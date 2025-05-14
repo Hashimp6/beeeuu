@@ -1,0 +1,281 @@
+const Conversation = require("../models/chatModel");
+const User = require("../models/userModel");
+const { getIo } = require("../config/socket");
+const mongoose = require("mongoose");
+
+/**
+ * Improved Message Controller with consistent socket pattern
+ */
+
+// Send a message and store it in the database
+const sendMessage = async (req, res) => {
+  try {
+    const { receiverId, text } = req.body;
+    const senderId = req.user.id;
+
+    if (!receiverId || !text) {
+      return res.status(400).json({
+        success: false,
+        message: "Receiver ID and message text are required",
+      });
+    }
+
+    // Validate if receiver exists
+    const receiver = await User.findById(receiverId);
+    if (!receiver) {
+      return res.status(404).json({
+        success: false,
+        message: "Receiver not found",
+      });
+    }
+
+    // Get or create conversation between these two users
+    let conversation = await Conversation.findOne({
+      members: { $all: [senderId, receiverId] },
+    });
+
+    // If no conversation exists, create one
+    if (!conversation) {
+      conversation = new Conversation({
+        members: [senderId, receiverId],
+        messages: [],
+      });
+    }
+
+    // Add new message to conversation
+    const newMessage = {
+      sender: senderId,
+      text,
+      createdAt: new Date(),
+    };
+
+    conversation.messages.push(newMessage);
+    await conversation.save();
+
+    // Get the message with its MongoDB-generated ID
+    const savedMessage =
+      conversation.messages[conversation.messages.length - 1];
+
+    // Format message for socket emission
+    const messageForSocket = {
+      _id: savedMessage._id,
+      sender: {
+        _id: senderId,
+        name: req.user.name,
+      },
+      text,
+      createdAt: savedMessage.createdAt,
+    };
+
+    // Emit message through socket to specific rooms
+    const io = getIo();
+
+    // Emit to receiver's personal room
+    io.to(`user:${receiverId}`).emit("new-message", {
+      conversationId: conversation._id,
+      message: messageForSocket,
+    });
+
+    // Also emit to conversation room if being used
+    io.to(`conversation:${conversation._id}`).emit("new-message", {
+      conversationId: conversation._id,
+      message: messageForSocket,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Message sent successfully",
+      data: messageForSocket,
+    });
+  } catch (error) {
+    console.error("Send message error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send message",
+      error: error.message,
+    });
+  }
+};
+
+// Get messages for a specific conversation
+const getConversationMessages = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { limit = 20, page = 1 } = req.query;
+    const userId = req.user.id;
+
+    // Convert params to integers
+    const limitInt = parseInt(limit);
+    const pageInt = parseInt(page);
+    const skip = (pageInt - 1) * limitInt;
+
+    // Find conversation and verify user is a member
+    const conversation = await Conversation.findById(conversationId)
+      .populate("members", "username email")
+      .populate("messages.sender", "username");
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    // Check if user is part of this conversation
+    if (
+      !conversation.members.some((member) => member._id.toString() === userId)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to access this conversation",
+      });
+    }
+
+    // Get paginated messages
+    const totalMessages = conversation.messages.length;
+
+    // Get slice of messages with pagination
+    const messages = conversation.messages
+      .slice(Math.max(0, totalMessages - skip - limitInt), totalMessages - skip)
+      .sort((a, b) => a.createdAt - b.createdAt);
+
+    res.status(200).json({
+      success: true,
+      conversationId,
+      messages,
+      pagination: {
+        total: totalMessages,
+        page: pageInt,
+        limit: limitInt,
+        pages: Math.ceil(totalMessages / limitInt),
+      },
+    });
+  } catch (error) {
+    console.error("Get messages error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve messages",
+      error: error.message,
+    });
+  }
+};
+
+// Get all conversations for the current user
+const getUserConversations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find all conversations this user is part of
+    const conversations = await Conversation.find({
+      members: { $in: [userId] },
+    })
+      .populate("members", "username email")
+      .populate("messages.sender", "username")
+      .sort({ updatedAt: -1 }); // Sort by most recent update
+
+    // Format conversations to include basic info
+    const formattedConversations = conversations.map((conversation) => {
+      // Get the other user in the conversation
+      const otherUser = conversation.members.find(
+        (member) => member._id.toString() !== userId
+      );
+
+      // Get the last message if any
+      const lastMessage =
+        conversation.messages.length > 0
+          ? conversation.messages[conversation.messages.length - 1]
+          : null;
+
+      return {
+        conversationId: conversation._id,
+        otherUser,
+        lastMessage,
+        unreadCount: conversation.messages.filter(
+          (msg) => msg.sender.toString() !== userId && !msg.read
+        ).length,
+        updatedAt: lastMessage
+          ? lastMessage.createdAt
+          : conversation.updatedAt || conversation._id.getTimestamp(),
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      conversations: formattedConversations,
+    });
+  } catch (error) {
+    console.error("Get conversations error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve conversations",
+      error: error.message,
+    });
+  }
+};
+
+// Create a new conversation
+const createConversation = async (req, res) => {
+  try {
+    const { receiverId } = req.body;
+    const senderId = req.user.id;
+
+    if (!receiverId) {
+      return res.status(400).json({
+        success: false,
+        message: "Receiver ID is required",
+      });
+    }
+
+    // Check if receiver exists
+    const receiver = await User.findById(receiverId);
+    if (!receiver) {
+      return res.status(404).json({
+        success: false,
+        message: "Receiver not found",
+      });
+    }
+
+    // Check if conversation already exists
+    const existingConversation = await Conversation.findOne({
+      members: { $all: [senderId, receiverId] },
+    });
+
+    if (existingConversation) {
+      return res.status(200).json({
+        success: true,
+        message: "Conversation already exists",
+        conversationId: existingConversation._id,
+      });
+    }
+
+    // Create new conversation
+    const newConversation = new Conversation({
+      members: [senderId, receiverId],
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await newConversation.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Conversation created successfully",
+      conversationId: newConversation._id,
+    });
+  } catch (error) {
+    console.error("Create conversation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create conversation",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  sendMessage,
+  getConversationMessages,
+  getUserConversations,
+  createConversation,
+};
