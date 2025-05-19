@@ -13,6 +13,8 @@ import NewChatScreen from '../screens/NewChatScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NewStore from '../screens/NewStoreScreen';
 import AppLayout from '../components/AppLayout';
+import SellerProfile from '../screens/StoreProfile';
+import AppointmentCalendar from '../screens/SheduleScreen';
 
 const Stack = createStackNavigator();
 
@@ -73,13 +75,13 @@ const AppNavigator = () => {
   // Stack for screens that require authentication
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-        <Stack.Screen
-        name="Home"
+      <Stack.Screen
+        name="Home" 
         component={AppLayout}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="HomeScreen"
+        name="HomeScreen" 
         component={HomeScreen}
         options={{ headerShown: false }}
       />
@@ -101,6 +103,16 @@ const AppNavigator = () => {
       <Stack.Screen
         name="NewChat"
         component={NewChatScreen}
+        options={{ headerShown: false }}
+      />
+       <Stack.Screen
+        name="SellerProfile"
+        component={SellerProfile}
+        options={{ headerShown: false }}
+      />
+       <Stack.Screen
+        name="AppointmentCalendar"
+        component={AppointmentCalendar}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

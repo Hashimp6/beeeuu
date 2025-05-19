@@ -42,7 +42,6 @@ export function AuthProvider({ children }) {
     try {
       setError(null);
       setLoading(true);
-      
       const response = await axios.post(`${SERVER_URL}/users/login`, {
         email,
         password

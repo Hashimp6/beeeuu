@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import SellerCard from '../components/SellersProfile';
+import SellerCard from '../components/SellersCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { SERVER_URL } from '../config';
@@ -52,7 +52,6 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
       const response = await axios.get(
         `${SERVER_URL}/stores/nearby?latitude=${latitude}&longitude=${longitude}`
       );
-      console.log("stores are",response.data );
       
       // Update state with fetched stores
       setStores(response.data.stores);
@@ -98,6 +97,7 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   
     return (
       <SellerCard
+      id={item._id}
         image={item.profileImage || "https://images.unsplash.com/photo-1600891964599-f61ba0e24092"}
         name={item.storeName}
         rating={`${item.rating || '0'} (${item.reviewCount || '0'})`}

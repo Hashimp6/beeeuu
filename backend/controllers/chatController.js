@@ -163,53 +163,44 @@ const getConversationMessages = async (req, res) => {
 // Get all conversations for the current user
 const getUserConversations = async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    // Find all conversations this user is part of
+    // Find all conversations where the current user is a member
     const conversations = await Conversation.find({
-      members: { $in: [userId] },
+      members: { $in: [req.user.id] }
     })
-      .populate("members", "username email")
-      .populate("messages.sender", "username")
-      .sort({ updatedAt: -1 }); // Sort by most recent update
-
-    // Format conversations to include basic info
-    const formattedConversations = conversations.map((conversation) => {
-      // Get the other user in the conversation
+    .populate("members", "username") // Populate members with username field
+    .sort({ updatedAt: -1 }); // Sort by most recent
+    
+    // Format conversations to include otherUser for the frontend
+    const formattedConversations = conversations.map(conversation => {
+      // Find the other user in the conversation (not the current user)
       const otherUser = conversation.members.find(
-        (member) => member._id.toString() !== userId
+        member => member._id.toString() !== req.user.id
       );
-
-      // Get the last message if any
-      const lastMessage =
-        conversation.messages.length > 0
-          ? conversation.messages[conversation.messages.length - 1]
-          : null;
-
+      
+      // Get the last message if it exists
+      const lastMessage = conversation.messages.length > 0 
+        ? conversation.messages[conversation.messages.length - 1] 
+        : null;
+      
+      // Count unread messages (you'll need to implement this logic)
+      const unreadCount = 0; // Replace with actual unread count logic
+      
       return {
         conversationId: conversation._id,
-        otherUser,
-        lastMessage,
-        unreadCount: conversation.messages.filter(
-          (msg) => msg.sender.toString() !== userId && !msg.read
-        ).length,
-        updatedAt: lastMessage
-          ? lastMessage.createdAt
-          : conversation.updatedAt || conversation._id.getTimestamp(),
+        otherUser: otherUser || { username: "Unknown User" },
+        lastMessage: lastMessage ? {
+          content: lastMessage.text,
+          sender: lastMessage.sender
+        } : null,
+        unreadCount,
+        updatedAt: conversation.updatedAt || conversation._id.getTimestamp()
       };
     });
-
-    res.status(200).json({
-      success: true,
-      conversations: formattedConversations,
-    });
+    
+    res.json({ success: true, conversations: formattedConversations });
   } catch (error) {
-    console.error("Get conversations error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to retrieve conversations",
-      error: error.message,
-    });
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

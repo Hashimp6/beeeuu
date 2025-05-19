@@ -7,6 +7,8 @@ require('dotenv').config();
 
 // Create a new store and update user to seller role
 const { Client } = require("@googlemaps/google-maps-services-js");
+const Product = require("../models/ProductModel");
+const Gallery = require("../models/galleryModel");
 
 // Initialize Google Maps client
 const googleMapsClient = new Client({});
@@ -73,6 +75,7 @@ const registerStore = async (req, res) => {
  
     // Create a new store with lat and long
     const newStore = new Store({
+      userId,
       storeName,
       description,
       profileImage,
@@ -137,16 +140,21 @@ const registerStore = async (req, res) => {
         return res.status(400).json({ message: "Invalid store ID" });
       }
   
-      const store = await Store.findById(storeId);
-      
+      // Fetch store, products, and gallery in parallel
+      const [store, products, gallery] = await Promise.all([
+        Store.findById(storeId),
+        Product.find({ store: storeId }),
+        Gallery.find({ store: storeId }),
+      ]);
+  
       if (!store) {
         return res.status(404).json({ message: "Store not found" });
       }
   
-      res.status(200).json({ store });
+      res.status(200).json({ store, products, gallery });
     } catch (error) {
-      console.error("Error getting store by ID:", error);
-      res.status(500).json({ message: "Failed to get store", error: error.message });
+      console.error("Error getting seller profile:", error);
+      res.status(500).json({ message: "Failed to get seller profile", error: error.message });
     }
   };
   
@@ -384,8 +392,6 @@ const findNearestSellers = async (req, res) => {
     }
   };
   
-  // Export the upload middleware function so it can be used in routes
-  const uploadStoreImage = upload.single("profileImage");
   
   module.exports = {
     registerStore,
@@ -393,6 +399,5 @@ const findNearestSellers = async (req, res) => {
     getStoreById,
     updateStore,
     deleteStore,
-    uploadStoreImage,
     findNearestSellers
   };

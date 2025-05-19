@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const storeSchema = new mongoose.Schema({ 
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   storeName: { type: String, required: true }, 
   description: { type: String }, 
   profileImage: { type: String }, 

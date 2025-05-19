@@ -2,10 +2,18 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // for message icon (you need expo install)
+import { useNavigation } from '@react-navigation/native';
 
-const SellerCard = ({ image, name, rating, location, category, price, time, offer }) => {
+const SellerCard = ({ id,image, name, rating, location, category, price, time, offer }) => {
+  const navigation = useNavigation(); // ✅ hook to get navigation object
+
+  const handlePress = () => {
+    navigation.navigate('SellerProfile',{id});
+  };
+
+  
   return (
-    <TouchableOpacity style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={handlePress}>
       {/* Food Image */}
       <Image source={{ uri: image }} style={styles.image} />
 
@@ -28,7 +36,7 @@ const SellerCard = ({ image, name, rating, location, category, price, time, offe
           {category && <Text style={styles.category}>{category}</Text>}
 
           <TouchableOpacity style={styles.messageButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#4CAF50" />
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#E3F2F7'" />
           </TouchableOpacity>
         </View>
       </View>
@@ -93,11 +101,11 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 14,
-    color: '#A9A9A9',
+    color: '#155366',
     fontWeight: '600',
   },
   messageButton: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#E3F2F7',
     padding: 8,
     borderRadius: 20,
   },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView , Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,18 +7,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import HomeScreen from '../screens/HomeScreen';
 import LocationSelectionModal from './LocationSelection';
 import ProfileScreen from './ProfileScreen';
+import { useNavigation } from '@react-navigation/native';
 
 const AppLayout = () => {
   const [activeTab, setActiveTab] = useState('Home');
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [user, setUser] = useState(null);
   const [locationUpdateTrigger, setLocationUpdateTrigger] = useState(0);
-  
+  const navigation = useNavigation();
+
   // Check for user location on component mount
   useEffect(() => {
     const checkUserLocation = async () => {
       try {
         const storedUserJson = await AsyncStorage.getItem('user');
+        
         
         if (storedUserJson) {
           let storedUser = JSON.parse(storedUserJson);
@@ -28,7 +31,8 @@ const AppLayout = () => {
           if (!storedUser.latitude || !storedUser.longitude) {
             setLocationModalVisible(true);
           }
-        } else {
+        }
+       else {
           // No user data stored yet, create one and show location modal
           const newUser = { id: Date.now().toString() };
           await AsyncStorage.setItem('user', JSON.stringify(newUser));
@@ -100,7 +104,11 @@ const AppLayout = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appName}>Bizz</Text>
+      <Image 
+  source={require('../assets/log.png')} // adjust path as needed
+  style={styles.logo}
+/>
+
 
         <View style={styles.iconContainer}>
           {/* Location Icon with current location name */}
@@ -116,12 +124,16 @@ const AppLayout = () => {
           </TouchableOpacity>
 
           {/* Modern Message Icon (Chat Bubble) */}
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>2</Text>
-            </View>
-          </TouchableOpacity>
+          <TouchableOpacity 
+  style={styles.iconButton}
+  onPress={() => navigation.navigate('ChatListScreen')}
+>
+  <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
+  <View style={styles.badge}>
+    <Text style={styles.badgeText}>2</Text>
+  </View>
+</TouchableOpacity>
+
         </View>
       </View>
 
@@ -184,14 +196,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    paddingTop: 30,
+    paddingTop: 25,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingRight: 16,
+    paddingLeft: 10,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+  },
+  logo: {
+    width: 120,     // adjust width
+    height: 55,
+    // borderRadius:50,     // adjust height
+    resizeMode: 'contain',
   },
   iconContainer: {
     flexDirection: 'row',
@@ -218,10 +237,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  logo: {
-    height: 30,
-    width: 120,
-  },
+ 
   messageIcon: {
     position: 'relative',
     padding: 4,

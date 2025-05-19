@@ -27,27 +27,36 @@ const ChatListScreen = ({ navigation }) => {
     }
   }, [isAuthenticated]);
 
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${SERVER_URL}/api/messages/conversations`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setConversations(response.data.conversations);
-      setLoading(false);
-      setRefreshing(false);
-    } catch (error) {
-      console.error("Error fetching conversations:", error);
-      setLoading(false);
-      setRefreshing(false);
-      alert("Failed to load conversations. Please try again.");
+
+const fetchConversations = async () => {
+  try {
+    setLoading(true);
+    
+    const response = await axios.get(
+      `${SERVER_URL}/messages/conversations`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    
+   
+    // Log the first conversation's otherUser if it exists
+    if (response.data.conversations && response.data.conversations.length > 0) {
+   
     }
-  };
+    
+    setConversations(response.data.conversations);
+    setLoading(false);
+    setRefreshing(false);
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    setLoading(false);
+    setRefreshing(false);
+    alert("Failed to load conversations. Please try again.");
+  }
+};
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -91,36 +100,41 @@ const ChatListScreen = ({ navigation }) => {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  const renderItem = ({ item }) => {
-    const { conversationId, otherUser, lastMessage, updatedAt } = item;
+ // Updated renderItem function to handle potential missing data
+const renderItem = ({ item }) => {
+  const { conversationId, otherUser, lastMessage, updatedAt } = item;
 
-    // Create initials for avatar placeholder
-    const initials = otherUser?.username
-      ? otherUser.username.substring(0, 2).toUpperCase()
-      : "??";
+  // Add debugging to see what's happening
+  console.log("Rendering conversation:", JSON.stringify(item));
+  
+  // Check if otherUser exists and has a username
+  // Create initials for avatar placeholder
+  const initials = otherUser && otherUser.username
+    ? otherUser.username.substring(0, 2).toUpperCase()
+    : "??";
 
-    return (
-      <TouchableOpacity
-        style={styles.conversationItem}
-        onPress={() => handleChatPress(conversationId, otherUser)}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
-        <View style={styles.conversationInfo}>
-          <View style={styles.conversationHeader}>
-            <Text style={styles.username} numberOfLines={1}>
-              {otherUser?.username || "Unknown User"}
-            </Text>
-            <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
-          </View>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {lastMessage?.content || "Start a conversation"}
+  return (
+    <TouchableOpacity
+      style={styles.conversationItem}
+      onPress={() => handleChatPress(conversationId, otherUser)}
+    >
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{initials}</Text>
+      </View>
+      <View style={styles.conversationInfo}>
+        <View style={styles.conversationHeader}>
+          <Text style={styles.username} numberOfLines={1}>
+            {otherUser && otherUser.username ? otherUser.username : "Unknown User"}
           </Text>
+          <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
         </View>
-      </TouchableOpacity>
-    );
-  };
+        <Text style={styles.lastMessage} numberOfLines={1}>
+          {lastMessage && lastMessage.content ? lastMessage.content : "Start a conversation"}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
   const handleLogout = async () => {
     await logout();
     navigation.replace("Login");

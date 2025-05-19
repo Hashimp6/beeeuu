@@ -11,7 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  StatusBar,
+  StatusBar,Image
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
@@ -37,6 +37,7 @@ const LoginScreen = ({ navigation }) => {
         type: 'success',
         text1: 'Login Successful!',
       });
+      
         } else {
       Toast.show({
         type: 'error',
@@ -58,14 +59,15 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.formWrapper}>
               {/* Logo */}
               <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>A</Text>
-                <Text style={styles.appName}>APP NAME</Text>
-              </View>
+  <Image 
+    source={require('../assets/log.png')}
+    style={styles.logo}
+  />
+</View>
 
               {/* Title */}
               <View style={styles.titleContainer}>
-                <Text style={styles.title}>Welcome Back</Text>
-                <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+                <Text style={styles.subtitle}>Sign in to your Account</Text>
               </View>
 
               {/* Form */}
@@ -148,8 +150,16 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'center',
+    width: '100%',
   },
+  
+  logo: {
+    width: 250,     // slightly smaller for balance
+    height: 90,
+    resizeMode: 'contain',
+  },
+
   logoText: {
     color: '#000000',
     fontSize: 32,

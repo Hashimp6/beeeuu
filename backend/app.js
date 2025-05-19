@@ -5,6 +5,9 @@ const connectDB = require('./config/db')
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/chatRoutes');
 const storeRoutes = require('./routes/storeRoute');
+const productsRoutes = require('./routes/productRoutes');
+const galleryRoutes = require('./routes/galleryRoute');
+
 
 dotenv.config();
 
@@ -21,5 +24,7 @@ app.use(express.json());
 app.use('/users', userRoutes);
 app.use('/messages', messageRoutes);
 app.use('/stores', storeRoutes);
+app.use('/products', productsRoutes);
+app.use('/gallery', galleryRoutes);
 
 module.exports = app;
