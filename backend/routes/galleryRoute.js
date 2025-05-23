@@ -1,13 +1,27 @@
 // routes/galleryRoutes.js
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { uploadGalleryImage } = require("../config/multer");
-const { addGalleryImage, deleteGalleryImage } = require("../controllers/galleryController");
+const { uploadGalleryImage } = require('../config/multer');
+const {
+  createGalleryPost,
+  getGalleryBySeller,
+  deleteGalleryImage,
+  deleteEntireGallery,
+  getAllGalleries
+} = require('../controllers/galleryController');
 
-// POST: Add gallery image
-router.post("/add", uploadGalleryImage.single("image"), addGalleryImage);
+// Middleware for authentication (add your auth middleware here)
+// const { authenticateSeller, authenticateAdmin } = require('../middleware/auth');
 
-// DELETE: Remove gallery image
-router.delete("/:id", deleteGalleryImage);
+router.post('/', uploadGalleryImage.single('image'), createGalleryPost);
+
+
+router.get('/:sellerId', getGalleryBySeller);
+
+router.delete('/:sellerId/image/:imageId', deleteGalleryImage);
+
+router.delete('/:sellerId', deleteEntireGallery);
+
+router.get('/all', getAllGalleries);
 
 module.exports = router;

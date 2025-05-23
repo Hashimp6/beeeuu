@@ -13,33 +13,68 @@ import {
   ScrollView,
   StatusBar,
   Image,
+  Alert,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { SERVER_URL } from '../config';
+import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 
-const RegisterScreen = ({ navigation }) => {
+const RegisterScreen = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { register, loading, error } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { register } = useAuth();
+  const navigation = useNavigation();
 
   const handleRegister = async () => {
+    // Form validation
     if (!name || !email || !password || !confirmPassword) {
-      alert("Please fill in all fields.");
+      Alert.alert("Error", "Please fill in all fields.");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match.");
+      Alert.alert("Error", "Passwords do not match.");
       return;
     }
 
-    const result = await register(name, email, password);
-    if (result.success) {
-      alert(result.message || "Registration successful! Please log in.");
-      navigation.navigate("Login");
-    } else {
-      alert(result.message || "Registration failed. Please try again.");
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      console.log("fine");
+
+      // Send registration request
+      const response = await axios.post(`${SERVER_URL}/users/register`, {
+        name,
+        email,
+        password
+      });
+
+      // Check response data structure
+      if (response.data && response.data.message) {
+        console.log("OTP request successful");
+        
+        // Navigate to OTP verification with email
+        navigation.navigate("otp", { email });
+      } else {
+        Alert.alert("Registration Failed", "Unexpected response from server");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      const 
+      errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,11 +90,11 @@ const RegisterScreen = ({ navigation }) => {
             <View style={styles.formWrapper}>
               {/* Logo */}
               <View style={styles.logoContainer}>
-               <Image 
-                 source={require('../assets/log.png')}
-                 style={styles.logo}
-               />
-             </View>
+                <Image 
+                  source={require('../assets/log.png')}
+                  style={styles.logo}
+                />
+              </View>
 
               {/* Title */}
               <View style={styles.titleContainer}>
@@ -120,10 +155,10 @@ const RegisterScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={styles.registerButton}
                   onPress={handleRegister}
-                  disabled={loading}
+                  disabled={isLoading}
                   activeOpacity={0.8}
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <Text style={styles.registerButtonText}>
@@ -152,7 +187,6 @@ const RegisterScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // Styles remain the same
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -177,7 +211,7 @@ const styles = StyleSheet.create({
   },
   
   logo: {
-    width: 250,     // slightly smaller for balance
+    width: 250,
     height: 90,
     resizeMode: 'contain',
   },

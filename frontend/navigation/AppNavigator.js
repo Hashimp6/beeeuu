@@ -2,34 +2,36 @@ import React from 'react';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
-// Remove ThemeContext import if you haven't created it yet
 
 // Import screens
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import OtpVerificationScreen from '../screens/OtpScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import NewChatScreen from '../screens/NewChatScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NewStore from '../screens/NewStoreScreen';
-import AppLayout from '../components/AppLayout';
 import SellerProfile from '../screens/StoreProfile';
-import AppointmentCalendar from '../screens/SheduleScreen';
+import AppointmentScheduler from '../screens/SheduleScreen';
+import ProductScreen from '../screens/StoreProduct';
+import ProfileScreen from '../components/ProfileScreen';
+import AppLayout from '../screens/AppLayout';
+import StoreGallery from '../screens/StoreGallery';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  // Use system color scheme directly if ThemeContext doesn't exist yet
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   
   // Show loading screen while checking authentication status
   if (authLoading) {
     return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: isDarkMode ? '#121212' : '#FFFFFF'
       }}>
@@ -54,67 +56,93 @@ const AppNavigator = () => {
     },
   };
 
-  // Stack for screens that don't require authentication
-  if (!isAuthenticated) {
-    return (
-      <Stack.Navigator screenOptions={screenOptions}>
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen} 
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="Register" 
-          component={RegisterScreen} 
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    );
-  }
-  
-  // Stack for screens that require authentication
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen
-        name="Home" 
+      {!isAuthenticated ? (
+        // Auth stack - Note the order and structure here
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="otp"
+            component={OtpVerificationScreen}
+            options={{ 
+              headerShown: false,
+              // This prevents going back to Register screen
+              gestureEnabled: false 
+            }}
+          />
+        </>
+      ) : (
+        // Main app stack
+        <>
+            <Stack.Screen 
+        name="Home"
         component={AppLayout}
         options={{ headerShown: false }}
+        initialParams={{ initialTab: 'Home' }}
       />
-      <Stack.Screen
-        name="HomeScreen" 
-        component={HomeScreen}
+          <Stack.Screen
+            name="HomeScreen"
+            component={HomeScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChatListScreen"
+            component={ChatListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChatDetail"
+            component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="NewStore"
+            component={NewStore}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="NewChat"
+            component={NewChatScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="SellerProfile"
+            component={SellerProfile}
+            options={{ headerShown: false }}
+          />
+              <Stack.Screen 
+        name="profile"
+        component={ProfileScreen}
         options={{ headerShown: false }}
+        initialParams={{ initialTab: 'Profile' }}
       />
-      <Stack.Screen
-        name="ChatListScreen"
-        component={ChatListScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="ChatDetail" 
-        component={ChatDetailScreen} 
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="NewStore" 
-        component={NewStore} 
-        options={{ headerShown: false }} 
-      />
-      <Stack.Screen
-        name="NewChat"
-        component={NewChatScreen}
-        options={{ headerShown: false }}
-      />
-       <Stack.Screen
-        name="SellerProfile"
-        component={SellerProfile}
-        options={{ headerShown: false }}
-      />
-       <Stack.Screen
-        name="AppointmentCalendar"
-        component={AppointmentCalendar}
-        options={{ headerShown: false }}
-      />
+          <Stack.Screen
+            name="AppointmentCalendar"
+            component={AppointmentScheduler}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="storeProduct"
+            component={ProductScreen}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="storeGallery"
+            component={StoreGallery}
+            options={{ headerShown: false }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 };

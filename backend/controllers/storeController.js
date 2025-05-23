@@ -157,12 +157,32 @@ const registerStore = async (req, res) => {
       res.status(500).json({ message: "Failed to get seller profile", error: error.message });
     }
   };
+  const getStoreByUserId = async (req, res) => {
+    try {
+      const { userId } = req.params;
+  
+      // Correct: filter object and await
+      const store = await Store.findOne({ userId });
+  
+      if (!store) {
+        return res.status(404).json({ message: "Store not found" });
+      }
+  
+      // Convert to plain object to avoid Mongoose circular refs
+      res.status(200).json(store.toObject());
+    } catch (error) {
+      console.error("Error getting seller profile:", error);
+      res.status(500).json({ message: "Failed to get seller profile", error: error.message });
+    }
+  };
   
   // Update store
   const updateStore = async (req, res) => {
     try {
       const { storeId } = req.params;
       const updateData = { ...req.body };
+      console.log("idstor",storeId);
+      
       
       // Handle image update if file is provided
       if (req.file && req.file.path) {
@@ -399,5 +419,6 @@ const findNearestSellers = async (req, res) => {
     getStoreById,
     updateStore,
     deleteStore,
-    findNearestSellers
+    findNearestSellers,
+    getStoreByUserId
   };

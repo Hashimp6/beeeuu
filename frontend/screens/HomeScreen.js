@@ -104,12 +104,14 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
         location={locationText}
         distance={distanceText}
         category={item.category || 'Uncategorized'}
+        description={item.description}
         price={item.price || '₹0'}
       />
     );
   };
   
   return (
+    
     <View style={styles.container}>
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>

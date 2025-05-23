@@ -1,76 +1,184 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/userModel")
+const User = require("../models/userModel");
+const sendMail = require("../config/nodeMailer");
+const crypto = require('crypto');
+
 
 /**
  * User Controller - Handles all user related operations
  */
 
-// Register a new user
-const register = async (req, res) => {
+let registrationStorage = {};
+let otpStorage = {};
+
+// Helper to clean up expired registrations and OTPs (should be scheduled to run periodically)
+const cleanupStorage = () => {
+  const now = Date.now();
+  const expiryTime = 30 * 60 * 1000; // 30 minutes
+
+  Object.keys(registrationStorage).forEach(email => {
+    if (now - registrationStorage[email].timestamp > expiryTime) {
+      delete registrationStorage[email];
+      delete otpStorage[email];
+    }
+  });
+};
+
+// Initial registration step
+const initiateRegistration = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { name, email, password } = req.body;
+console.log("name is",name);
 
-    // Check for required fields
-    if ( !email || !password) {
-      return res.status(400).json({ 
-        success: false,
-        message: " email, and password are required" 
+    // Check for missing fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email, and password are required."
       });
     }
 
-    // Check if user already exists (by email or username)
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
-
-    
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false,
-        message: "Email already registered" 
+      return res.status(400).json({
+        message: "Email is already registered."
       });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const newUser = new User({
-      username,
+    // Store registration data temporarily
+    registrationStorage[email] = {
+      username:name,
       email,
       password: hashedPassword,
-      role: role || "user"
-    });
+      timestamp: Date.now()
+    };
 
-    await newUser.save();
+    // Generate and send OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    otpStorage[email] = {
+      otp,
+      timestamp: Date.now()
+    };
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // Send OTP email
+    // await sendMail(email, otp);
+    console.log("OTP sent:", otp); // For development only, remove in production
 
-    // Return user data (excluding password)
-    const userData = newUser.toObject();
-    delete userData.password;
+    // Clean up expired registrations
+    cleanupStorage();
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      token,
-      user: userData
+    res.status(200).json({
+      message: "OTP sent successfully. Please verify to complete registration."
     });
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({
-      success: false,
-      message: "Server error during registration",
+      message: "Server error. Please try again later.",
       error: error.message
     });
   }
 };
 
+// Verify OTP and complete registration
+const verifyOTPAndRegister = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Check if OTP exists and is valid
+    if (!otpStorage[email] || !registrationStorage[email]) {
+      return res.status(400).json({
+        message: "OTP expired or registration timeout. Please try again."
+      });
+    }
+
+    // Verify OTP
+    if (otpStorage[email].otp !== otp) {
+      return res.status(400).json({
+        message: "Invalid OTP."
+      });
+    }
+
+    // Get stored registration data
+    const userData = registrationStorage[email];
+
+    // Create new user in database
+    const newUser = new User({
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      isVerified: true
+    });
+
+    await newUser.save();
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: newUser._id }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "7d" }
+    );
+
+    // Clean up storage
+    delete otpStorage[email];
+    delete registrationStorage[email];
+
+    // Return user data and token to auto-login the user
+    res.status(201).json({
+      message: "Registration completed successfully.",
+      token,
+      user: {
+        _id: newUser._id,
+        name: newUser.username,
+        email: newUser.email,
+        isVerified: newUser.isVerified
+      }
+    });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message
+    });
+  }
+};
+
+// Resend OTP
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!registrationStorage[email]) {
+      return res.status(400).json({
+        message: "Registration session expired. Please start registration again."
+      });
+    }
+
+    // Generate new OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    otpStorage[email] = {
+      otp,
+      timestamp: Date.now()
+    };
+
+    // Send new OTP
+    // await sendMail(email, otp);
+    console.log("OTP resent:", otp); // For development only, remove in production
+
+    res.status(200).json({
+      message: "OTP resent successfully."
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({
+      message: "Server error. Please try again later.",
+      error: error.message
+    });
+  }
+};
 // Login user
 const login = async (req, res) => {
   try {
@@ -450,7 +558,9 @@ const updateLocation = async (req, res) => {
 
 
 module.exports = {
-  register,
+  initiateRegistration,
+  verifyOTPAndRegister ,
+  resendOTP ,
   login,
   getCurrentUser,
   getUserById,

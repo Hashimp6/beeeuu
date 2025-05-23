@@ -135,10 +135,6 @@ const renderItem = ({ item }) => {
     </TouchableOpacity>
   );
 };
-  const handleLogout = async () => {
-    await logout();
-    navigation.replace("Login");
-  };
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -156,9 +152,7 @@ const renderItem = ({ item }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chats</Text>
-        <TouchableOpacity onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={26} color="#000000" />
-        </TouchableOpacity>
+     
       </View>
 
       {loading && !refreshing ? (

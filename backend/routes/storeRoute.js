@@ -6,7 +6,8 @@ const {
   getStoreById, 
   updateStore, 
   deleteStore,
-  findNearestSellers
+  findNearestSellers,
+  getStoreByUserId
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -14,6 +15,7 @@ const { uploadStoreImage } = require("../config/multer");
 
 router.get("/nearby", findNearestSellers);
  router.get("/:storeId", getStoreById);
+ router.get("/user/:userId", getStoreByUserId);
 // Apply authentication middleware to all routes
 router.use(protect);
 
@@ -27,7 +29,7 @@ router.get("/", authorize("admin"), getAllStores);
 // router.get("/:storeId", getStoreById);
 
 // Update store - use uploadStoreImage middleware
-router.put("/:storeId", authorize("seller", "admin"), uploadStoreImage.single("profileImage"), updateStore);
+router.put("/:storeId", uploadStoreImage.single("profileImage"), updateStore);
 
 // Delete store
 router.delete("/:storeId", authorize("seller", "admin"), deleteStore);

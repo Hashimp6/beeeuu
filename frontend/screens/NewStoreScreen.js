@@ -20,23 +20,30 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { SERVER_URL } from '../config';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NewStore = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  
+  // Get params
+  const { editMode = false, storeData = {} } = route.params || {};
+console.log("datastt",storeData);
 
-  // Form state
-  const [storeName, setStoreName] = useState('');
-  const [description, setDescription] = useState('');
-  const [imageUri, setImageUri] = useState('');
+  // Form state - Initialize with existing data if in edit mode
+
+  const [storeName, setStoreName] = useState(storeData.storeName || storeData.name || '');
+  const [description, setDescription] = useState(storeData.description || '');
+  const [imageUri, setImageUri] = useState(storeData.profileImage || '');
   const [imageInfo, setImageInfo] = useState(null); // For file info
-  const [place, setPlace] = useState('');
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [instagram, setInstagram] = useState('');
-  const [facebook, setFacebook] = useState('');
-  const [website, setWebsite] = useState('');
-  const [category, setCategory] = useState('');
+  const [place, setPlace] = useState(storeData.place || '');
+  const [phone, setPhone] = useState(storeData.phone || '');
+  const [whatsapp, setWhatsapp] = useState(storeData.socialMedia?.whatsapp || '');
+  const [instagram, setInstagram] = useState(storeData.socialMedia?.instagram || '');
+  const [facebook, setFacebook] = useState(storeData.socialMedia?.facebook || '');
+  const [website, setWebsite] = useState(storeData.socialMedia?.website || '');
+  const [category, setCategory] = useState(storeData.category || '');
   
   // UI state
   const [loading, setLoading] = useState(false);
@@ -63,6 +70,21 @@ const NewStore = () => {
   // Location API configuration
   const LOCATION_API_KEY = 'AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24';
   const LOCATION_API_URL = 'https://maps.googleapis.com/maps/api/place/autocomplete/json';
+
+  // Set navigation header based on mode
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      title: editMode ? 'Edit Store' : 'Register Store',
+      headerStyle: {
+        backgroundColor: '#000000',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    });
+  }, [editMode, navigation]);
 
   // Handle location input and get suggestions
   useEffect(() => {
@@ -112,7 +134,7 @@ const NewStore = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1],
+        aspect: [2, 1],
         quality: 0.8,
       });
 
@@ -168,6 +190,7 @@ const NewStore = () => {
       // Create form data
       const formData = new FormData();
   
+      // Only append image if it's a new image selection (not existing URL)
       if (imageInfo) {
         formData.append('profileImage', {
           uri: imageInfo.uri,
@@ -191,42 +214,83 @@ const NewStore = () => {
   
       formData.append('socialMedia', JSON.stringify(socialMedia));
   
-      const response = await axios.post(
-        `${SERVER_URL}/stores/register`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          }
+      // Choose endpoint and method based on mode
+      const storeId=storeData._id
+      console.log("storid",storeData._id);
+      
+      const endpoint = editMode 
+        ? `${SERVER_URL}/stores/${storeId}` 
+        : `${SERVER_URL}/stores/register`;
+      
+      const method = editMode ? 'put' : 'post';
+  
+      const response = await axios[method](endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
         }
-      );
+      });
   
       if (response.data) {
-        Alert.alert('Success', 'Store registered successfully!');
+        Alert.alert(
+          'Success',
+          editMode ? 'Store updated successfully!' : 'Store registered successfully!',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate("profile")  // Navigate after OK press
+            }
+          ]
+        );
+        
+        // Only update user role for new registration
+        if (!editMode) {
+          try {
+            const userData = await AsyncStorage.getItem('user');
+            if (userData !== null) {
+              const user = JSON.parse(userData);
+              user.role = 'seller';
+              await AsyncStorage.setItem('user', JSON.stringify(user));
+            }
+          } catch (error) {
+            console.error('Error updating role in AsyncStorage:', error);
+          }
+        }
+        
         resetForm();
-        navigation.navigate('Home');
+        
+        // Navigate based on mode
+        if (editMode) {
+          navigation.goBack(); // Go back to profile
+        } else {
+          navigation.navigate('Home'); // Go to home for new registration
+        }
       }
   
     } catch (error) {
-      console.error('Registration Error:', error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to register store');
+      console.error('Error:', error.response?.data || error.message);
+      Alert.alert('Error', 
+        error.response?.data?.message || 
+        `Failed to ${editMode ? 'update' : 'register'} store`
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setStoreName('');
-    setDescription('');
-    setImageUri('');
-    setImageInfo(null);
-    setPlace('');
-    setPhone('');
-    setWhatsapp('');
-    setInstagram('');
-    setFacebook('');
-    setWebsite('');
-    setCategory('');
+    if (!editMode) {
+      setStoreName('');
+      setDescription('');
+      setImageUri('');
+      setImageInfo(null);
+      setPlace('');
+      setPhone('');
+      setWhatsapp('');
+      setInstagram('');
+      setFacebook('');
+      setWebsite('');
+      setCategory('');
+    }
   };
 
   // Render location suggestions as individual touchable items
@@ -303,8 +367,12 @@ const NewStore = () => {
       <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Register Your Store</Text>
-          <Text style={styles.subtitle}>Fill in the details to start selling</Text>
+          <Text style={styles.title}>
+            {editMode ? 'Edit Your Store' : 'Register Your Store'}
+          </Text>
+          <Text style={styles.subtitle}>
+            {editMode ? 'Update your store details' : 'Fill in the details to start selling'}
+          </Text>
         </View>
 
         <View style={styles.imageContainer}>
@@ -319,7 +387,9 @@ const NewStore = () => {
             )}
           </TouchableOpacity>
           {imageUri && (
-            <Text style={styles.uploadSuccess}>Image selected</Text>
+            <Text style={styles.uploadSuccess}>
+              {editMode && !imageInfo ? 'Current image' : 'Image selected'}
+            </Text>
           )}
         </View>
 
@@ -443,7 +513,9 @@ const NewStore = () => {
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitButtonText}>Register Store</Text>
+              <Text style={styles.submitButtonText}>
+                {editMode ? 'Update Store' : 'Register Store'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -460,7 +532,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#000000',
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 10,
@@ -549,7 +621,6 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  // Category selector styles
   categorySelector: {
     backgroundColor: '#F8F8F8',
     borderWidth: 1,
@@ -615,7 +686,7 @@ const styles = StyleSheet.create({
   },
   suggestionContainer: {
     position: 'absolute',
-    top: 80, // Position below the input field
+    top: 80,
     left: 0,
     right: 0,
     zIndex: 1000,

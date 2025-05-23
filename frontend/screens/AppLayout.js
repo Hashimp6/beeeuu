@@ -1,27 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView , Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import your screen components
-import HomeScreen from '../screens/HomeScreen';
-import LocationSelectionModal from './LocationSelection';
-import ProfileScreen from './ProfileScreen';
-import { useNavigation } from '@react-navigation/native';
+import HomeScreen from './HomeScreen';
+import LocationSelectionModal from '../components/LocationSelection';
+import ProfileScreen from '../components/ProfileScreen';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const AppLayout = () => {
-  const [activeTab, setActiveTab] = useState('Home');
+  const route = useRoute();
+  const navigation = useNavigation();
+  
+  // Get initial tab from route params, default to 'Home'
+  const initialTab = route.params?.initialTab || 'Home';
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [user, setUser] = useState(null);
   const [locationUpdateTrigger, setLocationUpdateTrigger] = useState(0);
-  const navigation = useNavigation();
+
+  // Update active tab when route params change
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+    }
+  }, [route.params?.initialTab]);
 
   // Check for user location on component mount
   useEffect(() => {
     const checkUserLocation = async () => {
       try {
         const storedUserJson = await AsyncStorage.getItem('user');
-        
         
         if (storedUserJson) {
           let storedUser = JSON.parse(storedUserJson);
@@ -31,8 +42,7 @@ const AppLayout = () => {
           if (!storedUser.latitude || !storedUser.longitude) {
             setLocationModalVisible(true);
           }
-        }
-       else {
+        } else {
           // No user data stored yet, create one and show location modal
           const newUser = { id: Date.now().toString() };
           await AsyncStorage.setItem('user', JSON.stringify(newUser));
@@ -50,7 +60,7 @@ const AppLayout = () => {
   // Function to handle location modal close and update
   const handleLocationUpdate = useCallback(async (updatedUser) => {
     if (updatedUser) {
-      // This was missing: Save the updated user to AsyncStorage first
+      // Save the updated user to AsyncStorage first
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
       
       // Then update state
@@ -67,6 +77,14 @@ const AppLayout = () => {
     setLocationModalVisible(true);
   };
 
+  // Handle tab navigation - you can also navigate to specific routes if needed
+  const handleTabPress = (tabName) => {
+    setActiveTab(tabName);
+    
+    // Optional: If you want to use navigation instead of local state
+    // navigation.navigate('Home', { initialTab: tabName });
+  };
+
   // Function to render the content based on active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -81,8 +99,12 @@ const AppLayout = () => {
             locationUpdateTrigger={locationUpdateTrigger}
           />
         );
-      // case 'Search':
-      //   return <SearchScreen />;
+      case 'Search':
+        return (
+          <View style={styles.placeholder}>
+            <Text>Search Screen Content</Text>
+          </View>
+        );
       case 'Profile':
         return <ProfileScreen />;
       
@@ -104,11 +126,10 @@ const AppLayout = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-      <Image 
-  source={require('../assets/log.png')} // adjust path as needed
-  style={styles.logo}
-/>
-
+        <Image 
+          source={require('../assets/log.png')} // adjust path as needed
+          style={styles.logo}
+        />
 
         <View style={styles.iconContainer}>
           {/* Location Icon with current location name */}
@@ -125,15 +146,14 @@ const AppLayout = () => {
 
           {/* Modern Message Icon (Chat Bubble) */}
           <TouchableOpacity 
-  style={styles.iconButton}
-  onPress={() => navigation.navigate('ChatListScreen')}
->
-  <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
-  <View style={styles.badge}>
-    <Text style={styles.badgeText}>2</Text>
-  </View>
-</TouchableOpacity>
-
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('ChatListScreen')}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>2</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -146,36 +166,36 @@ const AppLayout = () => {
       <View style={styles.bottomNav}>
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Home' && styles.activeNavItem]} 
-          onPress={() => setActiveTab('Home')}
+          onPress={() => handleTabPress('Home')}
         >
           <Ionicons 
             name={activeTab === 'Home' ? 'home' : 'home-outline'} 
             size={24} 
-            color={activeTab === 'Home' ? '#000000' : '#555'} 
+            color={activeTab === 'Home' ? "#155366" : '#555'} 
           />
           <Text style={[styles.navText, activeTab === 'Home' && styles.activeNavText]}>Home</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Search' && styles.activeNavItem]} 
-          onPress={() => setActiveTab('Search')}
+          onPress={() => handleTabPress('Search')}
         >
           <Ionicons 
             name={activeTab === 'Search' ? 'search' : 'search-outline'} 
             size={24} 
-            color={activeTab === 'Search' ? '#000000' : '#555'} 
+            color={activeTab === 'Search' ? "#155366": '#555'} 
           />
           <Text style={[styles.navText, activeTab === 'Search' && styles.activeNavText]}>Search</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Profile' && styles.activeNavItem]} 
-          onPress={() => setActiveTab('Profile')}
+          onPress={() => handleTabPress('Profile')}
         >
           <Ionicons 
             name={activeTab === 'Profile' ? 'person' : 'person-outline'} 
             size={24} 
-            color={activeTab === 'Profile' ? '#000000' : '#555'} 
+            color={activeTab === 'Profile' ? "#155366": '#555'} 
           />
           <Text style={[styles.navText, activeTab === 'Profile' && styles.activeNavText]}>Profile</Text>
         </TouchableOpacity>
@@ -207,9 +227,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EEEEEE',
   },
   logo: {
-    width: 120,     // adjust width
+    width: 120,
     height: 55,
-    // borderRadius:50,     // adjust height
     resizeMode: 'contain',
   },
   iconContainer: {
@@ -232,15 +251,6 @@ const styles = StyleSheet.create({
   iconButton: {
     marginLeft: 15,
     position: 'relative',
-  },
-  appName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
- 
-  messageIcon: {
-    position: 'relative',
-    padding: 4,
   },
   badge: {
     position: 'absolute',
@@ -285,8 +295,13 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   activeNavText: {
-    color: '#000000',
+    color: "#155366",
     fontWeight: '600',
+  },
+  placeholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

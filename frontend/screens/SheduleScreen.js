@@ -1,28 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, ScrollView } from 'react-native';
-import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  KeyboardAvoidingView
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { TextInput } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-const AppointmentCalendar = () => {
+const AppointmentScheduler = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const otherUser= route.params.otherUser || {};
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [isLargeScreen, setIsLargeScreen] = useState(Dimensions.get('window').width > 768);
-
-  useEffect(() => {
-    const handleResize = ({ window }) => {
-      setIsLargeScreen(window.width > 768);
-    };
-    const subscription = Dimensions.addEventListener('change', handleResize);
-    return () => subscription.remove();
-  }, []);
-
-  const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const [locationName, setLocationName] = useState('');
+const [address, setAddress] = useState('');
+const [contactNo, setContactNo] = useState('');
+  // Time slots - you can customize these
+  const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+  
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const timeSlots = ['5:30 PM', '6:30 PM', '7:30 PM', '8:30 PM', '9:30 PM'];
+  // Initialize when component mounts
+  useEffect(() => {
+    console.log("strdxxxxd",otherUser);
+    
+    setSelectedDate(new Date());
+    setSelectedTime(null);
+    setCurrentMonth(new Date());
+  }, []);
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -44,13 +60,13 @@ const AppointmentCalendar = () => {
     }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize today to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
 
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const date = new Date(year, month, i);
-      date.setHours(0, 0, 0, 0); // Normalize date for comparison
+      date.setHours(0, 0, 0, 0);
       
-      const isPast = date < today; // Check if date is in the past
+      const isPast = date < today;
       
       days.push({
         date,
@@ -93,177 +109,294 @@ const AppointmentCalendar = () => {
     }
   };
 
+  const formatAppointmentDate = (date) => {
+    if (!date) return '';
+    return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  };
+
+  const handleSendAppointment = () => {
+    if (selectedDate && selectedTime) {
+      const appointmentDate = formatAppointmentDate(selectedDate);
+      
+      // Create the appointment data with location details
+      const appointmentData = {
+        date: appointmentDate,
+        time: selectedTime,
+        locationName: locationName,
+        address: address,
+        contactNo: contactNo,
+        storeId: otherUser,
+        product:otherUser.productName,
+        status: 'Pending'
+      };
+  
+      // Create confirmation message for the chat with location details
+      let confirmationMessage = `You have an appointment scheduled on ${appointmentDate} at ${selectedTime}.`;
+      
+      if (locationName) {
+        confirmationMessage += `\nLocation: ${locationName}`;
+      }
+      if (address) {
+        confirmationMessage += `\nAddress: ${address}`;
+      }
+      if (contactNo) {
+        confirmationMessage += `\nContact: ${contactNo}`;
+      }
+      if (otherUser.productName) {
+        confirmationMessage += `\nProduct: ${otherUser.productName}`;
+      }
+      
+      // Pass the data back to the previous screen (ChatDetailScreen)
+      navigation.navigate('ChatDetail', {
+        otherUser: otherUser,
+        appointmentMessage: confirmationMessage,
+        appointmentData: appointmentData
+      });
+    }
+  };
   const calendarDays = generateCalendarDays();
 
   return (
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Choose Date and Time for Appointment</Text>
-
-      {/* Month Navigation */}
-      <View style={styles.monthNavContainer}>
-        <View style={styles.monthNav}>
-          <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-            <ChevronLeft size={18} color="#155366" />
-          </TouchableOpacity>
-          <Text style={styles.monthText}>
-            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-          </Text>
-          <TouchableOpacity onPress={goToNextMonth} style={[styles.navButton, styles.navButtonActive]}>
-            <ChevronRight size={18} color="#fff" />
-          </TouchableOpacity>
-        </View>
+    
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Schedule Appointment</Text>
+        <View style={styles.placeholder} />
       </View>
-
-      {/* Calendar Container */}
-      <View style={styles.calendarContainer}>
-        {/* Calendar Header */}
-        <View style={styles.weekRow}>
-          {dayNames.map((day, idx) => (
-            <View key={idx} style={styles.dayNameContainer}>
-              <Text style={styles.dayName}>{day}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Calendar Days */}
-        <View style={styles.daysGrid}>
-          {calendarDays.map((day, idx) => {
-            const isSelected = selectedDate?.toDateString() === day.date.toDateString();
-            const isToday = day.isToday;
-            
-            return (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => handleDateSelect(day)}
-                disabled={!day.isCurrentMonth || day.isPast}
-                style={[
-                  styles.dayCell,
-                  !day.isCurrentMonth && styles.dayOtherMonth,
-                  day.isPast && styles.dayPast,
-                  isSelected && styles.daySelected,
-                  isToday && styles.dayToday,
-                ]}
-              >
-                <Text style={[
-                  styles.dayText,
-                  !day.isCurrentMonth && styles.dayTextOtherMonth,
-                  day.isPast && styles.dayTextPast,
-                  isSelected && styles.dayTextSelected,
-                  isToday && styles.dayTextToday,
-                ]}>
-                  {day.date.getDate()}
-                </Text>
+      <KeyboardAvoidingView
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  style={{ flex: 1 }}
+>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+            {/* Month Navigation */}
+            <View style={styles.monthNavContainer}>
+              <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+                <Ionicons name="chevron-back" size={22} color="#155366" />
               </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Time Slot Selection */}
-      <View style={styles.timeSlotContainer}>
-        <Text style={styles.sectionTitle}>Choose a Time</Text>
-        <View style={styles.timeSlotGrid}>
-          {timeSlots.map((time, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.timeSlot,
-                selectedTime === time && styles.timeSlotSelected
-              ]}
-              onPress={() => setSelectedTime(time)}
-              disabled={!selectedDate}
-            >
-              <Clock size={16} color={selectedTime === time ? '#fff' : '#155366'} />
-              <Text style={[
-                styles.timeSlotText,
-                selectedTime === time && styles.timeSlotTextSelected
-              ]}>
-                {time}
+              <Text style={styles.monthText}>
+                {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+              <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+                <Ionicons name="chevron-forward" size={22} color="#155366" />
+              </TouchableOpacity>
+            </View>
 
-      {/* Continue Button */}
-      <TouchableOpacity
-        style={[
-          styles.continueButton,
-          !(selectedDate && selectedTime) && styles.continueButtonDisabled
-        ]}
-        disabled={!(selectedDate && selectedTime)}
-      >
-        <Text style={styles.continueButtonText}>Continue</Text>
-      </TouchableOpacity>
-    </ScrollView>
+            {/* Calendar */}
+            <View style={styles.calendarContainer}>
+              {/* Day names */}
+              <View style={styles.weekRow}>
+                {dayNames.map((day, idx) => (
+                  <View key={idx} style={styles.dayNameContainer}>
+                    <Text style={styles.dayName}>{day}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Calendar grid */}
+              <View style={styles.daysGrid}>
+                {calendarDays.map((day, idx) => {
+                  const isSelected = selectedDate?.toDateString() === day.date.toDateString();
+                  
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => handleDateSelect(day)}
+                      disabled={!day.isCurrentMonth || day.isPast}
+                      style={[
+                        styles.dayCell,
+                        !day.isCurrentMonth && styles.dayOtherMonth,
+                        day.isPast && styles.dayPast,
+                        isSelected && styles.daySelected,
+                        day.isToday && styles.dayToday,
+                      ]}
+                    >
+                      <Text style={[
+                        styles.dayText,
+                        !day.isCurrentMonth && styles.dayTextOtherMonth,
+                        day.isPast && styles.dayTextPast,
+                        isSelected && styles.dayTextSelected,
+                        day.isToday && styles.dayTextToday,
+                      ]}>
+                        {day.date.getDate()}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Time selection */}
+            <View style={styles.timeSelectionContainer}>
+              <Text style={styles.sectionTitle}>Choose a Time</Text>
+              <View style={styles.timeSlotGrid}>
+                {timeSlots.map((time, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.timeSlot,
+                      selectedTime === time && styles.timeSlotSelected
+                    ]}
+                    onPress={() => setSelectedTime(time)}
+                    disabled={!selectedDate}
+                  >
+                    <Ionicons 
+                      name="time-outline" 
+                      size={18} 
+                      color={selectedTime === time ? "#FFFFFF" : "#155366"} 
+                    />
+                    <Text style={[
+                      styles.timeSlotText,
+                      selectedTime === time && styles.timeSlotTextSelected
+                    ]}>
+                      {time}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={styles.locationDetailsContainer}>
+  <Text style={styles.sectionTitle}>Location Details</Text>
+  
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Location Name</Text>
+    <TextInput
+      style={styles.textInput}
+      placeholder="Enter location name"
+      value={locationName}
+      onChangeText={setLocationName}
+      placeholderTextColor="#999999"
+    />
+  </View>
+
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Address</Text>
+    <TextInput
+      style={[styles.textInput, styles.addressInput]}
+      placeholder="Enter full address"
+      value={address}
+      onChangeText={setAddress}
+      multiline={true}
+      numberOfLines={3}
+      placeholderTextColor="#999999"
+    />
+  </View>
+
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Contact Number</Text>
+    <TextInput
+      style={styles.textInput}
+      placeholder="Enter contact number"
+      value={contactNo}
+      onChangeText={setContactNo}
+      keyboardType="phone-pad"
+      placeholderTextColor="#999999"
+    />
+  </View>
+</View>
+
+            {/* Selected appointment summary */}
+            {selectedDate && selectedTime && (
+              <View style={styles.appointmentSummary}>
+                <Text style={styles.summaryTitle}>Your Appointment Request</Text>
+                <View style={styles.summaryDetails}>
+                  <View style={styles.summaryRow}>
+                    <Ionicons name="calendar-outline" size={20} color="#155366" />
+                    <Text style={styles.summaryText}>{formatAppointmentDate(selectedDate)}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Ionicons name="time-outline" size={20} color="#155366" />
+                    <Text style={styles.summaryText}>{selectedTime}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+          </KeyboardAvoidingView>
+
+          {/* Bottom buttons */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+  style={[
+    styles.sendButton,
+    (!selectedDate || !selectedTime || !locationName || !address || !contactNo) && styles.sendButtonDisabled
+  ]}
+  onPress={handleSendAppointment}
+  disabled={!selectedDate || !selectedTime || !locationName || !address || !contactNo}
+>
+  <Text style={styles.sendButtonText}>Book Appointment</Text>
+</TouchableOpacity>
+          </View>
+        </View>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: '#ffffff',
-  },
   container: {
-    padding: 20,
-    backgroundColor: '#ffffff',
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  title: {
-    fontSize: 22,
-    color: '#333333',
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
-  },
-  monthNavContainer: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  monthNav: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 10,
+    padding: 16,
+    backgroundColor: '#155366', // Updated to requested teal color
+    paddingTop: Platform.OS === 'ios' ? 50 : 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  backButton: {
+    padding: 8,
+  },
+  placeholder: {
+    width: 40,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  monthNavContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   navButton: {
-    backgroundColor: '#E3F2F7',
-    padding: 12,
-    borderRadius: 25,
-    height: 44,
-    width: 44,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#E0F2F1', // Light teal
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navButtonActive: {
-    backgroundColor: '#155366',
-  },
   monthText: {
     fontSize: 18,
-    color: '#333333',
     fontWeight: '600',
+    color: '#155366', // Updated to requested teal color
   },
   calendarContainer: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   weekRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     marginBottom: 10,
-    paddingHorizontal: 5,
   },
   dayNameContainer: {
     width: 40,
@@ -271,9 +404,8 @@ const styles = StyleSheet.create({
   },
   dayName: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-    textAlign: 'center',
+    color: '#757575',
+    fontWeight: '500',
   },
   daysGrid: {
     flexDirection: 'row',
@@ -283,52 +415,75 @@ const styles = StyleSheet.create({
   dayCell: {
     width: 40,
     height: 40,
-    margin: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    margin: 2,
     borderRadius: 20,
   },
   dayText: {
-    fontSize: 16,
-    color: '#333333',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#000000',
   },
   dayOtherMonth: {
-    opacity: 0.4,
+    opacity: 0.3,
   },
   dayTextOtherMonth: {
-    color: '#999',
+    color: '#757575',
   },
   dayPast: {
-    opacity: 0.4,
-    backgroundColor: '#f0f0f0',
+    opacity: 0.5,
+  },
+  locationDetailsContainer: {
+    marginBottom: 20,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#155366',
+    marginBottom: 6,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    color: '#000000',
+  },
+  addressInput: {
+    height: 80,
+    textAlignVertical: 'top',
   },
   dayTextPast: {
-    color: '#aaa',
+    color: '#757575',
   },
   daySelected: {
-    backgroundColor: '#155366',
-    shadowColor: '#155366',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: '#155366', // Updated to requested teal color
   },
   dayTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   dayToday: {
     borderWidth: 1,
-    borderColor: '#155366',
+    borderColor: '#155366', // Updated to requested teal color
   },
   dayTextToday: {
-    fontWeight: '700',
-    color: '#155366',
+    fontWeight: 'bold',
+    color: '#155366', // Updated to requested teal color
   },
-  timeSlotContainer: {
-    marginTop: 10,
-    marginBottom: 10,
+  timeSelectionContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#155366', // Updated to requested teal color
   },
   timeSlotGrid: {
     flexDirection: 'row',
@@ -339,53 +494,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderColor: '#e0e0e0',
     borderWidth: 1,
+    borderColor: '#E0E0E0',
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
     width: '48%',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#E0F2F1', // Light teal
   },
   timeSlotSelected: {
-    backgroundColor: '#155366',
+    backgroundColor: '#155366', // Updated to requested teal color
     borderColor: '#155366',
-    shadowColor: '#155366',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
   },
   timeSlotText: {
     marginLeft: 8,
-    color: '#155366',
-    fontSize: 15,
-    fontWeight: '500',
+    color: '#155366', // Updated to requested teal color
+    fontSize: 14,
   },
   timeSlotTextSelected: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
-  continueButton: {
-    marginTop: 20,
-    backgroundColor: '#155366',
-    padding: 16,
+  appointmentSummary: {
+    backgroundColor: '#E0F2F1', // Light teal
     borderRadius: 12,
-    shadowColor: '#155366',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    padding: 16,
+    marginBottom: 20,
   },
-  continueButtonDisabled: {
-    backgroundColor: '#e5e5e5',
-    shadowOpacity: 0,
-  },
-  continueButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
+  summaryTitle: {
     fontSize: 16,
-  }
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#155366', // Updated to requested teal color
+  },
+  summaryDetails: {
+    gap: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  summaryText: {
+    fontSize: 15,
+    color: '#155366', // Updated to requested teal color
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#B2DFDB', // Very light teal
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  cancelButtonText: {
+    color: '#155366', // Updated to requested teal color
+    fontWeight: '500',
+  },
+  sendButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#155366', // Updated to requested teal color
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#B2DFDB', // Very light teal
+  },
+  sendButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
 });
 
-export default AppointmentCalendar;
+export default AppointmentScheduler;

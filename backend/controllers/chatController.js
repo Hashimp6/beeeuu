@@ -2,15 +2,16 @@ const Conversation = require("../models/chatModel");
 const User = require("../models/userModel");
 const { getIo } = require("../config/socket");
 const mongoose = require("mongoose");
+const storeModel = require("../models/storeModel");
 
 /**
  * Improved Message Controller with consistent socket pattern
  */
-
 // Send a message and store it in the database
 const sendMessage = async (req, res) => {
   try {
     const { receiverId, text } = req.body;
+    const store = await storeModel.findById(receiverId)
     const senderId = req.user.id;
 
     if (!receiverId || !text) {
@@ -209,6 +210,7 @@ const createConversation = async (req, res) => {
   try {
     const { receiverId } = req.body;
     const senderId = req.user.id;
+console.log("drr",senderId,receiverId);
 
     if (!receiverId) {
       return res.status(400).json({
@@ -220,6 +222,7 @@ const createConversation = async (req, res) => {
     // Check if receiver exists
     const receiver = await User.findById(receiverId);
     if (!receiver) {
+      
       return res.status(404).json({
         success: false,
         message: "Receiver not found",
@@ -232,6 +235,7 @@ const createConversation = async (req, res) => {
     });
 
     if (existingConversation) {
+      
       return res.status(200).json({
         success: true,
         message: "Conversation already exists",

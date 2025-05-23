@@ -15,12 +15,13 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error } = useAuth();
-
+ const navigation = useNavigation();
   const handleLogin = async () => {
     if (!email || !password) {
       Toast.show({

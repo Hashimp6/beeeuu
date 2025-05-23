@@ -20,44 +20,6 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 
-// Store Header Component - Improved with cleaner styling
-const StoreHeader = ({ storeData }) => {
-  console.log("strdttd",storeData);
-  
-  if (!storeData) return null;
-  
-  return (
-    <View style={storeHeaderStyles.container}>
-      {/* Store Image */}
-      {storeData.profileImage? (
-        <Image 
-          source={{ uri: storeData.profileImage }} 
-          style={storeHeaderStyles.storeImage} 
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={storeHeaderStyles.storeImagePlaceholder}>
-          <Text style={storeHeaderStyles.storeImagePlaceholderText}>
-            {storeData.storeName ? storeData.storeName.charAt(0).toUpperCase() : 'S'}
-          </Text>
-        </View>
-      )}
-
-      {/* Store Details */}
-      <View style={storeHeaderStyles.storeInfoContainer}>
-        <Text style={storeHeaderStyles.storeLabel}>STORE</Text>
-        <Text style={storeHeaderStyles.storeName}>
-          {storeData.storeName || 'Store'}
-        </Text>
-        {storeData.description && (
-          <Text style={storeHeaderStyles.storeDescription} numberOfLines={2}>
-            {storeData.description}
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-};
 
 const ChatDetailScreen = ({ navigation, route }) => {
   const { socket } = useSocket();
@@ -66,38 +28,22 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [storeDetails, setStoreDetails] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
+  const [pendingAppointment, setPendingAppointment] = useState(null);
   
   // Get parameters and auth context
-  const { conversationId, otherUser } = route.params || {};
+  const otherUser = route.params?.otherUser || null;
   const { user, token } = useAuth() || {};
   
   const flatListRef = useRef(null);
   
-  // Group messages by date
-  const groupedMessages = React.useMemo(() => {
-    if (!messages.length) return [];
-    
-    const groups = {};
-    messages.forEach(message => {
-      const date = new Date(message.createdAt).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(message);
-    });
-    
-    // Convert to array format for FlatList
-    return Object.keys(groups).map(date => ({
-      date,
-      data: groups[date],
-      id: date,
-    }));
-  }, [messages]);
   
   // Setup navigation header and fetch data
   useEffect(() => {
+    console.log("other derais",otherUser);
+    
     // Validate required data
-    if (!conversationId || !otherUser || !user || !token) {
+    if (!otherUser || !user || !token) {
       Alert.alert(
         "Error",
         "Missing required information to load chat",
@@ -106,84 +52,247 @@ const ChatDetailScreen = ({ navigation, route }) => {
       return;
     }
     
-    // If it's a store, fetch additional store details
-    // if (otherUser._id) {
-    //   fetchStoreDetails();
-    // }
+   
     
-    // Set up header
-    configureHeader();
+    const initializeChat = async () => {
+      try {
+        setLoading(true);
+        
+        // Check if conversationId was passed or create a new conversation
+        let chatId = route.params?.conversationId;
+        
+        if (!chatId) {
+          const receiverId = typeof otherUser === 'object' ? 
+            (otherUser._id || otherUser.userId) : otherUser;
+          
+          console.log('Creating conversation with receiverId:', receiverId);
+          
+          // Create a new conversation
+          const response = await axios.post(
+            `${SERVER_URL}/messages/conversations`,
+            { receiverId },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
+          console.log("response", response.data);
+          
+          chatId = response.data.conversationId;
+        }
+        
+        // Set conversation ID in state
+        setConversationId(chatId);
+        
+        // Now fetch messages with the conversation ID
+        await fetchMessages(chatId);
+        
+        // Setup socket connection
+        setupSocketConnection(chatId);
+      } catch (error) {
+        console.error('Error initializing chat:', error);
+        Alert.alert('Error', 'Failed to load conversation');
+        navigation.goBack();
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Fetch messages on component mount
-    fetchMessages();
-    
-    // Setup socket connection
-    setupSocketConnection();
+    initializeChat();
     
     return () => {
       // Clean up socket listeners
-      if (socket) {
+      if (socket && conversationId) {
         socket.off('new-message');
+        socket.off('message-sent'); // Also clean up any other listeners
         socket.emit('leave', { conversationId });
       }
     };
-  }, [conversationId, otherUser, user, token, socket]);
-  
-  // Setup custom header configuration
-  const configureHeader = () => {
-    navigation.setOptions({
-      // Use a simple title to avoid the complex header component issues
-      headerTitle: otherUser?.storeName || otherUser?.username || 'Chat',
-      headerTitleStyle: styles.headerTitleText,
-      headerStyle: {
-        backgroundColor: '#000000',
-        elevation: 0,
-        shadowOpacity: 0,
-      },
-      headerTintColor: '#FFFFFF',
-      headerLeft: () => (
-        <TouchableOpacity 
-          style={styles.headerBackButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="videocam" size={22} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="call" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="ellipsis-vertical" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      ),
+  }, [otherUser, user, token, socket, conversationId]); 
+
+  // Listen for navigation focus events to handle appointment messages
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (route.params?.appointmentMessage && route.params?.appointmentData) {
+        console.log('Navigation focus - setting pending appointment', {
+          message: route.params.appointmentMessage,
+          data: route.params.appointmentData
+        });
+        
+        setPendingAppointment({
+          message: route.params.appointmentMessage,
+          data: route.params.appointmentData,
+        });
+
+        // Clear the route params to prevent duplicate messages
+        navigation.setParams({ 
+          appointmentMessage: null, 
+          appointmentData: null 
+        });
+      }
     });
+
+    return unsubscribe;
+  }, [navigation, route.params]);
+
+  // Process pending appointment once we have a conversation ID
+  useEffect(() => {
+    if (pendingAppointment && conversationId) {
+      console.log('Processing pending appointment with conversation ID:', conversationId);
+      sendAppointmentMessage(pendingAppointment.message, pendingAppointment.data);
+      setPendingAppointment(null); // Clear after sending
+    }
+  }, [pendingAppointment, conversationId]);
+
+  // Handle sending appointment messages
+  const sendAppointmentMessage = async (messageText, appointmentData) => {
+    console.log("Sending appointment message:", messageText);
+    console.log("Appointment data:", appointmentData);
+    console.log("Conversation ID:", conversationId);
+    
+    if (!messageText || !conversationId) {
+      console.error("Missing required data for appointment message");
+      return;
+    }
+    
+    try {
+      setSending(true);
+      
+      // Create a simplified appointment data object to ensure consistent serialization
+      const simplifiedAppointmentData = {
+        date: appointmentData.date,
+        time: appointmentData.time,
+        status: appointmentData.status || 'Pending',
+        storeId: typeof appointmentData.storeId === 'object' ? 
+          appointmentData.storeId._id : appointmentData.storeId
+      };
+      
+      // Add temporary message to the list for immediate feedback
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      const tempMessage = {
+        _id: tempId,
+        text: messageText,
+        sender: {
+          _id: user._id,
+          username: user.username,
+        },
+        createdAt: new Date().toISOString(),
+        pending: true,
+        messageType: 'appointment',
+        appointmentData: simplifiedAppointmentData
+      };
+      
+      // Set the message immediately
+      setMessages(prevMessages => [...prevMessages, tempMessage]);
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+      
+      // Send to server
+      const response = await axios.post(
+        `${SERVER_URL}/messages/send`,
+        {
+          receiverId: otherUser._id,
+          text: messageText,
+          conversationId,
+          messageType: 'appointment',
+          appointmentData: simplifiedAppointmentData
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        }
+      );
+      
+      console.log('Appointment message response:', response.data);
+      
+      // Replace temp message with actual message from server
+      if (response.data.data) {
+        const serverMessage = {
+          ...response.data.data,
+          _id: response.data.data._id.toString(),
+          messageType: 'appointment',
+          appointmentData: simplifiedAppointmentData
+        };
+        
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg._id === tempId ? serverMessage : msg
+          )
+        );
+        
+        // Also emit to socket for real-time update to other user
+        if (socket) {
+          socket.emit('send-message', {
+            conversationId,
+            message: serverMessage
+          });
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error sending appointment message:', error.response || error);
+      Alert.alert('Error', 'Failed to send appointment message');
+      
+      // Mark message as failed and don't remove it
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg._id === tempId ? { ...msg, failed: true, pending: false } : msg
+        )
+      );
+    } finally {
+      setSending(false);
+    }
   };
   
+  
+
   // Setup socket connection and listeners
-  const setupSocketConnection = () => {
-    if (!socket || !conversationId) return;
+  const setupSocketConnection = (chatId) => {
+    if (!socket || !chatId) return;
     
     // Join conversation room
-    socket.emit('join', { conversationId: conversationId });
+    socket.emit('join', { conversationId: chatId });
     
     // Listen for new messages
     socket.on('new-message', (data) => {
+      console.log('Raw socket data received:', data);
+      
       // Only update if it's for our conversation
-      if (data.conversationId === conversationId) {
+      if (data.conversationId === chatId) {
         const newMessage = {
-          _id: data.message._id,
+          _id: data.message._id?.toString() || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
           text: data.message.text,
           sender: data.message.sender,
-          createdAt: data.message.createdAt
+          createdAt: data.message.createdAt,
+          messageType: data.message.messageType || 'text', // Default to 'text' if not specified
+          appointmentData: data.message.appointmentData || null
         };
         
-        setMessages(prevMessages => [...prevMessages, newMessage]);
+        console.log('Processed new message:', newMessage);
+        
+        // Check if this message already exists (to prevent duplicates)
+        setMessages(prevMessages => {
+          const existingMessage = prevMessages.find(msg => 
+            msg._id === newMessage._id || 
+            (msg._id.startsWith('temp-') && msg.text === newMessage.text && msg.sender._id === newMessage.sender._id)
+          );
+          
+          if (existingMessage) {
+            // Replace temp message or update existing
+            return prevMessages.map(msg => 
+              msg._id === existingMessage._id ? newMessage : msg
+            );
+          } else {
+            // Add new message
+            return [...prevMessages, newMessage];
+          }
+        });
         
         // Scroll to bottom
         setTimeout(() => {
@@ -193,39 +302,14 @@ const ChatDetailScreen = ({ navigation, route }) => {
     });
   };
   
-  // Fetch store details if available
-  // const fetchStoreDetails = async () => {
-  //   try {
-     
-      
-  //     const response = await axios.get(
-  //       `${SERVER_URL}/stores/${otherUser._id}`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-  //     console.log("ggg",response.data.store);
-      
-  //     if (response.data && response.data.store) {
-  //       setStoreDetails(response.data.store);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching store details:', error);
-  //     // Continue without store details
-  //   }
-  // };
   
   // Fetch messages from API
-  const fetchMessages = async () => {
-    if (!conversationId || !token) return;
+  const fetchMessages = async (chatId) => {
+    if (!chatId || !token) return;
     
     try {
-      setLoading(true);
-      
       const response = await axios.get(
-        `${SERVER_URL}/messages/conversations/${conversationId}`,
+        `${SERVER_URL}/messages/conversations/${chatId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -249,14 +333,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error fetching messages:', error);
       Alert.alert('Error', 'Failed to load messages');
-    } finally {
-      setLoading(false);
     }
   };
   
-  // Send message function
+  // Send regular message function
   const sendMessage = async () => {
-    if (!inputText.trim() || sending || !otherUser?._id) return;
+    if (!inputText.trim() || sending || !otherUser?._id || !conversationId) return;
     
     try {
       setSending(true);
@@ -273,7 +355,8 @@ const ChatDetailScreen = ({ navigation, route }) => {
           username: user.username,
         },
         createdAt: new Date().toISOString(),
-        pending: true
+        pending: true,
+        messageType: 'text'
       };
       
       setMessages(prevMessages => [...prevMessages, tempMessage]);
@@ -290,6 +373,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           receiverId: otherUser._id,
           text: messageText,
           conversationId,
+          messageType: 'text'
         },
         {
           headers: {
@@ -300,11 +384,25 @@ const ChatDetailScreen = ({ navigation, route }) => {
       
       // Replace temp message with actual message from server
       if (response.data.data) {
+        const serverMessage = {
+          ...response.data.data,
+          _id: response.data.data._id.toString(),
+          messageType: 'text'
+        };
+        
         setMessages(prevMessages => 
           prevMessages.map(msg => 
-            msg._id === tempId ? { ...response.data.data, _id: response.data.data._id.toString() } : msg
+            msg._id === tempId ? serverMessage : msg
           )
         );
+        
+        // Also emit to socket for real-time update
+        if (socket) {
+          socket.emit('send-message', {
+            conversationId,
+            message: serverMessage
+          });
+        }
       }
       
     } catch (error) {
@@ -314,7 +412,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       // Mark message as failed
       setMessages(prevMessages => 
         prevMessages.map(msg => 
-          msg._id === `temp-${Date.now()}` ? { ...msg, failed: true } : msg
+          msg._id === tempId ? { ...msg, failed: true, pending: false } : msg
         )
       );
     } finally {
@@ -330,21 +428,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   };
 
   // Format date for the message grouping
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
+
   
   // Message status indicator
   const renderMessageStatus = (item) => {
@@ -361,12 +445,46 @@ const ChatDetailScreen = ({ navigation, route }) => {
   const renderMessage = ({ item }) => {
     const isOwnMessage = item.sender._id === user?._id;
     
+    // Special handling for appointment messages
+    const isAppointmentMessage = item.messageType === 'appointment';
+    
+    // For appointment messages, use the AppointmentCard component
+    if (isAppointmentMessage && item.appointmentData) {
+      return (
+        <View style={[
+          isOwnMessage ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' },
+          item.pending && { opacity: 0.7 },
+          item.failed && { borderWidth: 1, borderColor: '#FF3B30', borderRadius: 12 },
+          { marginVertical: 4, maxWidth: '80%' }
+        ]}>
+          <AppointmentCard 
+            date={item.appointmentData.date}
+            time={item.appointmentData.time}
+          />
+          
+          <View style={[
+            styles.messageFooter,
+            { paddingHorizontal: 8, marginTop: 2 }
+          ]}>
+            <Text style={[
+              styles.timestamp,
+              isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp
+            ]}>
+              {formatTime(item.createdAt)}
+            </Text>
+            {isOwnMessage && renderMessageStatus(item)}
+          </View>
+        </View>
+      );
+    }
+    
+    // For regular messages, use the existing bubble style
     return (
       <View style={[
         styles.messageBubble,
         isOwnMessage ? styles.ownMessage : styles.otherMessage,
         item.pending && styles.pendingMessage,
-        item.failed && styles.failedMessage
+        item.failed && styles.failedMessage,
       ]}>
         <Text style={[
           styles.messageText,
@@ -374,6 +492,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         ]}>
           {item.text}
         </Text>
+        
         <View style={styles.messageFooter}>
           <Text style={[
             styles.timestamp,
@@ -386,53 +505,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
       </View>
     );
   };
-  
-  // Render date separator
-  const renderDateSeparator = (date) => {
-    return (
-      <View style={styles.dateSeparator}>
-        <Text style={styles.dateSeparatorText}>
-          {formatDate(date)}
-        </Text>
-      </View>
-    );
-  };
-  
-  // Render list header with chat info
-  const renderListHeader = () => {
-    return (
-      <View style={styles.listHeader}>
-        {/* Enhanced Store Header when applicable */}
-        {otherUser?.storeId && (
-          <StoreHeader storeData={{
-            ...otherUser,
-            ...storeDetails
-          }} />
-        )}
-        
-        {/* User info display if not a store */}
-        {!otherUser?.storeId && (
-          <View style={styles.userInfoHeader}>
-            {otherUser?.avatar ? (
-              <Image 
-                source={{ uri: otherUser.avatar }} 
-                style={styles.userHeaderImage} 
-              />
-            ) : (
-              <View style={styles.userHeaderImagePlaceholder}>
-                <Text style={styles.userHeaderImageText}>
-                  {otherUser?.username?.charAt(0).toUpperCase() || '?'}
-                </Text>
-              </View>
-            )}
-            <Text style={styles.userHeaderName}>
-              {otherUser?.username || 'User'}
-            </Text>
-          </View>
-        )}
-      </View>
-    );
-  };
+ 
   
   // If missing required data, show loading screen
   if (!conversationId || !otherUser || !user || !token) {
@@ -446,8 +519,33 @@ const ChatDetailScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
+      <View style={styles.header}>
+      {otherUser.avatar? (
+        <Image 
+          source={{ uri: otherUser.avatar }} 
+          style={styles.avatar} 
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={styles.storeImagePlaceholder}>
+          <Text style={styles.storeImagePlaceholderText}>
+            {otherUser.storeName ? otherUser.storeName.charAt(0).toUpperCase() : otherUser.username.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
       
-      <View style={styles.container}>
+        <View>
+          <Text style={styles.username}>{otherUser.storeName||otherUser.username}</Text>
+          <Text style={styles.status}>Online</Text>
+        </View>
+      </View>
+      
+      {/* Main chat container with KeyboardAvoidingView */}
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 20}
+      >
         {/* Chat background */}
         <View style={styles.wallpaper} />
         
@@ -463,133 +561,66 @@ const ChatDetailScreen = ({ navigation, route }) => {
             renderItem={renderMessage}
             keyExtractor={(item) => item._id.toString()}
             contentContainerStyle={styles.messagesList}
-            onRefresh={fetchMessages}
+            onRefresh={() => fetchMessages(conversationId)}
             refreshing={loading}
-            ListHeaderComponent={renderListHeader}
-            
-            // Only uncomment this if you implement the grouped messages version
-            // data={groupedMessages}
-            // keyExtractor={(item) => item.id}
-            // renderItem={({ item }) => (
-            //   <>
-            //     {renderDateSeparator(item.date)}
-            //     {item.data.map(message => renderMessage({ item: message }))}
-            //   </>
-            // )}
+            initialNumToRender={20}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            style={styles.messagesContainer}
           />
         )}
         
         {/* Input area */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
-          <View style={styles.inputContainer}>
-            <View style={styles.inputRow}>
-              <TouchableOpacity style={styles.inputIconButton}>
-                <Ionicons name="happy-outline" size={24} color="#757575" />
+        <View style={styles.inputContainer}>
+          <View style={styles.inputRow}>
+            <TouchableOpacity style={styles.inputIconButton}>
+              <Ionicons name="happy-outline" size={24} color="#757575" />
+            </TouchableOpacity>
+            
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Message"
+                placeholderTextColor="#757575"
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                maxLength={500}
+              />
+              
+              <TouchableOpacity style={styles.attachButton}>
+                <Ionicons name="attach" size={22} color="#757575" />
               </TouchableOpacity>
               
-              <View style={styles.textInputContainer}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Message"
-                  placeholderTextColor="#757575"
-                  value={inputText}
-                  onChangeText={setInputText}
-                  multiline
-                  maxLength={500}
-                />
-                
-                <TouchableOpacity style={styles.attachButton}>
-                  <Ionicons name="attach" size={22} color="#757575" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.cameraButton}>
-                  <Ionicons name="camera" size={22} color="#757575" />
-                </TouchableOpacity>
-              </View>
-              
-              <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  !inputText.trim() && styles.sendButtonInactive
-                ]}
-                onPress={sendMessage}
-                disabled={!inputText.trim() || sending}
-              >
-                {sending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : inputText.trim() ? (
-                  <Ionicons name="send" size={20} color="#FFFFFF" />
-                ) : (
-                  <Ionicons name="mic" size={20} color="#FFFFFF" />
-                )}
+              <TouchableOpacity style={styles.cameraButton}>
+                <Ionicons name="camera" size={22} color="#757575" />
               </TouchableOpacity>
             </View>
+            
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                !inputText.trim() && styles.sendButtonInactive
+              ]}
+              onPress={sendMessage}
+              disabled={!inputText.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : inputText.trim() ? (
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="mic" size={20} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 // Styles for the StoreHeader component
-const storeHeaderStyles = StyleSheet.create({
-  container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    // padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    flexDirection: 'row',
-  },
-  storeImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 16,
-  },
-  storeImagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  storeImagePlaceholderText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  storeInfoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  storeLabel: {
-    color: '#000000',
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  storeName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  storeDescription: {
-    fontSize: 13,
-    color: '#666666',
-  },
-});
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -604,14 +635,116 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#F5F5F5', // Light gray background for the chat
   },
-  headerBackButton: {
-    marginLeft: 8,
-    padding: 8,
+  messagesContainer: {
+    flex: 1,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },  
+  storeImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  storeImagePlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  headerAvatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  }, 
+  appointmentMessage: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  appointmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#155366',
+    padding: 12,
+    paddingTop: 30,
+  },
+ 
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 25,
+    marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: '#fff'
+  },
+  username: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  status: {
+    color: '#cce6cc',
+    fontSize: 12,
+  },
+  appointmentHeaderText: {
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  appointmentDetails: {
+    marginTop: 8,
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  appointmentDetail: {
+    fontSize: 13,
+    marginVertical: 2,
+  },
+
+  headerAvatarText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  headerTitleTextContainer: {
+    justifyContent: 'center',
   },
   headerTitleText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
+    maxWidth: 180,
+  },
+  headerSubtitleText: {
+    color: '#B3B3B3',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  headerBackButton: {
+    marginLeft: 8,
+    padding: 8,
   },
   headerRight: {
     flexDirection: 'row',
@@ -629,9 +762,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   listHeader: {
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 16,
-    // paddingHorizontal: 16,
   },
   userInfoHeader: {
     flexDirection: 'row',
@@ -639,6 +771,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -671,8 +804,10 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   messagesList: {
-    // paddingHorizontal: 16,
-    // paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    flexGrow: 1,
   },
   dateSeparator: {
     alignItems: 'center',
@@ -727,6 +862,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     marginTop: 4,
+    paddingHorizontal: 2,
   },
   timestamp: {
     fontSize: 11,
@@ -743,6 +879,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     padding: 8,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 8,
   },
   inputRow: {
     flexDirection: 'row',

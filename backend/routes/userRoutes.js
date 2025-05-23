@@ -4,7 +4,9 @@ const userController = require("../controllers/userController");
 const { protect, authorize } = require("../middleware/auth")
 
 // Public routes
-router.post("/register", userController.register);
+router.post("/register", userController.initiateRegistration);
+router.post("/verify-otp-register", userController.verifyOTPAndRegister);
+router.post("/resend-otp", userController.resendOTP);
 router.post("/login", userController.login);
 router.get("/verify-token", protect, userController.verifyToken);
 
