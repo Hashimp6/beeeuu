@@ -34,5 +34,18 @@ const galleryImageStorage = new CloudinaryStorage({
 });
 
 const uploadGalleryImage = multer({ storage: galleryImageStorage });
-
-module.exports = { uploadStoreImage, uploadProductImage , uploadGalleryImage,};
+const chatImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "chat_images",
+    allowed_formats: ["jpg", "jpeg", "png", "gif"],
+    transformation: [{ width: 1024, height: 1024, crop: "limit", quality: "auto" }],
+  },
+});
+const uploadChatImage = multer({ 
+  storage: chatImageStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for chat images
+  }
+});
+module.exports = { uploadStoreImage, uploadProductImage , uploadGalleryImage,uploadChatImage};

@@ -18,6 +18,7 @@ import ProductScreen from '../screens/StoreProduct';
 import ProfileScreen from '../components/ProfileScreen';
 import AppLayout from '../screens/AppLayout';
 import StoreGallery from '../screens/StoreGallery';
+import StoreSearchPage from '../screens/SearchStoreScreen';
 
 const Stack = createStackNavigator();
 
@@ -141,6 +142,12 @@ const AppNavigator = () => {
             component={StoreGallery}
             options={{ headerShown: false }}
           />
+            <Stack.Screen 
+        name="Search"
+        component={StoreSearchPage}
+        options={{ headerShown: false }}
+        initialParams={{ initialTab: 'Search' }}
+      />
         </>
       )}
     </Stack.Navigator>

@@ -8,6 +8,7 @@ import HomeScreen from './HomeScreen';
 import LocationSelectionModal from '../components/LocationSelection';
 import ProfileScreen from '../components/ProfileScreen';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import StoreSearchPage from './SearchStoreScreen';
 
 const AppLayout = () => {
   const route = useRoute();
@@ -100,11 +101,7 @@ const AppLayout = () => {
           />
         );
       case 'Search':
-        return (
-          <View style={styles.placeholder}>
-            <Text>Search Screen Content</Text>
-          </View>
-        );
+        return  <StoreSearchPage/>
       case 'Profile':
         return <ProfileScreen />;
       

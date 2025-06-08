@@ -3,21 +3,113 @@ const User = require("../models/userModel");
 const { getIo } = require("../config/socket");
 const mongoose = require("mongoose");
 const storeModel = require("../models/storeModel");
+const Appointment = require("../models/AppointmentModel");
+
 
 /**
  * Improved Message Controller with consistent socket pattern
  */
 // Send a message and store it in the database
+// const sendMessage = async (req, res) => {
+//   try {
+//     const { receiverId, text } = req.body;
+//     const store = await storeModel.findById(receiverId)
+//     const senderId = req.user.id;
+
+//     if (!receiverId || !text) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Receiver ID and message text are required",
+//       });
+//     }
+
+//     // Validate if receiver exists
+//     const receiver = await User.findById(receiverId);
+//     if (!receiver) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Receiver not found",
+//       });
+//     }
+
+//     // Get or create conversation between these two users
+//     let conversation = await Conversation.findOne({
+//       members: { $all: [senderId, receiverId] },
+//     });
+
+//     // If no conversation exists, create one
+//     if (!conversation) {
+//       conversation = new Conversation({
+//         members: [senderId, receiverId],
+//         messages: [],
+//       });
+//     }
+
+//     // Add new message to conversation
+//     const newMessage = {
+//       sender: senderId,
+//       text,
+//       createdAt: new Date(),
+//     };
+
+//     conversation.messages.push(newMessage);
+//     await conversation.save();
+
+//     // Get the message with its MongoDB-generated ID
+//     const savedMessage =
+//       conversation.messages[conversation.messages.length - 1];
+
+//     // Format message for socket emission
+//     const messageForSocket = {
+//       _id: savedMessage._id,
+//       sender: {
+//         _id: senderId,
+//         name: req.user.name,
+//       },
+//       text,
+//       createdAt: savedMessage.createdAt,
+//     };
+
+//     // Emit message through socket to specific rooms
+//     const io = getIo();
+
+//     // Emit to receiver's personal room
+//     io.to(`user:${receiverId}`).emit("new-message", {
+//       conversationId: conversation._id,
+//       message: messageForSocket,
+//     });
+
+//     // Also emit to conversation room if being used
+//     io.to(`conversation:${conversation._id}`).emit("new-message", {
+//       conversationId: conversation._id,
+//       message: messageForSocket,
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Message sent successfully",
+//       data: messageForSocket,
+//     });
+//   } catch (error) {
+//     console.error("Send message error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to send message",
+//       error: error.message,
+//     });
+//   }
+// };
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text } = req.body;
-    const store = await storeModel.findById(receiverId)
+    const { receiverId, text, appointmentData } = req.body;
+    console.log("dtasdad",req.body,"recieverId",receiverId);
+    
     const senderId = req.user.id;
 
-    if (!receiverId || !text) {
+    if (!receiverId) {
       return res.status(400).json({
         success: false,
-        message: "Receiver ID and message text are required",
+        message: "Receiver ID is required",
       });
     }
 
@@ -30,12 +122,11 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    // Get or create conversation between these two users
+    // Get or create conversation
     let conversation = await Conversation.findOne({
       members: { $all: [senderId, receiverId] },
     });
 
-    // If no conversation exists, create one
     if (!conversation) {
       conversation = new Conversation({
         members: [senderId, receiverId],
@@ -43,41 +134,67 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    // Add new message to conversation
-    const newMessage = {
+    // Build newMessage object
+    let newMessage = {
       sender: senderId,
-      text,
       createdAt: new Date(),
     };
 
+    // 📝 TEXT
+    if (text) {
+      newMessage.type = "text";
+      newMessage.text = text;
+    }
+
+    // 🖼️ IMAGE (from Multer - req.file.path contains Cloudinary URL)
+    else if (req.file) {
+      newMessage.type = "image";
+      newMessage.image = req.file.path;
+    }
+
+    // 📅 APPOINTMENT (Save in appointment model and reference here)
+    else if (appointmentData) {
+      const parsedData = JSON.parse(appointmentData);
+      
+      const appointment = await Appointment.create({
+        ...parsedData,
+        user: senderId,
+        store: parsedData.store, 
+      });
+    
+      newMessage.type = "appointment";
+      newMessage.appointment = appointment._id;
+    }
+    
+    else {
+      return res.status(400).json({
+        success: false,
+        message: "You must send either text, image, or appointment",
+      });
+    }
+
+    // Save and emit
     conversation.messages.push(newMessage);
     await conversation.save();
 
-    // Get the message with its MongoDB-generated ID
-    const savedMessage =
-      conversation.messages[conversation.messages.length - 1];
+    const savedMessage = conversation.messages[conversation.messages.length - 1];
 
-    // Format message for socket emission
     const messageForSocket = {
       _id: savedMessage._id,
-      sender: {
-        _id: senderId,
-        name: req.user.name,
-      },
-      text,
+      sender: { _id: senderId, name: req.user.name },
+      type: newMessage.type,
+      text: newMessage.text || null,
+      image: newMessage.image || null,
+      appointment: newMessage.appointment || null,
       createdAt: savedMessage.createdAt,
     };
 
-    // Emit message through socket to specific rooms
     const io = getIo();
-
-    // Emit to receiver's personal room
     io.to(`user:${receiverId}`).emit("new-message", {
       conversationId: conversation._id,
       message: messageForSocket,
     });
 
-    // Also emit to conversation room if being used
     io.to(`conversation:${conversation._id}`).emit("new-message", {
       conversationId: conversation._id,
       message: messageForSocket,
@@ -99,6 +216,7 @@ const sendMessage = async (req, res) => {
 };
 
 // Get messages for a specific conversation
+// Get messages for a specific conversation (UPDATED)
 const getConversationMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -113,7 +231,28 @@ const getConversationMessages = async (req, res) => {
     // Find conversation and verify user is a member
     const conversation = await Conversation.findById(conversationId)
       .populate("members", "username email")
-      .populate("messages.sender", "username");
+      .populate("messages.sender", "username")
+      .populate({
+        path: "messages.appointment",
+        populate: [
+          { 
+            path: "user", 
+            select: "username email",
+            model: 'User' // Be explicit about the model
+          },
+          { 
+            path: "store", 
+            select: "storeName _id",
+            model: 'Store' // Be explicit about the model
+          },
+          { 
+            path: "product", 
+            select: "name price",
+            model: 'Product' // Be explicit about the model
+          }
+        ]
+      });
+      console.log('Full conversation:', JSON.stringify(conversation, null, 2));
 
     if (!conversation) {
       return res.status(404).json({
@@ -140,10 +279,54 @@ const getConversationMessages = async (req, res) => {
       .slice(Math.max(0, totalMessages - skip - limitInt), totalMessages - skip)
       .sort((a, b) => a.createdAt - b.createdAt);
 
+    // Format messages for frontend
+    const formattedMessages = messages.map(message => {
+      const baseMessage = {
+        _id: message._id,
+        sender: message.sender,
+        createdAt: message.createdAt,
+        messageType: message.type || 'text', // Map 'type' to 'messageType' for frontend
+        read: message.read
+      };
+
+      // Add content based on message type
+      switch (message.type) {
+        case 'text':
+          baseMessage.text = message.text;
+          break;
+        case 'image':
+          baseMessage.image = message.image;
+          break;
+        case 'appointment':
+          baseMessage.appointmentData = message.appointment ? {
+            _id: message.appointment._id,
+            productName: message.appointment.productName,
+            status: message.appointment.status,
+            payment: message.appointment.payment,
+            cost: message.appointment.cost,
+            amountPaid: message.appointment.amountPaid,
+            date: message.appointment.date,
+            address: message.appointment.address,
+            locationName: message.appointment.locationName,
+            contactNo: message.appointment.contactNo,
+            user: message.appointment.user,
+            store: message.appointment.store,
+            product: message.appointment.product
+          } : null;
+          // Also add a text description for the appointment
+          baseMessage.text = `Appointment scheduled for ${message.appointment?.productName || 'service'}`;
+          break;
+        default:
+          baseMessage.text = message.text || '';
+      }
+
+      return baseMessage;
+    });
+
     res.status(200).json({
       success: true,
       conversationId,
-      messages,
+      messages: formattedMessages,
       pagination: {
         total: totalMessages,
         page: pageInt,

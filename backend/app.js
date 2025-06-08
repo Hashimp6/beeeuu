@@ -7,7 +7,7 @@ const messageRoutes = require('./routes/chatRoutes');
 const storeRoutes = require('./routes/storeRoute');
 const productsRoutes = require('./routes/productRoutes');
 const galleryRoutes = require('./routes/galleryRoute');
-
+const appointmentsRoutes = require('./routes/appointmentRoutes');
 
 dotenv.config();
 
@@ -26,5 +26,6 @@ app.use('/messages', messageRoutes);
 app.use('/stores', storeRoutes);
 app.use('/products', productsRoutes);
 app.use('/gallery', galleryRoutes);
+app.use('/appointments', appointmentsRoutes);
 
 module.exports = app;

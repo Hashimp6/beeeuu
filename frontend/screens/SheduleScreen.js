@@ -10,7 +10,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TextInput } from 'react-native';
+import axios from 'axios';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
+import { SERVER_URL } from '../config';
 
 const AppointmentScheduler = () => {
   const navigation = useNavigation();
@@ -19,6 +22,7 @@ const AppointmentScheduler = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+    const { user, token } = useAuth() || {};
   const [locationName, setLocationName] = useState('');
 const [address, setAddress] = useState('');
 const [contactNo, setContactNo] = useState('');
@@ -114,44 +118,52 @@ const [contactNo, setContactNo] = useState('');
     return `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
-  const handleSendAppointment = () => {
+  const handleSendAppointment = async() => {     
     if (selectedDate && selectedTime) {
       const appointmentDate = formatAppointmentDate(selectedDate);
-      
-      // Create the appointment data with location details
+               
+      // Create the appointment data
       const appointmentData = {
         date: appointmentDate,
         time: selectedTime,
         locationName: locationName,
         address: address,
+        productName: otherUser.productName,
         contactNo: contactNo,
-        storeId: otherUser,
-        product:otherUser.productName,
-        status: 'Pending'
+        store:otherUser.storeId,
+        product: otherUser.product, // Assuming this is the product ID
+        status: 'pending' // Use lowercase to match your schema enum
       };
   
-      // Create confirmation message for the chat with location details
-      let confirmationMessage = `You have an appointment scheduled on ${appointmentDate} at ${selectedTime}.`;
-      
-      if (locationName) {
-        confirmationMessage += `\nLocation: ${locationName}`;
+      try {
+        // Send appointment data to create appointment message
+        const response = await axios.post(`${SERVER_URL}/messages/send`, {
+          receiverId: otherUser._id,
+          appointmentData: JSON.stringify(appointmentData)
+        }, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  if (response.data)
+  {  console.log("✅ Appointment message sent", response.data);}
+      else{console.log(" Appointment error")}
+  
+        // Navigate back to ChatDetail with the appointment message
+        navigation.navigate("ChatDetail", {
+          otherUser: otherUser,
+
+        });
+  
+      } catch (error) {
+        console.error("❌ Failed to send appointment:", error.response?.data || error.message);
+        // You might want to show an error alert here
+        Alert.alert("Error", "Failed to send appointment. Please try again.");
       }
-      if (address) {
-        confirmationMessage += `\nAddress: ${address}`;
-      }
-      if (contactNo) {
-        confirmationMessage += `\nContact: ${contactNo}`;
-      }
-      if (otherUser.productName) {
-        confirmationMessage += `\nProduct: ${otherUser.productName}`;
-      }
-      
-      // Pass the data back to the previous screen (ChatDetailScreen)
-      navigation.navigate('ChatDetail', {
-        otherUser: otherUser,
-        appointmentMessage: confirmationMessage,
-        appointmentData: appointmentData
-      });
+    } else {
+      // Show validation error
+      Alert.alert("Error", "Please select both date and time for the appointment.");
     }
   };
   const calendarDays = generateCalendarDays();

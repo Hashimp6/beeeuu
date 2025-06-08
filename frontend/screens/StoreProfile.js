@@ -110,7 +110,7 @@ const SellerProfile = () => {
         setLoading(false);
       }
     };
-    const handleAppointment = (productName) => {
+    const handleAppointment = (productId,productName) => {
       setLoading(true);
       try {
         // Navigate directly to ChatDetail with store information
@@ -123,7 +123,8 @@ const SellerProfile = () => {
             storeName: store.storeName,
             storeId: store._id,
             avatar: store.profileImage || null, // optional
-            productName:productName
+            productName:productName,
+            product:productId
           }
         });
       } catch (error) {
@@ -384,7 +385,7 @@ const SellerProfile = () => {
               <Text style={styles.productPrice}>₹{item.price}</Text>
               <TouchableOpacity
                 style={styles.bookNowBtn}
-                onPress={() => handleAppointment(item.name)}
+                onPress={() => handleAppointment(item._id,item.name)}
               >
                 <Text style={styles.bookNowText}>Book</Text>
               </TouchableOpacity>
