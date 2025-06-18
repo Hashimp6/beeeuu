@@ -2,71 +2,110 @@ const Appointment = require("../models/AppointmentModel");
 const Store = require("../models/storeModel");
 const mongoose = require("mongoose");
 
-// Get all appointments for a user (both as customer and store owner)
+// Automatic status update function - runs daily to mark past appointments as completed
+const updatePastAppointments = async () => {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 59, 999);
 
+    // Update all confirmed appointments from yesterday and before to completed
+    const result = await Appointment.updateMany(
+      {
+        date: { $lte: yesterday },
+        status: { $in: ['confirmed', 'pending'] }
+      },
+      {
+        $set: { status: 'completed' }
+      }
+    );
+
+    console.log(`Updated ${result.modifiedCount} past appointments to completed status`);
+    return result;
+  } catch (error) {
+    console.log('Error updating past appointments:', error);
+  }
+};
+
+// Get all appointments for a user with flexible filtering
 const getUserAppointments = async (req, res) => {
   try {
     const { id } = req.params;
+    const { status, date, startDate, endDate, limit = 50, page = 1 } = req.query;
 
     if (!id) {
       return res.status(400).json({ message: "ID parameter is required" });
     }
 
-    // Search appointments where either the user or the store matches the given id
-    const appointments = await Appointment.find({
+    // Run automatic status update before fetching
+    await updatePastAppointments();
+
+    // Build query
+    let query = {
       $or: [
         { user: id },
         { store: id }
       ]
-    })
+    };
 
-    if (appointments.length === 0) {
-      return res.status(404).json({ message: "No appointments found for this ID" });
+    // Add status filter
+    if (status) {
+      query.status = status.toLowerCase();
     }
 
-    res.status(200).json({
-      message: "Appointments fetched successfully",
-      appointments
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Error fetching appointments",
-      error: error.message
-    });
-  }
-};
-
-
-
-const getAppointmentsByStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.query;
-
-    if (!id || !status) {
-      return res.status(400).json({ message: "Both ID and status are required" });
+    // Add date filters
+    if (date) {
+      // Single date filter
+      const targetDate = new Date(date);
+      const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+      
+      query.date = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    } else if (startDate || endDate) {
+      // Date range filter
+      query.date = {};
+      
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.date.$gte = start;
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
+      }
     }
 
-    // Search for appointments matching either user or store with the given status
-    const appointments = await Appointment.find({
-      status: status.toLowerCase(), // ensures case insensitivity
-      $or: [
-        { user: id },
-        { store: id }
-      ]
-    })
+    // Calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Get appointments with pagination
+    const appointments = await Appointment.find(query)
       .populate("user", "name email")
       .populate("store", "name location")
-      .populate("product", "name");
+      .populate("product", "name")
+      .sort({ date: -1 }) // Most recent first
+      .limit(parseInt(limit))
+      .skip(skip);
 
-    if (appointments.length === 0) {
-      return res.status(404).json({ message: "No appointments found for the given ID and status" });
-    }
+    // Get total count for pagination
+    const totalCount = await Appointment.countDocuments(query);
 
     res.status(200).json({
       message: "Appointments fetched successfully",
-      appointments
+      appointments,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        hasNextPage: page * limit < totalCount,
+        hasPrevPage: page > 1
+      }
     });
 
   } catch (error) {
@@ -77,62 +116,43 @@ const getAppointmentsByStatus = async (req, res) => {
   }
 };
 
-
-
-// Approve appointment (only store owner can approve)
-const approveAppointment = async (req, res) => {
+// Update appointment status
+const updateAppointmentStatus = async (req, res) => {
   try {
-    console.log("reached",req.params);
-    
     const { appointmentId } = req.params;
-    console.log("reached",appointmentId,req.user);
-    
+    const { status} = req.body;
+
+    console.log("Updating appointment:", appointmentId, "to status:", status);
+
+    // Validate status
+    const validStatuses = ["pending", "confirmed", "cancelled", "completed", "not-attended"];
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json({ 
+        message: "Invalid status. Valid statuses are: " + validStatuses.join(", ") 
+      });
+    }
+
     const appointment = await Appointment.findById(appointmentId);
     
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-        appointment.status = 'confirmed';
-        await appointment.save();
-  
+    // Update status and notes if provided
+    appointment.status = status.toLowerCase();
+    await appointment.save();
 
-    const updatedAppointment = await Appointment.findById(appointmentId)
-   
     res.status(200).json({
-      message: "Appointment approved successfully",
-      data: updatedAppointment
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error approving appointment", error: error.message });
-  }
-};
-
-// Cancel appointment (both user and store owner can cancel)
-const cancelAppointment = async (req, res) => {
-    try {
-        const { appointmentId } = req.params;
-        const appointment = await Appointment.findById(appointmentId)
-        
-        if (!appointment) {
-          return res.status(404).json({ message: "Appointment not found" });
-        }
-    
-        // Check if user is the store owner
-        // if (req.user.role==="store") {
-            appointment.status = 'cancelled';
-            await appointment.save();
+      message: `Appointment ${status.toLowerCase()} successfully`,
       
-    
-        const updatedAppointment = await Appointment.findById(appointmentId)
-       
-        res.status(200).json({
-          message: "Appointment approved successfully",
-          data: updatedAppointment
-        });
-      } catch (error) {
-        res.status(500).json({ message: "Error approving appointment", error: error.message });
-      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error updating appointment status", 
+      error: error.message 
+    });
+  }
 };
 
 // Get single appointment details
@@ -141,6 +161,9 @@ const getAppointmentById = async (req, res) => {
     const { appointmentId } = req.params;
     
     const appointment = await Appointment.findById(appointmentId)
+      .populate("user", "name email")
+      .populate("store", "name location")
+      .populate("product", "name");
      
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
@@ -159,15 +182,19 @@ const getAppointmentById = async (req, res) => {
 const createAppointment = async (req, res) => {
   try {
     const appointmentData = req.body;
-    console.log('appdta',appointmentData);
-    
+    console.log('appointmentData', appointmentData);
     
     // Validate required fields
-    const requiredFields = ['user', 'store', 'product'];
+    const requiredFields = ['user', 'store', 'product', 'date'];
     for (let field of requiredFields) {
       if (!appointmentData[field]) {
         return res.status(400).json({ message: `${field} is required` });
       }
+    }
+
+    // Set default status as pending
+    if (!appointmentData.status) {
+      appointmentData.status = 'pending';
     }
 
     const appointment = new Appointment(appointmentData);
@@ -187,11 +214,67 @@ const createAppointment = async (req, res) => {
   }
 };
 
+// Get appointment statistics/dashboard data
+const getAppointmentsByStatus = async (req, res) => {
+  try {
+    const { id } = req.params; // store ID
+    const { status } = req.query;
+    console.log("ddss",id,status);
+    
+
+    if (!id) {
+      return res.status(400).json({ message: "Store ID is required" });
+    }
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    const appointments = await Appointment.find({
+      store: id,
+      status
+    }).sort({ date: 1 });
+
+    if (!appointments.length) {
+      return res.status(404).json({ message: "No appointments found", appointments: [] });
+    }
+
+    res.status(200).json({
+      message: "Appointments fetched successfully",
+      appointments
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while fetching appointments",
+      error: error.message
+    });
+  }
+};
+
+
+// Manual function to update past appointments (can be called via cron job)
+const manualUpdatePastAppointments = async (req, res) => {
+  try {
+    const result = await updatePastAppointments();
+    res.status(200).json({
+      message: "Past appointments updated successfully",
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating past appointments",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getUserAppointments,
-  getAppointmentsByStatus,
-  approveAppointment,
-  cancelAppointment,
+  updateAppointmentStatus,
   getAppointmentById,
-  createAppointment
+  createAppointment,
+  getAppointmentsByStatus,
+  updatePastAppointments,
+  manualUpdatePastAppointments
 };

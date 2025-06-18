@@ -16,16 +16,21 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { SERVER_URL } from "../config";
+import { useAuth } from "../context/AuthContext";
 
-const StoreProfileComponent = ({ user }) => {
+const StoreProfileComponent = () => {
   const navigation = useNavigation();
   const [store, setStore] = useState(null);
+    const { user, token,setUser } = useAuth() || {};
   const [stats, setStats] = useState({
     pendingAppointments: 0,
     completedAppointments: 0,
     totalRevenue: 0,
   });
-  const [modalVisible, setModalVisible] = useState(false);
+  const [upiDropdownVisible, setUpiDropdownVisible] = useState(false);
+const [upiModalVisible, setUpiModalVisible] = useState(false);
+const [upiInput, setUpiInput] = useState("");
+const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
   const [editData, setEditData] = useState({
     storeName: "",
     description: "",
@@ -37,10 +42,9 @@ const StoreProfileComponent = ({ user }) => {
   useEffect(() => {
     const fetchSeller= async () => {
         try {
-          const userData = await AsyncStorage.getItem('user');
-          if (userData !== null) {
-            const parsedUser = JSON.parse(userData);
-            const response = await axios.get(`${SERVER_URL}/stores/user/${parsedUser._id}`);
+
+          if (user!== null) {
+            const response = await axios.get(`${SERVER_URL}/stores/user/${user._id}`);
 
             setStore(response.data)
             
@@ -52,29 +56,29 @@ const StoreProfileComponent = ({ user }) => {
       };
   
       fetchSeller();
-    if (user) {
-      // In a real app, you would make an API call to get store data
-      // For now, we'll use dummy data
-      const dummyStore =  {
-        storeName: "Your Store",
-        description: "Professional services with a personal touch",
-        place: "123 Main St, City, State",
-        category: "Professional Services",
-        phone: "+1 (555) 123-4567",
-        profileImage: null,
-        openingHours: "9:00 AM - 6:00 PM",
-        rating: 4.8,
-        reviews: 24,
-      };
-      setStore(dummyStore);
-      setEditData({
-        storeName: dummyStore.storeName,
-        description: dummyStore.description,
-        place: dummyStore.place,
-        category: dummyStore.category,
-        phone: dummyStore.phone,
-      });
-    }
+    // if (user) {
+    //   // In a real app, you would make an API call to get store data
+    //   // For now, we'll use dummy data
+    //   const dummyStore =  {
+    //     storeName: "Your Store",
+    //     description: "Professional services with a personal touch",
+    //     place: "123 Main St, City, State",
+    //     category: "Professional Services",
+    //     phone: "+1 (555) 123-4567",
+    //     profileImage: null,
+    //     openingHours: "9:00 AM - 6:00 PM",
+    //     rating: 4.8,
+    //     reviews: 24,
+    //   };
+    //   setStore(dummyStore);
+    //   setEditData({
+    //     storeName: dummyStore.storeName,
+    //     description: dummyStore.description,
+    //     place: dummyStore.place,
+    //     category: dummyStore.category,
+    //     phone: dummyStore.phone,
+    //   });
+    // }
 
     // Fetch appointment stats
     // In a real app, you would make an API call
@@ -83,6 +87,7 @@ const StoreProfileComponent = ({ user }) => {
       completedAppointments: 38,
       totalRevenue: 2450,
     });
+    setUpiInput(user?.upi || "");
   }, [user]);
 
   const handleEditStore = () => {
@@ -101,7 +106,46 @@ const StoreProfileComponent = ({ user }) => {
       }
     });
   };
-
+  const handleUpdateUpi = async () => {
+    if (!upiInput.trim()) {
+      Alert.alert("Error", "Please enter a valid UPI ID");
+      return;
+    }
+  
+    setIsUpdatingUpi(true);
+    try {
+      const storeId=store._id;
+      const response = await axios.put(
+        `${SERVER_URL}/upi/${storeId}/upi`,
+        { upi: upiInput },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      if (response.data.success) {
+        setUser((prevUser) => ({
+          ...prevUser,
+          upi: upiInput
+        }));
+        Alert.alert("Success", "UPI ID updated successfully!");
+        setUpiModalVisible(false);
+        setUpiDropdownVisible(false);
+        // Update user context if needed
+      } else {
+        Alert.alert("Error", "Failed to update UPI ID");
+      }
+    } catch (error) {
+      console.error("Error updating UPI:", error);
+      Alert.alert("Error", "Failed to update UPI ID. Please try again.");
+    } finally {
+      setIsUpdatingUpi(false);
+    }
+  };
+  
   const handleSaveStore = () => {
     // In a real app, you would make an API call to update store data
     console.log("Saving store data:", editData);
@@ -186,18 +230,29 @@ const StoreProfileComponent = ({ user }) => {
         </View>
 
         <View style={styles.card}>
-          <TouchableOpacity
+        <TouchableOpacity
             style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "pending" })}
+            onPress={() => navigation.navigate("StoreAppointments", { status: "confirmed",storeId:store._id})}
           >
             <View style={styles.appointmentOptionLeft}>
               <View style={[styles.statusDot, styles.pendingDot]} />
+              <Text style={styles.appointmentOptionText}>Coming Appointments</Text>
+            </View>
+            <View style={styles.appointmentCount}>
+              
+              <Icon name="chevron-right" size={20} color="#888" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.appointmentOption}
+            onPress={() => navigation.navigate("StoreAppointments", { status: "pending",storeId:store._id})}
+          >
+            <View style={styles.appointmentOptionLeft}>
+              <View style={[styles.statusDot, styles.acceptDot]} />
               <Text style={styles.appointmentOptionText}>Pending Appointments</Text>
             </View>
             <View style={styles.appointmentCount}>
-              <Text style={styles.appointmentCountText}>
-                {stats.pendingAppointments}
-              </Text>
+              
               <Icon name="chevron-right" size={20} color="#888" />
             </View>
           </TouchableOpacity>
@@ -206,14 +261,13 @@ const StoreProfileComponent = ({ user }) => {
 
           <TouchableOpacity
             style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "today" })}
+            onPress={() => navigation.navigate("StoreAppointments", { status: "today",storeId:store._id })}
           >
             <View style={styles.appointmentOptionLeft}>
               <View style={[styles.statusDot, styles.todayDot]} />
               <Text style={styles.appointmentOptionText}>Today's Appointments</Text>
             </View>
             <View style={styles.appointmentCount}>
-              <Text style={styles.appointmentCountText}>5</Text>
               <Icon name="chevron-right" size={20} color="#888" />
             </View>
           </TouchableOpacity>
@@ -222,16 +276,14 @@ const StoreProfileComponent = ({ user }) => {
 
           <TouchableOpacity
             style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "completed" })}
+            onPress={() => navigation.navigate("StoreAppointments", { status: "completed",storeId:store._id })}
           >
             <View style={styles.appointmentOptionLeft}>
               <View style={[styles.statusDot, styles.completedDot]} />
               <Text style={styles.appointmentOptionText}>Completed Appointments</Text>
             </View>
             <View style={styles.appointmentCount}>
-              <Text style={styles.appointmentCountText}>
-                {stats.completedAppointments}
-              </Text>
+             
               <Icon name="chevron-right" size={20} color="#888" />
             </View>
           </TouchableOpacity>
@@ -240,14 +292,14 @@ const StoreProfileComponent = ({ user }) => {
 
           <TouchableOpacity
             style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "cancelled" })}
+            onPress={() => navigation.navigate("StoreAppointments", { status: "cancelled",storeId:store._id })}
           >
             <View style={styles.appointmentOptionLeft}>
               <View style={[styles.statusDot, styles.cancelledDot]} />
               <Text style={styles.appointmentOptionText}>Cancelled Appointments</Text>
             </View>
             <View style={styles.appointmentCount}>
-              <Text style={styles.appointmentCountText}>3</Text>
+             
               <Icon name="chevron-right" size={20} color="#888" />
             </View>
           </TouchableOpacity>
@@ -309,16 +361,86 @@ const StoreProfileComponent = ({ user }) => {
           <View style={styles.divider} />
 
           <TouchableOpacity
-            style={styles.settingOption}
-            onPress={() => navigation.navigate("PaymentSettings")}
-          >
-            <View style={styles.settingOptionLeft}>
-              <Icon name="payment" size={20} color="#9b59b6" />
-              <Text style={styles.settingOptionText}>Payment Settings</Text>
-            </View>
-            <Icon name="chevron-right" size={20} color="#888" />
-          </TouchableOpacity>
+  style={styles.settingOption}
+  onPress={() => setUpiDropdownVisible(!upiDropdownVisible)}
+>
+  <View style={styles.settingOptionLeft}>
+    <Icon name="payment" size={20} color="#9b59b6" />
+    <Text style={styles.settingOptionText}>Payment Settings</Text>
+  </View>
+  <Icon 
+    name={upiDropdownVisible ? "keyboard-arrow-up" : "chevron-right"} 
+    size={20} 
+    color="#888" 
+  />
+</TouchableOpacity>
+{upiDropdownVisible && (
+  <View style={styles.upiDropdown}>
+    <View style={styles.upiSection}>
+      <Text style={styles.upiLabel}>Current UPI ID:</Text>
+      <Text style={styles.currentUpi}>
+        {user?.upi || "No UPI ID set"}
+      </Text>
+      <TouchableOpacity
+        style={styles.updateUpiButton}
+        onPress={() => setUpiModalVisible(true)}
+      >
+        <Icon name="edit" size={16} color="#fff" />
+        <Text style={styles.updateUpiButtonText}>
+          {user?.upi ? "Update UPI" : "Add UPI"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
 
+{/* UPI Update Modal */}
+<Modal
+  visible={upiModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setUpiModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.upiModalContent}>
+      <Text style={styles.modalTitle}>Update UPI ID</Text>
+      
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>UPI ID</Text>
+        <TextInput
+          style={styles.input}
+          value={upiInput}
+          onChangeText={setUpiInput}
+          placeholder="Enter your UPI ID (e.g., user@paytm)"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={[styles.modalButton, styles.cancelButton]}
+          onPress={() => {
+            setUpiModalVisible(false);
+            setUpiInput(user?.upi || "");
+          }}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.modalButton, styles.saveButton]}
+          onPress={handleUpdateUpi}
+          disabled={isUpdatingUpi}
+        >
+          <Text style={styles.saveButtonText}>
+            {isUpdatingUpi ? "Updating..." : "Update"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
           <View style={styles.divider} />
 
           <TouchableOpacity
@@ -491,6 +613,9 @@ const styles = StyleSheet.create({
   pendingDot: {
     backgroundColor: "#f39c12",
   },
+  acceptDot: {
+    backgroundColor: "#8e44ad",
+  },
   todayDot: {
     backgroundColor: "#3498db",
   },
@@ -518,6 +643,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 10,
     color: "#333",
+  },
+  upiDropdown: {
+    backgroundColor: "#f8f9fa",
+    marginHorizontal: 16,
+    marginTop: -8,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+  },
+  upiSection: {
+    alignItems: "flex-start",
+  },
+  upiLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+  },
+  currentUpi: {
+    fontSize: 16,
+    color: "#333",
+    fontWeight: "500",
+    marginBottom: 12,
+  },
+  updateUpiButton: {
+    flexDirection: "row",
+    backgroundColor: "#9b59b6",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  updateUpiButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    marginLeft: 4,
+    fontSize: 14,
+  },
+  upiModalContent: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalOverlay: {
     flex: 1,
@@ -579,7 +754,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   saveButton: {
-    backgroundColor: "#3498db",
+    backgroundColor: "#155366",
     marginLeft: 8,
   },
   cancelButtonText: {

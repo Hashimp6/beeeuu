@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  
  
   // Function to load stored authentication data when the app starts
   useEffect(() => {
@@ -210,6 +211,7 @@ export function AuthProvider({ children }) {
       token,
       loading,
       error,
+      setUser,
       login,
       // register,
       logout, 

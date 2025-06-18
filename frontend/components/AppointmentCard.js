@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext'; // Adjust path as needed
 import axios from 'axios';
@@ -17,6 +17,7 @@ const AppointmentCard = ({
   console.log('=== AppointmentCard Debug ===');
   console.log('appointmentData:', appointmentData);
   console.log('user:', user);
+  console.log('user.upi:', user?.upi);
   
   if (!appointmentData || !user) {
     console.log('❌ Missing data - appointmentData:', !!appointmentData, 'user:', !!user);
@@ -58,28 +59,231 @@ const AppointmentCard = ({
     }
   };
 
-  const handleAccept = async () => {
-    console.log('🟢 Accept button pressed for appointment:', appointmentData._id);
+
+
+  // Try multiple UPI app schemes for better compatibility
+  const tryOpenUPIApps = async (recipientUPI, amount, appointmentId, paymentType) => {
+    const transactionNote = `Payment for Appointment #${appointmentId.slice(-6)} - ${paymentType}`;
+    const transactionRef = `APT${appointmentId.slice(-8)}${Date.now().toString().slice(-4)}`;
+    
+    // Multiple UPI URL formats to try
+    const upiUrls = [
+      // PhonePe format
+      `phonepe://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
+      
+      // Google Pay format
+      `tez://upi/pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
+      
+      // Paytm format
+      `paytmmp://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
+      
+      // Standard UPI format
+      `upi://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}&tr=${transactionRef}`,
+      
+      // BHIM format
+      `bhim://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+    ];
+
+    console.log('🔗 Trying UPI URLs:', upiUrls);
+
+    // Try each URL scheme
+    for (let i = 0; i < upiUrls.length; i++) {
+      const url = upiUrls[i];
+      try {
+        console.log(`📱 Trying UPI URL ${i + 1}:`, url);
+        const canOpen = await Linking.canOpenURL(url);
+        
+        if (canOpen) {
+          console.log(`✅ Successfully opening UPI app with URL ${i + 1}`);
+          await Linking.openURL(url);
+          return true; // Successfully opened
+        } else {
+          console.log(`❌ Cannot open URL ${i + 1}`);
+        }
+      } catch (error) {
+        console.log(`❌ Error with URL ${i + 1}:`, error.message);
+        continue;
+      }
+    }
+    
+    return false; // None of the URLs worked
+  };
+
+  // Handle UPI Payment
+  const handleUPIPayment = async (paymentType, amount) => {
+    try {
+      console.log('🔍 Fetching store UPI details...');
+      
+      // Get store ID from appointment data
+      const storeId = appointmentData.store?._id || appointmentData.store;
+      
+      if (!storeId) {
+        Alert.alert(
+          'Store Not Found',
+          'Unable to find store information for payment.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      console.log('🏪 Fetching UPI for store ID:', storeId);
+      
+      // Fetch UPI from backend
+      const upiResponse = await axios.get(`${SERVER_URL}/upi/${storeId}/upi`);
+      const recipientUPI = upiResponse.data?.upi;
+      
+      console.log('💳 Store UPI fetched:', recipientUPI);
+      
+      if (!recipientUPI) {
+        Alert.alert(
+          'UPI Not Available',
+          'Store owner has not set up UPI payments. Please contact them directly.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      console.log('💳 Attempting UPI payment...');
+      console.log('Recipient UPI:', recipientUPI);
+      console.log('Amount:', amount);
+      console.log('Payment Type:', paymentType);
+
+      // Try to open UPI apps
+      const upiOpened = await tryOpenUPIApps(recipientUPI, amount, appointmentData._id, paymentType);
+      
+      if (upiOpened) {
+        // Show payment verification dialog after opening UPI app
+        setTimeout(() => {
+          Alert.alert(
+            'Payment Verification',
+            'Have you completed the payment successfully?',
+            [
+              { 
+                text: 'No, Cancel', 
+                style: 'cancel',
+                onPress: () => console.log('❌ Payment cancelled by user')
+              },
+              { 
+                text: 'Yes, Paid', 
+                onPress: () => handlePaymentVerification(paymentType, amount)
+              }
+            ]
+          );
+        }, 3000); // Wait 3 seconds for UPI app to process
+        
+      } else {
+        // Fallback: Show manual payment options
+        Alert.alert(
+          'Choose Payment Method',
+          `UPI ID: ${recipientUPI}\nAmount: ₹${amount}\nAppointment: #${appointmentData._id.slice(-6)}`,
+          [
+            { 
+              text: 'Copy UPI ID', 
+              onPress: () => {
+                // You might want to use Clipboard.setString() here
+                console.log('📋 UPI ID copied:', recipientUPI);
+                Alert.alert('Copied!', 'UPI ID copied to clipboard. You can paste it in your UPI app.');
+              }
+            },
+            { 
+              text: 'Open PhonePe', 
+              onPress: () => {
+                Linking.openURL('phonepe://').catch(() => {
+                  Alert.alert('PhonePe not installed', 'Please install PhonePe or use another UPI app.');
+                });
+              }
+            },
+            { 
+              text: 'Manual Payment', 
+              onPress: () => {
+                Alert.alert(
+                  'Manual Payment',
+                  `Please open your UPI app and send ₹${amount} to:\n\n${recipientUPI}\n\nReference: Appointment #${appointmentData._id.slice(-6)}`,
+                  [{ text: 'OK' }]
+                );
+              }
+            }
+          ]
+        );
+      }
+
+    } catch (error) {
+      console.error('❌ Error handling UPI payment:', error);
+      Alert.alert(
+        'Payment Error',
+        'Unable to process UPI payment. Please try again or contact support.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Handle payment verification after UPI transaction
+  const handlePaymentVerification = async (paymentType, amount) => {
+    try {
+      console.log('✅ User confirmed payment completion');
+      console.log('Payment Type:', paymentType);
+      console.log('Amount:', amount);
+
+      // Call your payment callback or API to update payment status
+      if (onPayment) {
+        await onPayment(appointmentData._id, paymentType, amount);
+      }
+      
+      // You might also want to call an API to update payment status
+      // const response = await axios.patch(`${SERVER_URL}/appointments/${appointmentData._id}/payment`, {
+      //   paymentType,
+      //   amount,
+      //   paymentMethod: 'UPI',
+      //   transactionId: `UPI_${Date.now()}` // You can generate a proper transaction ID
+      // });
+
+      Alert.alert(
+        'Payment Recorded',
+        'Your payment has been recorded. The store owner will verify the transaction.',
+        [{ text: 'OK' }]
+      );
+
+      // Refresh the appointment data
+      if (onRefresh) {
+        onRefresh();
+      }
+
+    } catch (error) {
+      console.error('❌ Error recording payment:', error);
+      Alert.alert(
+        'Error',
+        'Failed to record payment. Please contact support.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // SIMPLIFIED: Universal status update function
+  const updateAppointmentStatus = async (newStatus, actionName) => {
+    console.log(`🔄 ${actionName} appointment:`, appointmentData._id, 'to status:', newStatus);
+    
     Alert.alert(
-      'Accept Appointment',
-      'Are you sure you want to accept this appointment?',
+      `${actionName} Appointment`,
+      `Are you sure you want to ${actionName.toLowerCase()} this appointment?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Accept', 
+          text: actionName, 
+          style: newStatus === 'cancelled' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              console.log('✅ Accepting appointment:', appointmentData._id);
-              const appointmentId = appointmentData._id;
+              console.log(`✅ ${actionName} appointment:`, appointmentData._id);
+              
               const response = await axios.patch(
-                `${SERVER_URL}/appointments/${appointmentId}/approve`
+                `${SERVER_URL}/appointments/${appointmentData._id}`,
+                { status: newStatus }
               );
               
-              console.log('✅ Appointment accepted successfully:', response.data);
+              console.log(`✅ Appointment ${actionName.toLowerCase()} successfully:`, response.data);
               
               // Update the appointment state immediately
               if (onAppointmentUpdate) {
-                onAppointmentUpdate(appointmentData._id, { status: 'confirmed' });
+                onAppointmentUpdate(appointmentData._id, { status: newStatus });
               }
               
               // Force refresh immediately
@@ -90,66 +294,15 @@ const AppointmentCard = ({
               // Show success message
               Alert.alert(
                 'Success',
-                'Appointment has been accepted successfully!',
+                `Appointment has been ${actionName.toLowerCase()} successfully!`,
                 [{ text: 'OK' }]
               );
               
             } catch (error) {
-              console.error('❌ Error accepting appointment:', error);
+              console.error(`❌ Error ${actionName.toLowerCase()} appointment:`, error);
               Alert.alert(
                 'Error',
-                error.response?.data?.message || 'Failed to accept appointment. Please try again.',
-                [{ text: 'OK' }]
-              );
-            }
-          }
-        }
-      ]
-    );
-  };
-  
-  const handleCancel = async () => {
-    console.log('🔴 Cancel button pressed for appointment:', appointmentData._id);
-    Alert.alert(
-      'Cancel Appointment',
-      'Are you sure you want to cancel this appointment?',
-      [
-        { text: 'No', style: 'cancel' },
-        { 
-          text: 'Yes, Cancel', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('❌ Cancelling appointment:', appointmentData._id);
-              const appointmentId = appointmentData._id;
-              const response = await axios.patch(
-                `${SERVER_URL}/appointments/${appointmentId}/cancel`
-              );
-              
-              console.log('✅ Appointment cancelled successfully:', response.data);
-              
-              // Update the appointment state immediately
-              if (onAppointmentUpdate) {
-                onAppointmentUpdate(appointmentData._id, { status: 'cancelled' });
-              }
-              
-              // Force refresh immediately
-              if (onRefresh) {
-                onRefresh();
-              }
-              
-              // Show success message
-              Alert.alert(
-                'Success',
-                'Appointment has been cancelled successfully!',
-                [{ text: 'OK' }]
-              );
-              
-            } catch (error) {
-              console.error('❌ Error cancelling appointment:', error);
-              Alert.alert(
-                'Error',
-                error.response?.data?.message || 'Failed to cancel appointment. Please try again.',
+                error.response?.data?.message || `Failed to ${actionName.toLowerCase()} appointment. Please try again.`,
                 [{ text: 'OK' }]
               );
             }
@@ -159,6 +312,7 @@ const AppointmentCard = ({
     );
   };
 
+  // UPDATED: Handle Pay Advance with UPI
   const handlePayAdvance = () => {
     const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
     const amountPaid = appointmentData.amountPaid || 0;
@@ -180,18 +334,14 @@ const AppointmentCard = ({
           text: `Pay Advance (₹${advanceAmount})`, 
           onPress: () => {
             console.log('💰 Pay Advance selected');
-            if (onPayment) {
-              onPayment(appointmentData._id, 'advance', advanceAmount);
-            }
+            handleUPIPayment('advance', advanceAmount);
           }
         },
         { 
           text: `Pay Full (₹${remainingAmount})`, 
           onPress: () => {
             console.log('💸 Pay Full selected');
-            if (onPayment) {
-              onPayment(appointmentData._id, 'full', remainingAmount);
-            }
+            handleUPIPayment('full', remainingAmount);
           }
         }
       ]
@@ -210,14 +360,15 @@ const AppointmentCard = ({
           text: 'Pay Advance', 
           onPress: () => {
             console.log('💰 Pay Advance selected');
-            onPayment?.(appointmentData._id, 'advance');
+            const advanceAmount = Math.ceil(appointmentData.cost * 0.3);
+            handleUPIPayment('advance', advanceAmount);
           }
         },
         { 
           text: 'Pay Full', 
           onPress: () => {
             console.log('💸 Pay Full selected');
-            onPayment?.(appointmentData._id, 'full');
+            handleUPIPayment('full', remainingAmount);
           }
         }
       ]
@@ -250,7 +401,7 @@ const AppointmentCard = ({
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.cancelButton]} 
-              onPress={handleCancel}
+              onPress={() => updateAppointmentStatus('cancelled', 'Cancel')}
             >
               <Ionicons name="close" size={14} color="#FFFFFF" />
               <Text style={styles.buttonText}>Cancel</Text>
@@ -283,7 +434,7 @@ const AppointmentCard = ({
             
             <TouchableOpacity 
               style={[styles.actionButton, styles.cancelButton]} 
-              onPress={handleCancel}
+              onPress={() => updateAppointmentStatus('cancelled', 'Cancel')}
             >
               <Ionicons name="close" size={14} color="#FFFFFF" />
               <Text style={styles.buttonText}>Cancel</Text>
@@ -302,7 +453,7 @@ const AppointmentCard = ({
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[styles.actionButton, styles.acceptButton]} 
-            onPress={handleAccept}
+            onPress={() => updateAppointmentStatus('confirmed', 'Approve')}
           >
             <Ionicons name="checkmark" size={14} color="#FFFFFF" />
             <Text style={styles.buttonText}>Approve</Text>
@@ -310,7 +461,7 @@ const AppointmentCard = ({
           
           <TouchableOpacity 
             style={[styles.actionButton, styles.cancelButton]} 
-            onPress={handleCancel}
+            onPress={() => updateAppointmentStatus('cancelled', 'Decline')}
           >
             <Ionicons name="close" size={14} color="#FFFFFF" />
             <Text style={styles.buttonText}>Decline</Text>
@@ -371,7 +522,7 @@ const AppointmentCard = ({
           <View style={styles.column}>
             <Text style={styles.label}>Cost</Text>
             <Text style={styles.value}>
-              ₹{appointmentData.cost || 0}
+              ₹{appointmentData.price|| 0}
               {appointmentData.amountPaid > 0 && (
                 <Text style={styles.paidAmount}> (₹{appointmentData.amountPaid} paid)</Text>
               )}

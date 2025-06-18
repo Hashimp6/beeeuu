@@ -19,42 +19,6 @@ import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileShareHandler from '../components/ProfileShare';
 
-const screenWidth = Dimensions.get('window').width;
-
-// Sample gallery and products data until real data is available
-const dummyGalleryImages = [
-  'https://picsum.photos/200?random=1',
-  'https://picsum.photos/200?random=2',
-  'https://picsum.photos/200?random=3',
-  'https://picsum.photos/200?random=4',
-  'https://picsum.photos/200?random=5',
-  'https://picsum.photos/200?random=6',
-];
-
-const dummyProducts = [
-  {
-    id: '1',
-    image: 'https://picsum.photos/300?random=11',
-    name: 'Coconut Oil 1L',
-    details: 'Pure cold-pressed organic coconut oil.',
-    price: '₹250',
-  },
-  {
-    id: '2',
-    image: 'https://picsum.photos/300?random=12',
-    name: 'Homemade Soap',
-    details: 'Natural handmade herbal soap bar.',
-    price: '₹80',
-  },
-  {
-    id: '3',
-    image: 'https://picsum.photos/300?random=13',
-    name: 'Banana Chips',
-    details: 'Crunchy Kerala-style banana chips.',
-    price: '₹120',
-  },
-];
-
 const SellerProfile = () => {
   const [activeTab, setActiveTab] = useState('products');
   const [loading, setLoading] = useState(true);

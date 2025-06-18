@@ -11,6 +11,8 @@ const storeSchema = new mongoose.Schema({
     type: { type: String,enum: ['Point'], default: "Point" },
     coordinates: [Number] 
   },
+
+upi:{ type: String },
   phone: { type: String },
   socialMedia: { 
     whatsapp: { type: String }, 

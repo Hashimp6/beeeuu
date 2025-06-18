@@ -14,49 +14,47 @@ import axios from "axios";
 import { SERVER_URL } from "../config";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ChatListScreen = ({ navigation }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { token, isAuthenticated, logout } = useAuth();
+  const { token, isAuthenticated, logout, user } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchConversations();
-    }
-  }, [isAuthenticated]);
-
-
-const fetchConversations = async () => {
-  try {
-    setLoading(true);
-    
-    const response = await axios.get(
-      `${SERVER_URL}/messages/conversations`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        fetchConversations();
       }
-    );
-    
-   
-    // Log the first conversation's otherUser if it exists
-    if (response.data.conversations && response.data.conversations.length > 0) {
-   
+    }, [isAuthenticated])
+  );
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await axios.get(
+        `${SERVER_URL}/messages/conversations`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      console.log("Conversations response:", response.data);
+      
+      setConversations(response.data.conversations || response.data);
+      setLoading(false);
+      setRefreshing(false);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setLoading(false);
+      setRefreshing(false);
+      alert("Failed to load conversations. Please try again.");
     }
-    
-    setConversations(response.data.conversations);
-    setLoading(false);
-    setRefreshing(false);
-  } catch (error) {
-    console.error("Error fetching conversations:", error);
-    setLoading(false);
-    setRefreshing(false);
-    alert("Failed to load conversations. Please try again.");
-  }
-};
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -64,25 +62,47 @@ const fetchConversations = async () => {
   };
 
   const handleNewChat = () => {
-    // Navigate to NewChat or Contacts screen to start a new conversation
     navigation.navigate("NewChat");
   };
 
-  const handleChatPress = (conversationId, otherUser) => {
-    navigation.navigate("ChatDetail", {
-      conversationId,
-      otherUser,
-    });
+  // Helper function to get the other user from conversation
+  const getOtherUser = (conversation) => {
+    if (conversation.otherUser) {
+      return conversation.otherUser;
+    }
+    
+    // If using members array structure
+    if (conversation.members && Array.isArray(conversation.members)) {
+      const otherUser = conversation.members.find(member => 
+        member._id !== user?._id
+      );
+      return otherUser;
+    }
+    
+    return null;
   };
 
-  // Rest of your component remains the same
+  const handleChatPress = (conversation) => {
+    const otherUser = getOtherUser(conversation);
+    const conversationId = conversation.conversationId || conversation._id;
+    
+    if (otherUser && conversationId) {
+      navigation.navigate("ChatDetail", {
+        conversationId,
+        otherUser,
+      });
+    } else {
+      console.error("Missing otherUser or conversationId:", { otherUser, conversationId });
+      alert("Unable to open chat. Please try again.");
+    }
+  };
+
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
 
     const date = new Date(timestamp);
     const now = new Date();
 
-    // If same day, return time
     if (date.toDateString() === now.toDateString()) {
       return date.toLocaleTimeString([], {
         hour: "2-digit",
@@ -90,51 +110,93 @@ const fetchConversations = async () => {
       });
     }
 
-    // If within the last week, return day name
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     if (diffDays < 7) {
       return date.toLocaleDateString([], { weekday: "short" });
     }
 
-    // Otherwise return date
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
- // Updated renderItem function to handle potential missing data
-const renderItem = ({ item }) => {
-  const { conversationId, otherUser, lastMessage, updatedAt } = item;
+  const renderItem = ({ item }) => {
+    console.log("Rendering conversation item:", JSON.stringify(item, null, 2));
+    
+    const otherUser = getOtherUser(item);
+    const lastMessage = item.lastMessage || (item.messages && item.messages[item.messages.length - 1]);
+    const updatedAt = item.updatedAt || item.createdAt;
 
-  // Add debugging to see what's happening
-  console.log("Rendering conversation:", JSON.stringify(item));
-  
-  // Check if otherUser exists and has a username
-  // Create initials for avatar placeholder
-  const initials = otherUser && otherUser.username
-    ? otherUser.username.substring(0, 2).toUpperCase()
-    : "??";
+    if (!otherUser) {
+      console.log("No other user found for conversation:", item);
+      return null;
+    }
 
-  return (
-    <TouchableOpacity
-      style={styles.conversationItem}
-      onPress={() => handleChatPress(conversationId, otherUser)}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initials}</Text>
-      </View>
-      <View style={styles.conversationInfo}>
-        <View style={styles.conversationHeader}>
-          <Text style={styles.username} numberOfLines={1}>
-            {otherUser && otherUser.username ? otherUser.username : "Unknown User"}
+    // Determine display name and initials based on user role and store info
+    let displayName = "Unknown User";
+    let initials = "??";
+    let isStore = false;
+
+    // Check if user is a seller with store information
+    if (otherUser.role === "seller" || otherUser.userType === "seller") {
+      // Check for store information in different possible structures
+      const storeInfo = otherUser.storeId || otherUser.store || otherUser.storeDetails;
+      
+      if (storeInfo && storeInfo.storeName) {
+        displayName = storeInfo.storeName;
+        initials = storeInfo.storeName.substring(0, 2).toUpperCase();
+        isStore = true;
+      } else if (otherUser.storeName) {
+        displayName = otherUser.storeName;
+        initials = otherUser.storeName.substring(0, 2).toUpperCase();
+        isStore = true;
+      } else if (otherUser.username) {
+        displayName = otherUser.username;
+        initials = otherUser.username.substring(0, 2).toUpperCase();
+      }
+    } else if (otherUser.username) {
+      displayName = otherUser.username;
+      initials = otherUser.username.substring(0, 2).toUpperCase();
+    }
+
+    return (
+      <TouchableOpacity
+        style={styles.conversationItem}
+        onPress={() => handleChatPress(item)}
+      >
+        <View style={[
+          styles.avatar,
+          isStore && styles.storeAvatar
+        ]}>
+          <Text style={[
+            styles.avatarText,
+            isStore && styles.storeAvatarText
+          ]}>
+            {initials}
           </Text>
-          <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
         </View>
-        <Text style={styles.lastMessage} numberOfLines={1}>
-          {lastMessage && lastMessage.content ? lastMessage.content : "Start a conversation"}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
+        <View style={styles.conversationInfo}>
+          <View style={styles.conversationHeader}>
+            <Text style={styles.username} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {isStore && (
+              <View style={styles.storeBadge}>
+                <Ionicons name="storefront" size={12} color="#4CAF50" />
+              </View>
+            )}
+            <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
+          </View>
+          <Text style={styles.lastMessage} numberOfLines={1}>
+            {lastMessage && lastMessage.content ? 
+              lastMessage.content : 
+              lastMessage && lastMessage.text ?
+                lastMessage.text :
+                "Start a conversation"
+            }
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -149,10 +211,8 @@ const renderItem = ({ item }) => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chats</Text>
-     
       </View>
 
       {loading && !refreshing ? (
@@ -163,7 +223,7 @@ const renderItem = ({ item }) => {
         <FlatList
           data={conversations}
           renderItem={renderItem}
-          keyExtractor={(item) => item.conversationId}
+          keyExtractor={(item) => item.conversationId || item._id}
           contentContainerStyle={
             conversations.length === 0 ? { flex: 1 } : styles.listContent
           }
@@ -174,7 +234,6 @@ const renderItem = ({ item }) => {
         />
       )}
 
-      {/* New Chat Button */}
       <TouchableOpacity style={styles.newChatButton} onPress={handleNewChat}>
         <Ionicons name="add" size={30} color="#FFFFFF" />
       </TouchableOpacity>
@@ -183,7 +242,6 @@ const renderItem = ({ item }) => {
 };
 
 const styles = StyleSheet.create({
-  // Styles remain the same
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
@@ -199,7 +257,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
@@ -224,10 +281,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 15,
   },
+  storeAvatar: {
+    backgroundColor: "#E8F5E8",
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+  },
   avatarText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#666666",
+  },
+  storeAvatarText: {
+    color: "#4CAF50",
   },
   conversationInfo: {
     flex: 1,
@@ -236,6 +301,7 @@ const styles = StyleSheet.create({
   conversationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 5,
   },
   username: {
@@ -244,10 +310,13 @@ const styles = StyleSheet.create({
     color: "#000000",
     flex: 1,
   },
+  storeBadge: {
+    marginLeft: 8,
+    marginRight: 8,
+  },
   timeStamp: {
     fontSize: 12,
     color: "#888888",
-    marginLeft: 10,
   },
   lastMessage: {
     fontSize: 14,

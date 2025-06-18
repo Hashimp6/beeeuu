@@ -8,6 +8,8 @@ const storeRoutes = require('./routes/storeRoute');
 const productsRoutes = require('./routes/productRoutes');
 const galleryRoutes = require('./routes/galleryRoute');
 const appointmentsRoutes = require('./routes/appointmentRoutes');
+const upiRoute = require('./routes/upiRoute');
+const searchRoute = require('./routes/searchRoutes');
 
 dotenv.config();
 
@@ -27,5 +29,6 @@ app.use('/stores', storeRoutes);
 app.use('/products', productsRoutes);
 app.use('/gallery', galleryRoutes);
 app.use('/appointments', appointmentsRoutes);
-
+app.use('/upi', upiRoute);
+app.use('/search', searchRoute);
 module.exports = app;

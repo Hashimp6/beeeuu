@@ -2,30 +2,38 @@ const express = require('express');
 const router = express.Router();
 const {
   getUserAppointments,
-  getAppointmentsByStatus,
-  approveAppointment,
-  cancelAppointment,
+  updateAppointmentStatus,
   getAppointmentById,
-  createAppointment
+  createAppointment,
+  getAppointmentStats,
+  manualUpdatePastAppointments,
+  getAppointmentsByStatus
 } = require('../controllers/appointmentController');
 
 // Create new appointment
 router.post('/', createAppointment);
 
-// Get all appointments for a user (as customer and store owner)
-router.get('/check/:id', getUserAppointments);
+// Get appointments with flexible filtering
+// Usage examples:
+// /user/123 - Get all appointments for user
+// /user/123?status=confirmed - Filter by status
+// /user/123?date=2024-01-15 - Get appointments for specific date
+// /user/123?startDate=2024-01-15&endDate=2024-01-20 - Date range
+// /user/123?status=confirmed&date=2024-01-15 - Multiple filters
+// /user/123?limit=10&page=2 - Pagination
+router.get('/user/:id', getUserAppointments);
 
-// Get appointments by status for a user
-router.get('/user/:userId/status', getAppointmentsByStatus);
+// Get appointment statistics/dashboard data
+router.get('/store/:id/status', getAppointmentsByStatus);
 
 // Get single appointment by ID
 router.get('/:appointmentId', getAppointmentById);
 
-// Approve appointment (store owner only)
-router.patch('/:appointmentId/approve', approveAppointment);
+// Update appointment status (universal - handles all status changes)
+// Usage: PUT /appointments/123 with body: { "status": "confirmed", "notes": "Optional notes" }
+router.patch('/:appointmentId', updateAppointmentStatus);
 
-// Cancel appointment (user or store owner)
-router.patch('/:appointmentId/cancel', cancelAppointment);
-
+// Manual trigger to update past appointments (useful for testing or manual runs)
+router.post('/update-past', manualUpdatePastAppointments);
 
 module.exports = router;
