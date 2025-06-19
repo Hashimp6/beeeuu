@@ -1,26 +1,45 @@
-import 'dotenv/config';
+// import 'dotenv/config';
 
 export default {
   expo: {
-    // Your existing config...
-    extra: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+    name: "beeu",
+    slug: "beeu",
+    version: "1.0.0",
+    owner: "hashimp6",
+    orientation: "portrait",
+    userInterfaceStyle: "light",
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      config: {
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+      }
     },
-    // If using Google Maps in your app, also add this to restrict API usage:
     android: {
+      package: "com.hashim.beeuu",
+      adaptiveIcon: {
+        backgroundColor: "#ffffff"
+      },
       config: {
         googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY,
-        },
+          apiKey: process.env.GOOGLE_MAPS_API_KEY
+        }
       },
-    },
-    ios: {
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-      },
+      permissions: ["NOTIFICATIONS"]
     },
     plugins: [
-      // Add other plugins you're using...
+      [
+        "expo-notifications",
+        {
+          color: "#ffffff",
+        }
+      ]
     ],
-  },
+    extra: {
+      eas: {
+        projectId: "02f51a23-2820-4320-a2b6-3a62255abb20"
+      },
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+    }
+  }
 };
