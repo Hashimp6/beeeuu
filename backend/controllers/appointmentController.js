@@ -2,6 +2,12 @@ const Appointment = require("../models/AppointmentModel");
 const Store = require("../models/storeModel");
 const mongoose = require("mongoose");
 
+
+const { notifyAppointmentRequest, notifyAppointmentAccepted,
+  notifyAppointmentCancelled,
+  notifyAppointmentDeclined,
+  notifyPaymentReceived } = require("../utils/appointmentNotification");
+
 // Automatic status update function - runs daily to mark past appointments as completed
 const updatePastAppointments = async () => {
   try {
@@ -116,11 +122,11 @@ const getUserAppointments = async (req, res) => {
   }
 };
 
-// Update appointment status
+// Update appointment status WITH NOTIFICATIONS
 const updateAppointmentStatus = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const { status} = req.body;
+    const { status } = req.body;
 
     console.log("Updating appointment:", appointmentId, "to status:", status);
 
@@ -132,24 +138,158 @@ const updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    const appointment = await Appointment.findById(appointmentId);
+    const appointment = await Appointment.findById(appointmentId)
+      .populate('user', 'username')
+      .populate('store', 'name');
     
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    // Update status and notes if provided
-    appointment.status = status.toLowerCase();
+    const oldStatus = appointment.status;
+    const newStatus = status.toLowerCase();
+
+    // Update status
+    appointment.status = newStatus;
     await appointment.save();
 
+    // 🔔 SEND NOTIFICATIONS BASED ON STATUS CHANGE
+    try {
+      if (oldStatus === 'pending' && newStatus === 'confirmed') {
+        console.log('📱 Sending appointment acceptance notification...');
+        await notifyAppointmentAccepted(appointment);
+      } 
+      else if (oldStatus === 'pending' && newStatus === 'cancelled') {
+        console.log('📱 Sending appointment decline notification...');
+        await notifyAppointmentDeclined(appointment);
+      }
+      else if (newStatus === 'cancelled' && oldStatus !== 'pending') {
+        console.log('📱 Sending appointment cancellation notification...');
+        // Determine who cancelled (you might need to pass this info in request)
+        const cancelledBy = req.body.cancelledBy || 'customer'; // Default to customer
+        await notifyAppointmentCancelled(appointment, cancelledBy);
+      }
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed but appointment updated:', notificationError);
+      // Don't fail the entire request if notification fails
+    }
+
     res.status(200).json({
-      message: `Appointment ${status.toLowerCase()} successfully`,
-      
+      message: `Appointment ${newStatus} successfully`,
+      appointment: {
+        _id: appointment._id,
+        status: appointment.status,
+        user: appointment.user,
+        store: appointment.store
+      }
     });
 
   } catch (error) {
+    console.error('Error updating appointment status:', error);
     res.status(500).json({ 
       message: "Error updating appointment status", 
+      error: error.message 
+    });
+  }
+};
+
+// Create new appointment WITH NOTIFICATION
+const createAppointment = async (req, res) => {
+  try {
+    const appointmentData = req.body;
+    console.log('Creating appointment:', appointmentData);
+    
+    // Validate required fields
+    const requiredFields = ['user', 'store', 'product', 'date'];
+    for (let field of requiredFields) {
+      if (!appointmentData[field]) {
+        return res.status(400).json({ message: `${field} is required` });
+      }
+    }
+
+    // Set default status as pending
+    if (!appointmentData.status) {
+      appointmentData.status = 'pending';
+    }
+
+    const appointment = new Appointment(appointmentData);
+    await appointment.save();
+
+    const populatedAppointment = await Appointment.findById(appointment._id)
+      .populate('user', 'name email contactNo username')
+      .populate('store', 'name address')
+      .populate('product', 'name price');
+
+    // 🔔 SEND NOTIFICATION TO STORE OWNER
+    try {
+      console.log('📱 Sending appointment request notification...');
+      await notifyAppointmentRequest(populatedAppointment);
+    } catch (notificationError) {
+      console.error('⚠️ Notification failed but appointment created:', notificationError);
+      // Don't fail the entire request if notification fails
+    }
+
+    res.status(201).json({
+      message: "Appointment created successfully",
+      data: populatedAppointment
+    });
+  } catch (error) {
+    console.error('Error creating appointment:', error);
+    res.status(500).json({ message: "Error creating appointment", error: error.message });
+  }
+};
+
+// Handle payment notification (add this new function)
+const handlePaymentUpdate = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { paymentType, amount, paymentMethod = 'UPI' } = req.body;
+
+    console.log('Processing payment update:', { appointmentId, paymentType, amount });
+
+    const appointment = await Appointment.findById(appointmentId)
+      .populate('user', 'username')
+      .populate('store', 'name');
+    
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Update payment information
+    const currentPaid = appointment.amountPaid || 0;
+    appointment.amountPaid = currentPaid + parseFloat(amount);
+    
+    // Update payment status based on amount
+    const totalCost = appointment.cost || appointment.price || 0;
+    if (appointment.amountPaid >= totalCost) {
+      appointment.payment = 'full';
+    } else if (appointment.amountPaid > 0) {
+      appointment.payment = 'advance';
+    }
+
+    await appointment.save();
+
+    // 🔔 SEND PAYMENT NOTIFICATION TO STORE OWNER
+    try {
+      console.log('📱 Sending payment notification...');
+      await notifyPaymentReceived(appointment, amount, paymentType);
+    } catch (notificationError) {
+      console.error('⚠️ Payment notification failed:', notificationError);
+    }
+
+    res.status(200).json({
+      message: "Payment updated successfully",
+      appointment: {
+        _id: appointment._id,
+        amountPaid: appointment.amountPaid,
+        payment: appointment.payment
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating payment:', error);
+    res.status(500).json({ 
+      message: "Error updating payment", 
       error: error.message 
     });
   }
@@ -178,49 +318,12 @@ const getAppointmentById = async (req, res) => {
   }
 };
 
-// Create new appointment
-const createAppointment = async (req, res) => {
-  try {
-    const appointmentData = req.body;
-    console.log('appointmentData', appointmentData);
-    
-    // Validate required fields
-    const requiredFields = ['user', 'store', 'product', 'date'];
-    for (let field of requiredFields) {
-      if (!appointmentData[field]) {
-        return res.status(400).json({ message: `${field} is required` });
-      }
-    }
-
-    // Set default status as pending
-    if (!appointmentData.status) {
-      appointmentData.status = 'pending';
-    }
-
-    const appointment = new Appointment(appointmentData);
-    await appointment.save();
-
-    const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate('user', 'name email contactNo')
-      .populate('store', 'name address')
-      .populate('product', 'name price');
-
-    res.status(201).json({
-      message: "Appointment created successfully",
-      data: populatedAppointment
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error creating appointment", error: error.message });
-  }
-};
-
 // Get appointment statistics/dashboard data
 const getAppointmentsByStatus = async (req, res) => {
   try {
     const { id } = req.params; // store ID
     const { status } = req.query;
-    console.log("ddss",id,status);
-    
+    console.log("Getting appointments by status:", id, status);
 
     if (!id) {
       return res.status(400).json({ message: "Store ID is required" });
@@ -252,7 +355,6 @@ const getAppointmentsByStatus = async (req, res) => {
   }
 };
 
-
 // Manual function to update past appointments (can be called via cron job)
 const manualUpdatePastAppointments = async (req, res) => {
   try {
@@ -276,5 +378,6 @@ module.exports = {
   createAppointment,
   getAppointmentsByStatus,
   updatePastAppointments,
-  manualUpdatePastAppointments
+  manualUpdatePastAppointments,
+  handlePaymentUpdate // New function for payment notifications
 };

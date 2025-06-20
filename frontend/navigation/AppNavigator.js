@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 // Import screens
@@ -20,12 +21,29 @@ import AppLayout from '../screens/AppLayout';
 import StoreGallery from '../screens/StoreGallery';
 import StoreSearchPage from '../screens/SearchStoreScreen';
 import StoreAppointments from '../screens/StoreAppointment';
+import { useNotification } from '../context/NotificationContext';
+import OrderDetails from '../screens/OrderDataCollection';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const colorScheme = useColorScheme();
+  const navigation = useNavigation();
+  const { setupNotificationListeners, removeNotificationListeners } = useNotification();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      // Setup notification listeners when user is authenticated
+      const listeners = setupNotificationListeners(navigation);
+      
+      // Cleanup listeners on unmount
+      return () => {
+        removeNotificationListeners();
+      };
+    }
+  }, [user, navigation]);
   const isDarkMode = colorScheme === 'dark';
   
   // Show loading screen while checking authentication status
@@ -131,6 +149,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="AppointmentCalendar"
             component={AppointmentScheduler}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="OrderDetails"
+            component={OrderDetails}
             options={{ headerShown: false }}
           />
            <Stack.Screen

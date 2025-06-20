@@ -4,6 +4,7 @@ const { getIo } = require("../config/socket");
 const mongoose = require("mongoose");
 const storeModel = require("../models/storeModel");
 const Appointment = require("../models/AppointmentModel");
+const { sendChatNotification } = require("../services/notificationService");
 
 
 
@@ -86,6 +87,23 @@ const sendMessage = async (req, res) => {
     await conversation.save();
 
     const savedMessage = conversation.messages[conversation.messages.length - 1];
+// Send push notification to receiver
+const receiverUser = await User.findById(receiverId);
+if (receiverUser && receiverUser.pushToken) {
+  const senderUser = await User.findById(senderId);
+  const notificationText = newMessage.type === 'text'
+    ? newMessage.text
+    : newMessage.type === 'image'
+    ? '📷 Sent an image'
+    : '📅 Sent an appointment';
+
+  await sendChatNotification(
+    receiverUser.pushToken,
+    senderUser.name || senderUser.username,
+    notificationText,
+    conversation._id.toString()
+  );
+}
 
     const messageForSocket = {
       _id: savedMessage._id,

@@ -348,11 +348,31 @@ const SellerProfile = () => {
             <View style={styles.productFooter}>
               <Text style={styles.productPrice}>₹{item.price}</Text>
               <TouchableOpacity
-                style={styles.bookNowBtn}
-                onPress={() => handleAppointment(item._id,item.name)}
-              >
-                <Text style={styles.bookNowText}>Book</Text>
-              </TouchableOpacity>
+              style={styles.bookNowBtn}
+              onPress={() => {
+                if (item.type === 'service') {
+                  // Navigate to appointment screen
+                  navigation.navigate('Appointment', {
+                    itemId: item._id,
+                    itemName: item.name,
+                    itemDetails: item
+                  });
+                } else if (item.type === 'product') {
+                  // Navigate to order details screen
+                  navigation.navigate('OrderDetails', {
+                    itemId: item._id,
+                    itemName: item.name,
+                    itemDetails: item
+                  });
+                } else {
+                  alert("Unknown item type");
+                }
+              }}
+            >
+              <Text style={styles.bookNowText}>
+                {item.type === 'service' ? 'Book' : 'Buy'}
+              </Text>
+            </TouchableOpacity>
             </View>
           </View>
         </View>

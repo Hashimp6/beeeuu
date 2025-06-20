@@ -10,6 +10,7 @@ const galleryRoutes = require('./routes/galleryRoute');
 const appointmentsRoutes = require('./routes/appointmentRoutes');
 const upiRoute = require('./routes/upiRoute');
 const searchRoute = require('./routes/searchRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 dotenv.config();
 
@@ -31,4 +32,5 @@ app.use('/gallery', galleryRoutes);
 app.use('/appointments', appointmentsRoutes);
 app.use('/upi', upiRoute);
 app.use('/search', searchRoute);
+app.use('/notifications', notificationRoutes);
 module.exports = app;

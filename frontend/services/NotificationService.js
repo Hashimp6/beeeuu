@@ -1,62 +1,115 @@
 import * as Notifications from 'expo-notifications';
-import { AppState } from 'react-native';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-export class NotificationService {
-  // Send local notification when receiving a message
-  static async showMessageNotification(message, senderName, conversationId) {
-    // Only show notification if app is in background
-    if (AppState.currentState === 'background' || AppState.currentState === 'inactive') {
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `New message from ${senderName}`,
-            body: message.text || 'New message',
-            data: { 
-              conversationId,
-              messageId: message._id,
-              type: 'chat_message'
-            },
-            sound: 'default',
-          },
-          trigger: null, // Show immediately
-        });
-      } catch (error) {
-        console.error('Error showing notification:', error);
+// Configure how notifications are handled when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+// Variables to store listeners
+let notificationListener = null;
+let responseListener = null;
+
+const registerForPushNotificationsAsync = async () => {
+  let token;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    if (finalStatus !== 'granted') {
+      alert('Failed to get push token for push notification!');
+      return;
+    }
+    
+    try {
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      if (!projectId) {
+        throw new Error('Project ID not found');
       }
-    }
-  }
-
-  // Send local notification when sending a message (for confirmation)
-  static async showMessageSentNotification(recipientName) {
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Message Sent',
-          body: `Your message to ${recipientName} was delivered`,
-          data: { type: 'message_sent' },
-        },
-        trigger: {
-          seconds: 1, // Show after 1 second
-        },
-      });
-    } catch (error) {
-      console.error('Error showing sent notification:', error);
-    }
-  }
-
-  // Cancel all notifications for a specific conversation
-  static async cancelConversationNotifications(conversationId) {
-    try {
-      const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      const notificationsToCancel = scheduledNotifications.filter(
-        notification => notification.content.data?.conversationId === conversationId
-      );
       
-      for (const notification of notificationsToCancel) {
-        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
-      }
-    } catch (error) {
-      console.error('Error canceling notifications:', error);
+      token = (await Notifications.getExpoPushTokenAsync({
+        projectId,
+      })).data;
+      
+      console.log('Expo Push Token:', token);
+    } catch (e) {
+      token = `${e}`;
+      console.error('Error getting push token:', e);
     }
+  } else {
+    alert('Must use physical device for Push Notifications');
   }
-}
+
+  return token;
+};
+
+const setupNotificationListeners = (navigation) => {
+  // Listener for notifications received while app is running
+  notificationListener = Notifications.addNotificationReceivedListener(notification => {
+    console.log('Notification received:', notification);
+  });
+
+  // Listener for when user taps on notification
+  responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+    console.log('Notification tapped:', response);
+    
+    const { data } = response.notification.request.content;
+    
+    if (data.type === 'chat' && data.conversationId) {
+      // Navigate to chat screen
+      navigation.navigate('ChatScreen', { 
+        conversationId: data.conversationId,
+        otherUserName: data.senderName 
+      });
+    }
+  });
+};
+
+const removeNotificationListeners = () => {
+  if (notificationListener) {
+    Notifications.removeNotificationSubscription(notificationListener);
+  }
+  if (responseListener) {
+    Notifications.removeNotificationSubscription(responseListener);
+  }
+};
+
+const scheduleLocalNotification = async (title, body, data = {}) => {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data,
+    },
+    trigger: { seconds: 1 },
+  });
+};
+
+export {
+  registerForPushNotificationsAsync,
+  setupNotificationListeners,
+  removeNotificationListeners,
+  scheduleLocalNotification,
+};
+

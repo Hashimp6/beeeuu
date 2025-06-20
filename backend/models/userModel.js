@@ -16,6 +16,10 @@ place:{ type: String },
       enum: ["Point"],
       default: "Point",
     },
+    pushToken: {
+      type: String,
+      default: null
+    },
     coordinates: {
       type: [Number],
       default: [0, 0], 

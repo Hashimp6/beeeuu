@@ -17,6 +17,7 @@ export default {
     },
     android: {
       package: "com.hashim.beeuu",
+         "googleServicesFile": "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#ffffff"
       },
@@ -31,6 +32,7 @@ export default {
       [
         "expo-notifications",
         {
+          icon: "./assets/log.png",
           color: "#ffffff",
         }
       ]
