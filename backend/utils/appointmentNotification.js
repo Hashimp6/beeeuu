@@ -1,7 +1,7 @@
 // utils/appointmentNotifications.js
-const { sendPushNotification } = require('./pushNotifications'); // Your existing push notification utility
 const User = require('../models/userModel');
 const Store = require('../models/storeModel');
+const { sendPushNotification } = require('../services/notificationService');
 
 // Send appointment notification to a user
 const sendAppointmentNotification = async (userId, title, body, appointmentData) => {

@@ -100,7 +100,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       const response = await axios.put(
         `${SERVER_URL}/notifications/update-push-token`,
-        { pushToken },
+        { pushToken,userId:user._id },
         {
           headers: {
             Authorization: `Bearer ${token}`,

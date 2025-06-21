@@ -2,10 +2,10 @@ const User = require("../models/userModel");
 
 const updatePushToken = async (req, res) => {
   try {
-    console.log("dddd");
+    console.log("dddd",req.body);
     
-    const { pushToken } = req.body;
-    const userId = req.user.id;
+    const { pushToken,userId } = req.body;
+console.log("jj",userId);
 
     if (!pushToken) {
       return res.status(400).json({

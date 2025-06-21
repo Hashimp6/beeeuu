@@ -362,7 +362,8 @@ const SellerProfile = () => {
                   navigation.navigate('OrderDetails', {
                     itemId: item._id,
                     itemName: item.name,
-                    itemDetails: item
+                    itemDetails: item,
+                    store
                   });
                 } else {
                   alert("Unknown item type");

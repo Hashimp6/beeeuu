@@ -11,6 +11,7 @@ const appointmentsRoutes = require('./routes/appointmentRoutes');
 const upiRoute = require('./routes/upiRoute');
 const searchRoute = require('./routes/searchRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 dotenv.config();
 
@@ -33,4 +34,5 @@ app.use('/appointments', appointmentsRoutes);
 app.use('/upi', upiRoute);
 app.use('/search', searchRoute);
 app.use('/notifications', notificationRoutes);
+app.use('/orders', orderRoutes);
 module.exports = app;

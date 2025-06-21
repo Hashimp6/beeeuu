@@ -21,9 +21,13 @@ import { SERVER_URL } from '../config';
 const OrderDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const otherUser = route.params.otherUser || {};
-  const product = route.params.product || otherUser.product || {};
+  const store = route.params.store|| {};
+  const product =route.params.itemDetails
+  console.log("fss",product);
+  console.log("lss",store);
+  
   const { user, token } = useAuth() || {};
+console.log("authuser",user);
 
   // Form states
   const [quantity, setQuantity] = useState(1);
@@ -36,7 +40,7 @@ const OrderDetails = () => {
   const productPrice = parseFloat(product.price) || 0;
   const productName = product.name || product.productName || 'Product';
   const productImage = product.image || product.imageUrl || null;
-  const storeId = otherUser.storeId || otherUser._id;
+  const storeId = store.storeId || store._id;
 
   // Payment options
   const paymentOptions = [
@@ -88,16 +92,16 @@ const OrderDetails = () => {
       
       switch (selectedPayment) {
         case 'gpay':
-          paymentUrl = `gpay://pay?pa=${otherUser.upiId || 'merchant@paytm'}&pn=${otherUser.storeName || 'Store'}&am=${amount}&cu=INR`;
+          paymentUrl = `gpay://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
           break;
         case 'phonepe':
-          paymentUrl = `phonepe://pay?pa=${otherUser.upiId || 'merchant@paytm'}&pn=${otherUser.storeName || 'Store'}&am=${amount}&cu=INR`;
+          paymentUrl = `phonepe://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
           break;
         case 'paytm':
-          paymentUrl = `paytmmp://pay?pa=${otherUser.upiId || 'merchant@paytm'}&pn=${otherUser.storeName || 'Store'}&am=${amount}&cu=INR`;
+          paymentUrl = `paytmmp://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
           break;
         case 'upi':
-          paymentUrl = `upi://pay?pa=${otherUser.upiId || 'merchant@paytm'}&pn=${otherUser.storeName || 'Store'}&am=${amount}&cu=INR`;
+          paymentUrl = `upi://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
           break;
       }
 
@@ -140,16 +144,19 @@ const OrderDetails = () => {
       quantity: quantity,
       unitPrice: productPrice,
       totalAmount: calculateTotal(),
+      buyerId:user._id,
       customerName: customerName,
       deliveryAddress: address,
       phoneNumber: phoneNumber,
       paymentMethod: selectedPayment,
       storeId: storeId,
-      sellerId: otherUser._id,
+      sellerId: store._id,
       status: 'pending'
     };
 
     try {
+      console.log("order data ",orderData);
+      
       // Process payment first (except for COD)
       if (selectedPayment !== 'cod') {
         const paymentResult = await processPayment();
@@ -176,10 +183,7 @@ const OrderDetails = () => {
           [
             {
               text: 'OK',
-              onPress: () => {
-                // Navigate back or to order tracking screen
-                navigation.navigate('OrderHistory'); // or wherever you want to navigate
-              }
+             
             }
           ]
         );
@@ -203,11 +207,14 @@ const OrderDetails = () => {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+  style={{ flex: 1 }}
+  keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0} // optional tweak for iOS
+>
+<ScrollView
+    contentContainerStyle={styles.scrollContent}
+    keyboardShouldPersistTaps="handled"
+  >    
           {/* Product Details */}
           <View style={styles.productContainer}>
             <Text style={styles.sectionTitle}>Product Details</Text>
@@ -218,8 +225,8 @@ const OrderDetails = () => {
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{productName}</Text>
                 <Text style={styles.productPrice}>₹{productPrice.toFixed(2)}</Text>
-                {otherUser.storeName && (
-                  <Text style={styles.storeName}>Store: {otherUser.storeName}</Text>
+                {store.storeName && (
+                  <Text style={styles.storeName}>Store: {store.storeName}</Text>
                 )}
               </View>
             </View>
@@ -352,27 +359,28 @@ const OrderDetails = () => {
           </View>
 
         </ScrollView>
+        <View style={styles.buttonContainer}>
+      <TouchableOpacity 
+        style={styles.cancelButton} 
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.cancelButtonText}>Cancel</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.placeOrderButton,
+          (!customerName || !address || !phoneNumber) && styles.placeOrderButtonDisabled
+        ]}
+        onPress={handlePlaceOrder}
+        disabled={!customerName || !address || !phoneNumber}
+      >
+        <Text style={styles.placeOrderButtonText}>Place Order</Text>
+      </TouchableOpacity>
+    </View>
       </KeyboardAvoidingView>
 
       {/* Bottom buttons */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.cancelButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.placeOrderButton,
-            (!customerName || !address || !phoneNumber) && styles.placeOrderButtonDisabled
-          ]}
-          onPress={handlePlaceOrder}
-          disabled={!customerName || !address || !phoneNumber}
-        >
-          <Text style={styles.placeOrderButtonText}>Place Order</Text>
-        </TouchableOpacity>
-      </View>
+     
     </View>
   );
 };

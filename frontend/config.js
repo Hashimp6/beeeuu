@@ -1,2 +1,2 @@
-// export const SERVER_URL = "http://192.168.1.33:5500"; // replace with your IP
-export const SERVER_URL = "https://beeeuu.onrender.com"; 
+export const SERVER_URL = "http://192.168.1.34:5500"; // replace with your IP
+// export const SERVER_URL = "https://beeeuu.onrender.com"; 
