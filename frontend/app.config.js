@@ -17,7 +17,7 @@ export default {
     },
     android: {
       package: "com.hashim.beeuu",
-         "googleServicesFile": "./google-services.json",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#ffffff"
       },
