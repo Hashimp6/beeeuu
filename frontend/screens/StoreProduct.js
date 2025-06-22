@@ -378,34 +378,49 @@ const SellerProfile = ({ navigation }) => {
     />
 
     {/* Type Dropdown */}
-    <View style={styles.input}>
-      <Picker
-        selectedValue={product.type}
-        onValueChange={(value) => setProduct({ ...product, type: value })}
-      >
-        <Picker.Item label="Select Type *" value={null} />
-        <Picker.Item label="Product" value="product" />
-        <Picker.Item label="Service" value="service" />
-      </Picker>
-    </View>
+    <Picker
+  selectedValue={product.type}
+  onValueChange={(value) => setProduct({ ...product, type: value })}
+  style={{
+    backgroundColor: '#f5f5f5',
+    marginVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    color: 'black', // <- important to show selected value
+    fontSize: 16,
+  }}
+>
+  <Picker.Item label="Select Type *" value={null} />
+  <Picker.Item label="Product" value="product" />
+  <Picker.Item label="Service" value="service" />
+</Picker>
 
     {/* Category Dropdown */}
-    <View style={styles.input}>
-      <Picker
-        selectedValue={product.category}
-        onValueChange={(value) => setProduct({ ...product, category: value })}
-      >
-        <Picker.Item label="Select Category *" value={null} />
-        <Picker.Item label="Face" value="face" />
-        <Picker.Item label="Hand" value="hand" />
-        <Picker.Item label="Hair" value="hair" />
-        <Picker.Item label="Nail" value="nail" />
-        <Picker.Item label="Body" value="body" />
-        <Picker.Item label="Food" value="food" />
-        <Picker.Item label="Stationary" value="stationary" />
-        <Picker.Item label="Bakery" value="bakery" />
-      </Picker>
-    </View>
+    <Picker
+  selectedValue={product.category}
+  onValueChange={(value) => setProduct({ ...product, category: value })}
+  style={{
+    backgroundColor: '#f5f5f5',
+    marginVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    color: 'black', // Ensures selected value is visible
+    fontSize: 16,
+  }}
+>
+  <Picker.Item label="Select Category *" value={null} />
+  <Picker.Item label="Face" value="face" />
+  <Picker.Item label="Hand" value="hand" />
+  <Picker.Item label="Hair" value="hair" />
+  <Picker.Item label="Nail" value="nail" />
+  <Picker.Item label="Body" value="body" />
+  <Picker.Item label="Food" value="food" />
+  <Picker.Item label="Stationary" value="stationary" />
+  <Picker.Item label="Bakery" value="bakery" />
+</Picker>
+
 
     {/* Image Picker */}
     <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>

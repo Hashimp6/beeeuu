@@ -51,6 +51,7 @@ const SellerProfile = () => {
       Linking.openURL(url);
     }
   };
+  
     // Add a function to handle the chat button press
     const handleChatNow = () => {
       setLoading(true);
@@ -79,7 +80,7 @@ const SellerProfile = () => {
       try {
         // Navigate directly to ChatDetail with store information
         // Let the ChatDetailScreen handle the conversation creation
-        navigation.navigate('AppointmentCalendar', {
+        navigation.navigate('AppointmentScheduler', {
           otherUser: {
             _id: store.userId, // Store owner's user ID
             userId: store.userId, // Providing both formats for flexibility
@@ -98,28 +99,58 @@ const SellerProfile = () => {
         setLoading(false);
       }
     };
-    const handleShare = async () => {
-      console.log("sharing store", store);
-      
-      const profileData = {
-        name: store.storeName || 'Store',
-        bio: store.description || `${store.category} store in ${store.place}`,
-        profileUrl: ProfileShareHandler.generateProfileDeepLink(store._id, 'yourapp'), // Update 'yourapp' to your actual scheme
-        imageUrl: store.profileImage || ''
-      };
+   // Updated handleShare function in your component
+const handleShare = async () => {
+  console.log("sharing store", store);
+  
+  try {
+    // Use the improved shareStore method
+    const result = await ProfileShareHandler.shareStore(store);
     
-      const options = {
-        customMessage: `Hey! Check out ${store.storeName}'s store on our app!`,
-        includeImage: !!store.profileImage // Only include image if URL exists
-      };
-    
-      const result = await ProfileShareHandler.shareProfile(profileData, options);
-      
-      if (result.success) {
-        console.log('Store profile shared successfully!');
-        // Optional: Show success toast/alert to user
-      }
-    };
+    if (result.success) {
+      console.log('Store profile shared successfully!');
+      // Optional: Show success toast/alert to user
+      Toast.show({
+        type: 'success',
+        text1: 'Shared!',
+        text2: 'Store profile shared successfully',
+      });
+    } else if (result.dismissed) {
+      console.log('User dismissed share dialog');
+    }
+  } catch (error) {
+    console.error('Share error:', error);
+    Toast.show({
+      type: 'error',
+      text1: 'Share Failed',
+      text2: 'Could not share store profile',
+    });
+  }
+};
+
+// Alternative: If you prefer the original approach
+const handleShareOriginal = async () => {
+  console.log("sharing store", store);
+  
+  const profileData = {
+    name: store.storeName || 'Store',
+    bio: store.description || `${store.category} store in ${store.place}`,
+    profileUrl: ProfileShareHandler.generateProfileDeepLink(store._id, 'beeu'), // Fixed scheme
+    imageUrl: store.profileImage || ''
+  };
+  
+  const options = {
+    customMessage: `Hey! Check out ${store.storeName}'s store on Beeu!`,
+    includeImage: !!store.profileImage
+  };
+  
+  const result = await ProfileShareHandler.shareProfile(profileData, options);
+  
+  if (result.success) {
+    console.log('Store profile shared successfully!');
+    // Optional: Show success toast/alert to user
+  }
+};
     const handleTabChange = async (tab) => {
       setActiveTab(tab);
   
@@ -351,12 +382,7 @@ const SellerProfile = () => {
               style={styles.bookNowBtn}
               onPress={() => {
                 if (item.type === 'service') {
-                  // Navigate to appointment screen
-                  navigation.navigate('Appointment', {
-                    itemId: item._id,
-                    itemName: item.name,
-                    itemDetails: item
-                  });
+                  handleAppointment(item._id,item.name)
                 } else if (item.type === 'product') {
                   // Navigate to order details screen
                   navigation.navigate('OrderDetails', {

@@ -556,6 +556,204 @@ const updateLocation = async (req, res) => {
   }
 };
 
+let passwordResetStorage = {};
+
+// Clean up expired reset tokens
+const cleanupResetTokens = () => {
+  const now = Date.now();
+  const expiryTime = 30 * 60 * 1000; // 30 minutes
+
+  Object.keys(passwordResetStorage).forEach(email => {
+    if (now - passwordResetStorage[email].timestamp > expiryTime) {
+      delete passwordResetStorage[email];
+    }
+  });
+};
+
+// Initiate forgot password - send reset link via email
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required"
+      });
+    }
+
+    // Check if user exists (but don't reveal if email doesn't exist for security)
+    const user = await User.findOne({ email });
+    
+    // Always return success message for security (don't reveal if email exists)
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If the email exists in our system, a password reset link has been sent."
+      });
+    }
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Store reset token with expiration
+    passwordResetStorage[email] = {
+      token: resetToken,
+      userId: user._id,
+      timestamp: Date.now()
+    };
+
+    // Create reset link (adjust URL to match your frontend)
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    
+    // Send password reset email
+    await sendMail.sendPasswordResetEmail(email, resetLink, user.username);
+    
+    console.log("Password reset link:", resetLink); // For development only
+    console.log("Reset token:", resetToken); // For development only
+
+    // Clean up expired tokens
+    cleanupResetTokens();
+
+    res.status(200).json({
+      success: true,
+      message: "If the email exists in our system, a password reset link has been sent."
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
+      error: error.message
+    });
+  }
+};
+
+// Verify reset token validity
+const verifyResetToken = async (req, res) => {
+  try {
+    const { token, email } = req.query;
+
+    if (!token || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Token and email are required"
+      });
+    }
+
+    // Check if token exists and is valid
+    const resetData = passwordResetStorage[email];
+    if (!resetData || resetData.token !== token) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token"
+      });
+    }
+
+    // Check if token is expired (30 minutes)
+    const now = Date.now();
+    const expiryTime = 30 * 60 * 1000;
+    if (now - resetData.timestamp > expiryTime) {
+      delete passwordResetStorage[email];
+      return res.status(400).json({
+        success: false,
+        message: "Reset token has expired. Please request a new one."
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Token is valid"
+    });
+
+  } catch (error) {
+    console.error("Verify reset token error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during token verification",
+      error: error.message
+    });
+  }
+};
+
+// Reset password with token
+const resetPassword = async (req, res) => {
+  try {
+    const { token, email, newPassword } = req.body;
+
+    if (!token || !email || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Token, email, and new password are required"
+      });
+    }
+
+    // Validate password strength (add your own validation rules)
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long"
+      });
+    }
+
+    // Check if token exists and is valid
+    const resetData = passwordResetStorage[email];
+    if (!resetData || resetData.token !== token) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token"
+      });
+    }
+
+    // Check if token is expired
+    const now = Date.now();
+    const expiryTime = 30 * 60 * 1000;
+    if (now - resetData.timestamp > expiryTime) {
+      delete passwordResetStorage[email];
+      return res.status(400).json({
+        success: false,
+        message: "Reset token has expired. Please request a new one."
+      });
+    }
+
+    // Find user
+    const user = await User.findById(resetData.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Clean up reset token
+    delete passwordResetStorage[email];
+
+    // Send confirmation email
+    await sendMail.sendPasswordResetConfirmation(email, user.username);
+
+    res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully"
+    });
+
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during password reset",
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
   initiateRegistration,
@@ -569,5 +767,8 @@ module.exports = {
   deleteUser,
   changePassword,
   verifyToken,
-  updateLocation
+  updateLocation,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
 };

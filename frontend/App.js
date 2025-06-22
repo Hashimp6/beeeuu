@@ -5,13 +5,14 @@ import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext.js";
 import { NotificationProvider } from "./context/NotificationContext";
 import AppNavigator from "./navigation/AppNavigator.js";
+import linking from "./navigation/linkingConfig.js";
 
 export default function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
         <SocketProvider>
-          <NavigationContainer>
+          <NavigationContainer linking={linking}>
             <AppNavigator />
           </NavigationContainer>
         </SocketProvider>

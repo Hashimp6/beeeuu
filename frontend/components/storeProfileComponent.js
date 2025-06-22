@@ -305,6 +305,68 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
           </TouchableOpacity>
         </View>
       </View>
+      {/* Product Management */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Icon name="shopping-cart" size={22} color="#155366"/>
+          <Text style={styles.sectionTitle}>Product Management</Text>
+        </View>
+
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.appointmentOption}
+            onPress={() => navigation.navigate("StoreOrders", { status: "pending", storeId: store._id })}
+          >
+            <View style={styles.appointmentOptionLeft}>
+              <View style={[styles.statusDot, styles.pendingDot]} />
+              <Text style={styles.appointmentOptionText}>Pending Orders</Text>
+            </View>
+            <View style={styles.appointmentCount}>
+              <Icon name="chevron-right" size={20} color="#888" />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          
+
+          <View style={styles.divider} />
+
+        
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.appointmentOption}
+            onPress={() => navigation.navigate("StoreOrders", { status: "completed", storeId: store._id })}
+          >
+            <View style={styles.appointmentOptionLeft}>
+              <View style={[styles.statusDot, styles.completedDot]} />
+              <Text style={styles.appointmentOptionText}>Completed Orders</Text>
+            </View>
+            <View style={styles.appointmentCount}>
+              <Icon name="chevron-right" size={20} color="#888" />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.appointmentOption}
+            onPress={() => navigation.navigate("StoreOrders", { status: "cancelled", storeId: store._id })}
+          >
+            <View style={styles.appointmentOptionLeft}>
+              <View style={[styles.statusDot, styles.cancelledDot]} />
+              <Text style={styles.appointmentOptionText}>Cancelled Orders</Text>
+            </View>
+            <View style={styles.appointmentCount}>
+              <Icon name="chevron-right" size={20} color="#888" />
+            </View>
+          </TouchableOpacity>
+
+
+        
+        </View>
+      </View>
 
       {/* Store Settings */}
       <View style={styles.section}>

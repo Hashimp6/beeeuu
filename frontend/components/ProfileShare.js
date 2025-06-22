@@ -1,3 +1,4 @@
+// utils/ProfileShareHandler.js
 import { Share, Alert, Platform } from 'react-native';
 
 class ProfileShareHandler {
@@ -78,37 +79,60 @@ class ProfileShareHandler {
   }
 
   /**
-   * Generate a deep link URL for the profile
-   * @param {string} userId - User's unique ID
-   * @param {string} appScheme - Your app's URL scheme (e.g., 'myapp')
+   * Generate a deep link URL for the store profile
+   * @param {string} storeId - Store's unique ID
+   * @param {string} appScheme - Your app's URL scheme
    * @returns {string} Deep link URL
    */
-  static generateProfileDeepLink(userId, appScheme = 'yourapp') {
-    return `${appScheme}://store/${userId}`;
+  static generateProfileDeepLink(storeId, appScheme = 'beeu') {
+    return `${appScheme}://store/${storeId}`;
   }
 
   /**
-   * Generate a web URL for the profile (if you have a web version)
-   * @param {string} userId - User's unique ID
+   * Generate a web URL for the store profile (if you have a web version)
+   * @param {string} storeId - Store's unique ID
    * @param {string} baseUrl - Your web app's base URL
    * @returns {string} Web URL
    */
-  static generateProfileWebLink(userId, baseUrl = 'https://yourapp.com') {
-    return `${baseUrl}/profile/${userId}`;
+  static generateProfileWebLink(storeId, baseUrl = 'https://beeu.com') {
+    return `${baseUrl}/store/${storeId}`;
   }
 
   /**
    * Quick share with minimal setup
-   * @param {string} userName - User's name
-   * @param {string} userId - User's ID for generating links
+   * @param {string} storeName - Store's name
+   * @param {string} storeId - Store's ID for generating links
    */
-  static async quickShare(userName, userId) {
-    const profileUrl = this.generateProfileDeepLink(userId);
+  static async quickShare(storeName, storeId) {
+    const profileUrl = this.generateProfileDeepLink(storeId);
     
     await this.shareProfile({
-      name: userName,
+      name: storeName,
       profileUrl: profileUrl
     });
+  }
+
+  /**
+   * Share store with full details
+   * @param {Object} store - Complete store object
+   */
+  static async shareStore(store) {
+    const profileUrl = this.generateProfileDeepLink(store._id);
+    const webUrl = this.generateProfileWebLink(store._id);
+    
+    const profileData = {
+      name: store.storeName || 'Store',
+      bio: store.description || `${store.category} store in ${store.place}`,
+      profileUrl: profileUrl,
+      imageUrl: store.profileImage || ''
+    };
+
+    const options = {
+      customMessage: `Hey! Check out ${store.storeName}'s store on Beeu!`,
+      includeImage: !!store.profileImage
+    };
+
+    return await this.shareProfile(profileData, options);
   }
 }
 

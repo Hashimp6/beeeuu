@@ -11,40 +11,74 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  StatusBar,Image
+  StatusBar,
+  Image,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { SERVER_URL } from '../../config';
 
-const LoginScreen = () => {
+const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading, error } = useAuth();
- const navigation = useNavigation();
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+
+  const handleForgotPassword = async () => {
+    console.log("clicked");
+    if (!email) {
       Toast.show({
         type: 'error',
-        text1: 'Missing Details',
-        text2: 'Please enter both email and password.',
+        text1: 'Email Required',
+        text2: 'Please enter your email address.',
       });
       return;
     }
 
-    const result = await login(email, password);
-    if (result.success) {
-      Toast.show({
-        type: 'success',
-        text1: 'Login Successful!',
-      });
-      
-        } else {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       Toast.show({
         type: 'error',
-        text1: 'Login Failed',
-        text2: result.message || 'Invalid email or password.',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address.',
       });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+
+    console.log("forgot option clicked",email);
+      const response = await axios.post(`${SERVER_URL}/users/forgot-password`, {
+        email,
+      });
+    
+      const data = response.data;
+    
+      if (data.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Email Sent!',
+          text2: 'If the email exists, a reset link has been sent.',
+        });
+        navigation.goBack();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: data.message || 'Something went wrong.',
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: error.response?.data?.message || 'Please try again later.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,15 +94,18 @@ const LoginScreen = () => {
             <View style={styles.formWrapper}>
               {/* Logo */}
               <View style={styles.logoContainer}>
-  <Image 
-    source={require('../assets/log.png')}
-    style={styles.logo}
-  />
-</View>
+                <Image 
+                  source={require('../../assets/log.png')}
+                  style={styles.logo}
+                />
+              </View>
 
               {/* Title */}
               <View style={styles.titleContainer}>
-                <Text style={styles.subtitle}>Sign in to your Account</Text>
+                <Text style={styles.title}>Forgot Password?</Text>
+                <Text style={styles.subtitle}>
+                  Enter your email address and we'll send you a link to reset your password.
+                </Text>
               </View>
 
               {/* Form */}
@@ -86,41 +123,25 @@ const LoginScreen = () => {
                   />
                 </View>
 
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.inputLabel}>Password</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#AAAAAA"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                </View>
-
-                <TouchableOpacity style={styles.forgotPasswordButton}>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity
-                  style={styles.loginButton}
-                  onPress={handleLogin}
+                  style={styles.sendButton}
+                  onPress={handleForgotPassword}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
                   {loading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.loginButtonText}>Sign In</Text>
+                    <Text style={styles.sendButtonText}>Send Reset Link</Text>
                   )}
                 </TouchableOpacity>
 
-                <View style={styles.footer}>
-                  <Text style={styles.footerText}>Don't have an account? </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <Text style={styles.signUpText}>Register</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={styles.backButtonText}>Back to Sign In</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
@@ -131,7 +152,6 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  // Your existing styles remain the same
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -153,45 +173,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    marginBottom: 40,
   },
-  
   logo: {
-    width: 250,     // slightly smaller for balance
+    width: 250,
     height: 90,
     resizeMode: 'contain',
   },
-
-  logoText: {
-    color: '#000000',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  appName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 2,
-  },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
     color: '#666666',
     fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   formContainer: {
     width: '100%',
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: 24,
     backgroundColor: '#F5F5F5',
     borderRadius: 16,
     paddingHorizontal: 20,
@@ -210,47 +220,33 @@ const styles = StyleSheet.create({
     padding: 0,
     fontWeight: '500',
   },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  loginButton: {
+  sendButton: {
     backgroundColor: '#000000',
     height: 56,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
-  loginButtonText: {
+  sendButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 10,
+  backButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
   },
-  footerText: {
-    color: '#666666',
-    fontSize: 14,
-  },
-  signUpText: {
+  backButtonText: {
     color: '#000000',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
-export default LoginScreen;
+export default ForgotPasswordScreen;

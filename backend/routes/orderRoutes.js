@@ -21,7 +21,7 @@ router.post('/create', createOrder);
 
 // Get all orders for a user (buyer or seller)
 // Query params: ?status=pending&role=buyer&startDate=2024-01-01&endDate=2024-12-31&limit=20&page=1
-router.get('/user/:id', getUserOrders);
+router.get('/store/:id', getUserOrders);
 
 // Get single order by MongoDB _id
 router.get('/details/:orderId', getOrderById);
@@ -43,7 +43,7 @@ router.delete('/delete/:orderId', deleteOrder);
 
 // Get orders by status for a seller
 // Query params: ?status=pending
-router.get('/seller/:sellerId/status', getOrdersByStatus);
+router.get('/store/:storeId/status', getOrdersByStatus);
 
 // Get order statistics for a seller
 router.get('/seller/:sellerId/stats', getOrderStats);

@@ -154,9 +154,9 @@ const AppLayout = () => {
             onPress={() => navigation.navigate('ChatListScreen')}
           >
             <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
-            <View style={styles.badge}>
+            {/* <View style={styles.badge}>
               <Text style={styles.badgeText}>2</Text>
-            </View>
+            </View> */}
           </TouchableOpacity>
         </View>
       </View>

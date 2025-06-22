@@ -35,14 +35,19 @@ export default {
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
+    scheme: "beeu", // ✅ Add this for deep linking
     ios: {
-      bundleIdentifier: "com.hashim.beeuu", // ✅ required
+      bundleIdentifier: "com.hashim.beeuu",
       supportsTablet: true,
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
-      }
+      },
+      // ✅ Add associated domains for universal links
+      associatedDomains: [
+        "applinks:beeu.com",
+        "applinks:www.beeu.com"
+      ]
     },
-    
     android: {
       package: "com.hashim.beeuu",
       googleServicesFile: "./android/app/google-services.json",
@@ -54,7 +59,28 @@ export default {
           apiKey: process.env.GOOGLE_MAPS_API_KEY
         }
       },
-      permissions: ["NOTIFICATIONS"]
+      permissions: ["NOTIFICATIONS"],
+      // ✅ Add intent filters for deep linking
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "beeu.com"
+            },
+            {
+              scheme: "https",
+              host: "www.beeu.com"
+            },
+            {
+              scheme: "beeu"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     plugins: [
       [
@@ -64,9 +90,7 @@ export default {
           color: "#ffffff"
         }
       ]
-    ]
-,    
-    
+    ],
     extra: {
       eas: {
         projectId: "02f51a23-2820-4320-a2b6-3a62255abb20"

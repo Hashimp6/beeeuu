@@ -394,10 +394,11 @@ const deleteOrder = async (req, res) => {
 // Get orders by status for a seller
 const getOrdersByStatus = async (req, res) => {
   try {
-    const { sellerId } = req.params;
+    const { storeId } = req.params; // store ID
     const { status } = req.query;
-
-    if (!sellerId) {
+    console.log("ORDERis",storeId,status);
+    
+    if (!storeId) {
       return res.status(400).json({ message: "Seller ID is required" });
     }
 
@@ -406,12 +407,13 @@ const getOrdersByStatus = async (req, res) => {
     }
 
     const orders = await Order.find({
-      sellerId: sellerId,
+      sellerId: storeId,
       status: status.toLowerCase()
     })
     .populate("buyerId", "name email")
     .populate("productId", "name price image")
     .sort({ orderDate: -1 });
+console.log(orders);
 
     res.status(200).json({
       message: "Orders fetched successfully",

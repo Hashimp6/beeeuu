@@ -15,8 +15,8 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { useAuth } from "../context/AuthContext";
-import { SERVER_URL } from '../config';
+import { useAuth } from "../../context/AuthContext";
+import { SERVER_URL } from '../../config';
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 
@@ -91,7 +91,7 @@ const RegisterScreen = () => {
               {/* Logo */}
               <View style={styles.logoContainer}>
                 <Image 
-                  source={require('../assets/log.png')}
+                  source={require('../../assets/log.png')}
                   style={styles.logo}
                 />
               </View>

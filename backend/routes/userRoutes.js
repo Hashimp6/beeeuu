@@ -9,7 +9,9 @@ router.post("/verify-otp-register", userController.verifyOTPAndRegister);
 router.post("/resend-otp", userController.resendOTP);
 router.post("/login", userController.login);
 router.get("/verify-token", protect, userController.verifyToken);
-
+router.post('/forgot-password', userController.forgotPassword);
+router.get('/verify-reset-token', userController.verifyResetToken);
+router.post('/reset-password', userController.resetPassword);
 // Protected routes
 router.get("/me", protect, userController.getCurrentUser);
 router.put("/update/:id", protect, userController.updateUser);

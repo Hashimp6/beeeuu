@@ -5,8 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 // Import screens
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
+import LoginScreen from '../screens/login/LoginScreen';
+import RegisterScreen from '../screens/login/RegisterScreen';
 import OtpVerificationScreen from '../screens/OtpScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
@@ -23,6 +23,9 @@ import StoreSearchPage from '../screens/SearchStoreScreen';
 import StoreAppointments from '../screens/StoreAppointment';
 import { useNotification } from '../context/NotificationContext';
 import OrderDetails from '../screens/OrderDataCollection';
+import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
+import StoreOrders from '../screens/StoreOrders';
 
 const Stack = createStackNavigator();
 
@@ -91,6 +94,18 @@ const AppNavigator = () => {
             component={RegisterScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen 
+          name="ForgotPassword"
+           component={ForgotPasswordScreen}
+            options={{ headerShown: false }} />
+      <Stack.Screen 
+        name="ResetPassword" 
+        component={ResetPasswordScreen}
+        options={{
+          // Prevent going back to previous screen
+          gestureEnabled: false,
+        }}
+      />
           <Stack.Screen
             name="otp"
             component={OtpVerificationScreen}
@@ -147,7 +162,7 @@ const AppNavigator = () => {
         initialParams={{ initialTab: 'Profile' }}
       />
           <Stack.Screen
-            name="AppointmentCalendar"
+            name="AppointmentScheduler"
             component={AppointmentScheduler}
             options={{ headerShown: false }}
           />
@@ -164,6 +179,11 @@ const AppNavigator = () => {
            <Stack.Screen
             name="StoreAppointments"
             component={StoreAppointments}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="StoreOrders"
+            component={StoreOrders}
             options={{ headerShown: false }}
           />
            <Stack.Screen
