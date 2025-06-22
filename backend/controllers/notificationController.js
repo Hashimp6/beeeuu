@@ -14,7 +14,8 @@ console.log("jj",userId);
       });
     }
 
-    await User.findByIdAndUpdate(userId, { pushToken });
+    const updatedUser = await User.findByIdAndUpdate(userId, { pushToken }, { new: true });
+console.log("Updated user:", updatedUser);
 
     res.status(200).json({
       success: true,

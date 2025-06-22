@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,7 +13,6 @@ import {
   Alert,
   Image,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
 import axios from 'axios';
 import { SERVER_URL } from '../config';

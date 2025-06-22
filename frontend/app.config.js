@@ -1,21 +1,28 @@
-// import 'dotenv/config';
-import { writeFileSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 
-// Create google-services.json from environment variable during EAS build
-if (process.env.EAS_BUILD && process.env.GOOGLE_SERVICES_JSON) {
+const isEASBuild = process.env.EAS_BUILD === 'true';
+
+if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON) && !existsSync(join('android', 'app', 'google-services.json'))) {
   try {
-    const googleServicesJson = Buffer.from(process.env.GOOGLE_SERVICES_JSON, 'base64').toString('utf8');
-    const filePath = join(process.cwd(), 'google-services.json');
-    
-    // Validate it's valid JSON
-    JSON.parse(googleServicesJson);
-    
+    const googleServicesJson = Buffer.from(
+      process.env.GOOGLE_SERVICES_JSON,
+      'base64'
+    ).toString('utf8');
+
+    const filePath = join(process.cwd(), 'android', 'app', 'google-services.json');
+    const dirPath = dirname(filePath);
+
+    if (!existsSync(dirPath)) {
+      mkdirSync(dirPath, { recursive: true });
+    }
+
+    JSON.parse(googleServicesJson); // ✅ Validate
     writeFileSync(filePath, googleServicesJson);
-    console.log('✅ google-services.json created successfully from environment variable');
+
+    console.log('✅ google-services.json created successfully');
   } catch (error) {
-    console.error('❌ Error creating google-services.json:', error.message);
-    throw error;
+    console.error('❌ Failed to write google-services.json:', error.message);
   }
 }
 
@@ -29,14 +36,16 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
+      bundleIdentifier: "com.hashim.beeuu", // ✅ required
       supportsTablet: true,
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       }
     },
+    
     android: {
       package: "com.hashim.beeuu",
-      googleServicesFile: "./google-services.json",
+      googleServicesFile: "./android/app/google-services.json",
       adaptiveIcon: {
         backgroundColor: "#ffffff"
       },

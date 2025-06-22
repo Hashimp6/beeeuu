@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
     default: "user",
   },
   storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },
+  pushToken: {
+    type: String,
+    default: null
+  },
 place:{ type: String },
   location: {
     type: {
@@ -16,10 +20,7 @@ place:{ type: String },
       enum: ["Point"],
       default: "Point",
     },
-    pushToken: {
-      type: String,
-      default: null
-    },
+   
     coordinates: {
       type: [Number],
       default: [0, 0], 

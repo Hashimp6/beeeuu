@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   StatusBar,
   TextInput,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from "axios";
 import { SERVER_URL } from "../config";
 import { Ionicons } from "@expo/vector-icons";

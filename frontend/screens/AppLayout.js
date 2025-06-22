@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar, Platform } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -120,7 +121,13 @@ const AppLayout = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.container} edges={[, 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#FFFFFF" 
+        translucent={false}
+      />
       {/* Header */}
       <View style={styles.header}>
         <Image 
@@ -203,7 +210,8 @@ const AppLayout = () => {
         visible={locationModalVisible} 
         onClose={handleLocationUpdate} 
       />
-    </SafeAreaView>
+      </SafeAreaView>
+      </SafeAreaProvider>
   );
 };
 
@@ -211,17 +219,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    // paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Add this line
   },
   header: {
-    paddingTop: 25,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingRight: 16,
     paddingLeft: 10,
-    paddingVertical: 5,
+    paddingVertical: 1, // Increased from 5
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: '#DDDDDD', // More visible border
+    backgroundColor: '#FFFFFF', // Explicit background
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1,
+      },
+      android: {
+        elevation: 7,
+      },
+    }),
   },
   logo: {
     width: 120,
@@ -269,14 +289,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    paddingVertical: 4,
-    backgroundColor: '#FFFFFF',
-  },
+// Add this new style
+bottomNavContainer: {
+  paddingBottom: Platform.OS === 'ios' ? 0 : 10, // Extra padding for Android
+},
+
+// Update bottomNav style:
+bottomNav: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  borderTopWidth: 1,
+  borderTopColor: '#DDDDDD', // More visible
+  paddingVertical: 8, // Increased from 4
+  backgroundColor: '#FFFFFF',
+  ...Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1,
+    },
+    android: {
+      elevation: 8,
+    },
+  }),
+},
   navItem: {
     flex: 1,
     alignItems: 'center',
