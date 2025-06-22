@@ -1,5 +1,6 @@
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { Picker } from '@react-native-picker/picker';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -40,6 +41,7 @@ const SellerProfile = ({ navigation }) => {
     name: '',
     description: '',
     category: '',
+    type: '', // Added missing type field
     price: '',
     imageUri: '',
   });
@@ -66,6 +68,7 @@ const SellerProfile = ({ navigation }) => {
       name: '',
       description: '',
       category: '',
+      type: '', // Reset type field
       price: '',
       imageUri: '',
     });
@@ -78,6 +81,12 @@ const SellerProfile = ({ navigation }) => {
     try {
       setLoading(true);
       setError('');
+      
+      // Check if storeDetails exists
+      if (!storeDetails || !storeDetails._id) {
+        throw new Error('Store details not available');
+      }
+      
       const storeId = storeDetails._id;
 
       const response = await axios.get(`${SERVER_URL}/products/store/${storeId}`, {
@@ -104,7 +113,7 @@ const SellerProfile = ({ navigation }) => {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchProducts();
-  }, []);
+  }, [token, storeDetails]); // Added dependencies
 
   // Fetch data when component mounts or comes into focus
   useFocusEffect(
@@ -130,9 +139,9 @@ const SellerProfile = ({ navigation }) => {
         return;
       }
 
-      // Launch image picker - FIXED: Use correct enum
+      // Launch image picker with correct configuration
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Use array format instead of enum
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Fixed: Use correct enum
         allowsEditing: true,
         aspect: [3, 4],
         quality: 0.8,
@@ -156,10 +165,23 @@ const SellerProfile = ({ navigation }) => {
     }
   };
 
-  // FIXED: Add/Update product with proper null checking
+  // Add/Update product with proper validation
   const handleSubmitProduct = async () => {
-    if (!product.name || !product.price) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    // Enhanced validation
+    if (!product.name.trim() || !product.price.trim() || !product.type || !product.category) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Type, Category, Price)');
+      return;
+    }
+
+    // Validate price is a number
+    if (isNaN(parseFloat(product.price)) || parseFloat(product.price) <= 0) {
+      Alert.alert('Error', 'Please enter a valid price');
+      return;
+    }
+
+    // Check if storeDetails exists
+    if (!storeDetails || !storeDetails._id) {
+      Alert.alert('Error', 'Store information is missing');
       return;
     }
 
@@ -168,10 +190,11 @@ const SellerProfile = ({ navigation }) => {
 
       const formData = new FormData();
       formData.append('store', storeDetails._id);
-      formData.append('name', product.name);
-      formData.append('description', product.description);
+      formData.append('name', product.name.trim());
+      formData.append('description', product.description.trim());
       formData.append('category', product.category);
-      formData.append('price', product.price);
+      formData.append('type', product.type); // Added type field
+      formData.append('price', parseFloat(product.price).toString());
       
       if (product.imageUri) {
         const fileExtension = product.imageUri.split('.').pop() || 'jpg';
@@ -182,16 +205,15 @@ const SellerProfile = ({ navigation }) => {
         });
       }
 
-      console.log("daataa", formData);
+      console.log("FormData prepared", formData);
       
-      // FIXED: Safe access to _id with optional chaining
       const productId = editingProduct?._id;
       const url = editingProduct 
         ? `${SERVER_URL}/products/${productId}`
         : `${SERVER_URL}/products/add`;
 
       const method = editingProduct ? 'put' : 'post';
-      console.log("every", url, formData, token);
+      console.log("API call:", method, url);
 
       const response = await axios({
         method,
@@ -218,7 +240,8 @@ const SellerProfile = ({ navigation }) => {
 
     } catch (err) {
       console.error('Error saving product:', err);
-      Alert.alert('Error', 'Failed to save product. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to save product. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -255,7 +278,8 @@ const SellerProfile = ({ navigation }) => {
   
     } catch (err) {
       console.error('Error deleting product:', err);
-      Alert.alert('Error', 'Failed to delete product. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to delete product. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -265,16 +289,15 @@ const SellerProfile = ({ navigation }) => {
   const handleEditProduct = (item) => {
     setEditingProduct(item);
     setProduct({
-      name: item.name,
-      description: item.description,
+      name: item.name || '',
+      description: item.description || '',
       category: item.category || '',
-      price: item.price.toString(),
-      imageUri: item.image|| '',
+      type: item.type || '', // Added type field
+      price: item.price ? item.price.toString() : '',
+      imageUri: item.image || '',
     });
     setShowAddForm(true);
   };
-
-  
 
   const toggleAddForm = () => {
     if (showAddForm) {
@@ -284,6 +307,33 @@ const SellerProfile = ({ navigation }) => {
       setShowAddForm(true);
     }
   };
+
+  // Show loading state if token is not loaded yet
+  if (!token && !error) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#155366" />
+        <Text style={{ marginTop: 10, color: '#666' }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show error state if token loading failed
+  if (error && !token) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 20 }}>
+          Authentication Error: {error}
+        </Text>
+        <TouchableOpacity 
+          style={styles.submitBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.submitText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView 
@@ -302,88 +352,121 @@ const SellerProfile = ({ navigation }) => {
       </View>
 
       {showAddForm && (
-        <View style={styles.addProductForm}>
-          <Text style={styles.formTitle}>
-            {editingProduct ? 'Edit Product' : 'Add New Product'}
+  <View style={styles.addProductForm}>
+    <Text style={styles.formTitle}>
+      {editingProduct ? 'Edit Product' : 'Add New Product'}
+    </Text>
+
+    {/* Product Name */}
+    <TextInput
+      placeholder="Product Name *"
+      placeholderTextColor="#666"
+      style={styles.input}
+      value={product.name}
+      onChangeText={(text) => setProduct({ ...product, name: text })}
+    />
+
+    {/* Description */}
+    <TextInput
+      placeholder="Description"
+      placeholderTextColor="#666"
+      style={[styles.input, styles.textArea]}
+      value={product.description}
+      onChangeText={(text) => setProduct({ ...product, description: text })}
+      multiline
+      numberOfLines={3}
+    />
+
+    {/* Type Dropdown */}
+    <View style={styles.input}>
+      <Picker
+        selectedValue={product.type}
+        onValueChange={(value) => setProduct({ ...product, type: value })}
+      >
+        <Picker.Item label="Select Type *" value={null} />
+        <Picker.Item label="Product" value="product" />
+        <Picker.Item label="Service" value="service" />
+      </Picker>
+    </View>
+
+    {/* Category Dropdown */}
+    <View style={styles.input}>
+      <Picker
+        selectedValue={product.category}
+        onValueChange={(value) => setProduct({ ...product, category: value })}
+      >
+        <Picker.Item label="Select Category *" value={null} />
+        <Picker.Item label="Face" value="face" />
+        <Picker.Item label="Hand" value="hand" />
+        <Picker.Item label="Hair" value="hair" />
+        <Picker.Item label="Nail" value="nail" />
+        <Picker.Item label="Body" value="body" />
+        <Picker.Item label="Food" value="food" />
+        <Picker.Item label="Stationary" value="stationary" />
+        <Picker.Item label="Bakery" value="bakery" />
+      </Picker>
+    </View>
+
+    {/* Image Picker */}
+    <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+      <Text style={styles.imagePickerText}>
+        {product.imageUri ? 'Change Image' : '📷 Pick Image from Gallery'}
+      </Text>
+    </TouchableOpacity>
+
+    {/* Image Preview */}
+    {product.imageUri && (
+      <View style={styles.imagePreviewContainer}>
+        <Image
+          source={{ uri: product.imageUri }}
+          style={styles.previewImage}
+          onError={(error) => {
+            console.log('Image load error:', error);
+            Alert.alert('Error', 'Failed to load image');
+          }}
+        />
+        <TouchableOpacity
+          style={styles.removeImageBtn}
+          onPress={() => setProduct({ ...product, imageUri: '' })}
+        >
+          <Text style={styles.removeImageText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+
+    {/* Price */}
+    <TextInput
+      placeholder="Price (₹) *"
+      placeholderTextColor="#666"
+      keyboardType="numeric"
+      style={styles.input}
+      value={product.price}
+      onChangeText={(text) => setProduct({ ...product, price: text })}
+    />
+
+    {/* Buttons */}
+    <View style={styles.buttonRow}>
+      <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.submitBtn, loading && styles.disabledBtn]}
+        onPress={handleSubmitProduct}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" size="small" />
+        ) : (
+          <Text style={styles.submitText}>
+            {editingProduct ? 'Update' : 'Add Product'}
           </Text>
-          
-          <TextInput
-            placeholder="Product Name *"
-            style={styles.input}
-            value={product.name}
-            onChangeText={(text) => setProduct({...product, name: text})}
-          />
-          
-          <TextInput
-            placeholder="Description"
-            style={[styles.input, styles.textArea]}
-            value={product.description}
-            onChangeText={(text) => setProduct({...product, description: text})}
-            multiline
-            numberOfLines={3}
-          />
-          
-          <TextInput
-            placeholder="Category"
-            style={styles.input}
-            value={product.category}
-            onChangeText={(text) => setProduct({...product, category: text})}
-          />
-        
-          <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-            <Text style={styles.imagePickerText}>
-              {product.imageUri ? 'Change Image' : '📷 Pick Image from Gallery'}
-            </Text>
-          </TouchableOpacity>
-        
-          {product.imageUri ? (
-            <View style={styles.imagePreviewContainer}>
-              <Image 
-                source={{ uri: product.imageUri }} 
-                style={styles.previewImage}
-                onError={(error) => {
-                  console.log('Image load error:', error);
-                  Alert.alert('Error', 'Failed to load image');
-                }}
-              />
-              <TouchableOpacity 
-                style={styles.removeImageBtn} 
-                onPress={() => setProduct({...product, imageUri: ''})}
-              >
-                <Text style={styles.removeImageText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        
-          <TextInput
-            placeholder="Price (₹) *"
-            keyboardType="numeric"
-            style={styles.input}
-            value={product.price}
-            onChangeText={(text) => setProduct({...product, price: text})}
-          />
-        
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.submitBtn, loading && styles.disabledBtn]} 
-              onPress={handleSubmitProduct}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <Text style={styles.submitText}>
-                  {editingProduct ? 'Update' : 'Add Product'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+        )}
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+
 
       {loading && !showAddForm ? (
         <ActivityIndicator size="large" color="#155366" style={{ marginTop: 40 }} />
@@ -413,6 +496,9 @@ const SellerProfile = ({ navigation }) => {
                   </Text>
                   {item.category && (
                     <Text style={styles.category}>{item.category}</Text>
+                  )}
+                  {item.type && (
+                    <Text style={styles.category}>{item.type}</Text>
                   )}
                   <View style={styles.footer}>
                     <Text style={styles.price}>₹{item.price}</Text>
@@ -542,6 +628,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#f5f5f5',
     padding: 12,
+    color: 'black', 
     marginVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
@@ -651,6 +738,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
     alignSelf: 'flex-start',
+    marginBottom: 2,
   },
   footer: {
     flexDirection: 'row',

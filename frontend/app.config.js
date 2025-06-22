@@ -61,10 +61,12 @@ export default {
         "expo-notifications",
         {
           icon: "./assets/log.png",
-          color: "#ffffff",
+          color: "#ffffff"
         }
       ]
-    ],
+    ]
+,    
+    
     extra: {
       eas: {
         projectId: "02f51a23-2820-4320-a2b6-3a62255abb20"

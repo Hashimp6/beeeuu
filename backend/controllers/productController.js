@@ -3,18 +3,21 @@ const Product = require('../models/ProductModel');
 // Add Product
 const addProduct = async (req, res) => {
     try {
+      console.log("reqst comes from bc",req.body);
+      
       let image = "";
       if (req.file && req.file.path) {
         image = req.file.path;  
       }
   
-      const { store, name, description,category, price } = req.body;
+      const { store, name, description,category,type, price } = req.body;
   
       if (!store || !name || !price) {
         return res.status(400).json({ message: "Store, Name and Price are required" });
       }
+  console.log("image ",image);
   
-      const newProduct = new Product({ store, name, description,category, image, price });
+      const newProduct = new Product({ store, name, description,category, image,type, price });
       const savedProduct = await newProduct.save();
 
   
