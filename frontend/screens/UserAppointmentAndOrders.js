@@ -1,0 +1,853 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+  ActivityIndicator,
+  ScrollView,
+  Linking,
+  Image
+} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import axios from 'axios';
+import { SERVER_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
+
+const UserAppointmentsOrders = ({ route, navigation }) => {
+  const { user, status } = route.params;
+  const [activeTab, setActiveTab] = useState(status === 'appointment' ? 'appointments' : 'orders');
+  const [appointments, setAppointments] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { token } = useAuth() || {};
+
+  const validateRequiredData = () => {
+    if (!user?._id || !token || !status) {
+      setError('Missing required data');
+      return false;
+    }
+    return true;
+  };
+
+  const fetchAppointments = async () => {
+    if (!validateRequiredData()) return;
+
+    try {
+      console.log('Fetching appointments for user:', user._id);
+
+      const response = await axios.get(
+        `${SERVER_URL}/appointments/user/${user._id}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          timeout: 10000
+        }
+      );
+
+      if (response.status === 200) {
+        const appointmentsData = response.data.appointments || [];
+        setAppointments(appointmentsData);
+        console.log(`Fetched ${appointmentsData.length} appointments`);
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      if (error.response?.status === 404) {
+        setAppointments([]);
+      } else {
+        handleApiError(error, 'appointments');
+      }
+    }
+  };
+
+  const fetchOrders = async () => {
+    if (!validateRequiredData()) return;
+
+    try {
+      console.log('Fetching orders for user:', user._id);
+
+      const response = await axios.get(
+        `${SERVER_URL}/orders/store/${user._id}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          timeout: 10000
+        }
+      );
+
+      if (response.status === 200) {
+        const ordersData = response.data.orders || [];
+        setOrders(ordersData);
+        console.log(`Fetched ${ordersData.length} orders`);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      if (error.response?.status === 404) {
+        setOrders([]);
+      } else {
+        handleApiError(error, 'orders');
+      }
+    }
+  };
+
+  const handleApiError = (error, type) => {
+    if (error.response) {
+      if (error.response.status === 401) {
+        setError('Authentication failed. Please login again.');
+      } else if (error.response.status === 403) {
+        setError(`You do not have permission to view these ${type}.`);
+      } else if (error.response.status >= 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(`Error: ${error.response.data?.message || `Failed to fetch ${type}`}`);
+      }
+    } else if (error.request) {
+      setError('Network error. Please check your internet connection.');
+    } else if (error.code === 'ECONNABORTED') {
+      setError('Request timeout. Please try again.');
+    } else {
+      setError('An unexpected error occurred.');
+    }
+  };
+
+  const fetchData = async () => {
+    if (!validateRequiredData()) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Only fetch the data for the initial status
+      if (status === 'appointment') {
+        await fetchAppointments();
+        setActiveTab('appointments');
+      } else {
+        await fetchOrders();
+        setActiveTab('orders');
+      }
+    } catch (error) {
+      console.error('Error in fetchData:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return { dateStr: 'No date', timeStr: '', isToday: false, isTomorrow: false };
+    
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const dateStr = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+    });
+
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    if (date.toDateString() === today.toDateString()) {
+      return { dateStr: 'Today', timeStr, isToday: true, isTomorrow: false };
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return { dateStr: 'Tomorrow', timeStr, isToday: false, isTomorrow: true };
+    }
+
+    return { dateStr, timeStr, isToday: false, isTomorrow: false };
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return null;
+    
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numPrice)) return null;
+    
+    return numPrice.toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return '#FF9500';
+      case 'confirmed': return '#34C759';
+      case 'completed': return '#007AFF';
+      case 'cancelled': return '#FF3B30';
+      case 'not_attended': return '#FF6B35';
+      case 'processing': return '#FF9500';
+      case 'shipped': return '#007AFF';
+      case 'delivered': return '#34C759';
+      case 'returned': return '#FF3B30';
+      case 'refunded': return '#8E44AD';
+      default: return '#8E8E93';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending': return 'schedule';
+      case 'confirmed': return 'check-circle';
+      case 'completed': return 'done-all';
+      case 'cancelled': return 'cancel';
+      case 'not_attended': return 'person-off';
+      case 'processing': return 'hourglass-empty';
+      case 'shipped': return 'local-shipping';
+      case 'delivered': return 'check-circle';
+      case 'returned': return 'keyboard-return';
+      case 'refunded': return 'account-balance-wallet';
+      default: return 'help';
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (activeTab === 'appointments') {
+      await fetchAppointments();
+    } else {
+      await fetchOrders();
+    }
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const renderAppointmentCard = ({ item }) => {
+    const dateTime = formatDate(item.date);
+    const formattedPrice = formatPrice(item.price);
+    const phoneNumber = item.contactNo || item.user?.contactNo || item.phone;
+    const shopName = item.store?.name || item.store?.storeName || item.store?.businessName || 'Shop';
+
+    return (
+      <View style={styles.card}>
+        {/* Header with Date/Time and Call Button */}
+        <View style={styles.cardHeader}>
+          <View style={styles.dateTimeContainer}>
+            <Text style={[
+              styles.dateText,
+              dateTime.isToday && styles.todayText,
+              dateTime.isTomorrow && styles.tomorrowText
+            ]}>
+              {dateTime.dateStr}
+            </Text>
+            <Text style={styles.timeText}>{dateTime.timeStr}</Text>
+          </View>
+          
+          <View style={styles.headerActions}>
+            {formattedPrice && (
+              <View style={styles.priceChip}>
+                <Text style={styles.priceText}>{formattedPrice}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Status Badge - More Prominent */}
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+          <Icon 
+            name={getStatusIcon(item.status)} 
+            size={16} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.statusBadgeText}>
+            {item.status.replace('_', ' ').toUpperCase()}
+          </Text>
+        </View>
+
+        {/* Service Info */}
+        <View style={styles.infoSection}>
+          <View style={styles.serviceRow}>
+            <Icon name="shopping-bag" size={16} color="#666" />
+            <Text style={styles.serviceText}>
+              {item.productName || item.product?.name || item.serviceName || 'Service'}
+            </Text>
+          </View>
+
+          {/* Shop Name */}
+          <View style={styles.shopRow}>
+            <Icon name="store" size={16} color="#666" />
+            <Text style={styles.shopText}>{shopName}</Text>
+          </View>
+
+          {(item.locationName || item.store?.location || item.location) && (
+            <View style={styles.locationRow}>
+              <Icon name="place" size={16} color="#666" />
+              <Text style={styles.locationText}>
+                {item.locationName || item.store?.location || item.location}
+              </Text>
+            </View>
+          )}
+
+          {item.notes && (
+            <View style={styles.notesRow}>
+              <Icon name="note" size={16} color="#666" />
+              <Text style={styles.notesText} numberOfLines={2}>
+                {item.notes}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  const renderOrderCard = ({ item }) => {
+    const dateTime = formatDate(item.createdAt || item.orderDate);
+    const formattedPrice = formatPrice(item.totalAmount || item.amount);
+    const productImage = item.productId?.image || item.product?.image;
+    const productName = item.productName || item.productId?.name || item.product?.name;
+    const storeName = item.sellerName || item.seller?.name || item.store?.name || 'Store';
+    const quantity = item.quantity || 1;
+    const unitPrice = formatPrice(item.unitPrice || item.productId?.price);
+
+    return (
+      <View style={styles.card}>
+        {/* Header with Order ID and Price */}
+        <View style={styles.cardHeader}>
+          <View style={styles.dateTimeContainer}>
+            <Text style={styles.orderIdText}>Order #{item.orderId || item._id?.slice(-6)}</Text>
+            <Text style={[
+              styles.dateText,
+              dateTime.isToday && styles.todayText,
+              dateTime.isTomorrow && styles.tomorrowText
+            ]}>
+              {dateTime.dateStr} {dateTime.timeStr}
+            </Text>
+          </View>
+          
+          <View style={styles.headerActions}>
+            {formattedPrice && (
+              <View style={styles.priceChip}>
+                <Text style={styles.priceText}>{formattedPrice}</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Status Badge */}
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+          <Icon 
+            name={getStatusIcon(item.status)} 
+            size={16} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.statusBadgeText}>
+            {item.status.replace('_', ' ').toUpperCase()}
+          </Text>
+        </View>
+
+        {/* Product Info with Image */}
+        <View style={styles.productSection}>
+          {productImage && (
+            <Image 
+              source={{ uri: productImage }} 
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          )}
+          <View style={styles.productDetails}>
+            <Text style={styles.productName} numberOfLines={2}>
+              {productName}
+            </Text>
+            <View style={styles.quantityPriceRow}>
+              <Text style={styles.quantityText}>Qty: {quantity}</Text>
+              {unitPrice && (
+                <Text style={styles.unitPriceText}>{unitPrice} each</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Order Details */}
+        <View style={styles.infoSection}>
+          {/* Store Name */}
+          <View style={styles.shopRow}>
+            <Icon name="store" size={16} color="#666" />
+            <Text style={styles.shopText}>{storeName}</Text>
+          </View>
+
+          {/* Customer Info */}
+          {item.customerName && (
+            <View style={styles.serviceRow}>
+              <Icon name="person" size={16} color="#666" />
+              <Text style={styles.serviceText}>Customer: {item.customerName}</Text>
+            </View>
+          )}
+
+          {/* Phone Number */}
+          {item.phoneNumber && (
+            <View style={styles.serviceRow}>
+              <Icon name="phone" size={16} color="#666" />
+              <Text style={styles.serviceText}>{item.phoneNumber}</Text>
+            </View>
+          )}
+
+          {/* Delivery Address */}
+          {(item.deliveryAddress || item.shippingAddress) && (
+            <View style={styles.locationRow}>
+              <Icon name="location-on" size={16} color="#666" />
+              <Text style={styles.locationText} numberOfLines={2}>
+                {item.deliveryAddress || item.shippingAddress}
+              </Text>
+            </View>
+          )}
+
+          {/* Payment Method */}
+          {item.paymentMethod && (
+            <View style={styles.paymentRow}>
+              <Icon name="payment" size={16} color="#666" />
+              <Text style={styles.paymentText}>
+                Payment: {item.paymentMethod.toUpperCase()} 
+                {item.paymentStatus && ` (${item.paymentStatus})`}
+              </Text>
+            </View>
+          )}
+
+          {item.trackingNumber && (
+            <View style={styles.notesRow}>
+              <Icon name="local-shipping" size={16} color="#666" />
+              <Text style={styles.notesText}>
+                Tracking: {item.trackingNumber}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  // Function to get the current data based on active tab and status
+  const getCurrentData = () => {
+    if (status === 'appointment') {
+      return activeTab === 'appointments' ? appointments : [];
+    } else {
+      return activeTab === 'orders' ? orders : [];
+    }
+  };
+
+  // Function to check if tab should be visible
+  const shouldShowTab = (tabType) => {
+    return status === 'appointment' ? tabType === 'appointments' : tabType === 'orders';
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#155366" />
+        <Text style={styles.loadingText}>Loading user data...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color="#155366" />
+        </TouchableOpacity>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>{user.name || 'User'}</Text>
+          <Text style={styles.headerSubtitle}>{user.phone || user.contactNo}</Text>
+        </View>
+        <TouchableOpacity onPress={onRefresh}>
+          <Icon name="refresh" size={24} color="#155366" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Selector - Only show relevant tab */}
+      <View style={styles.tabContainer}>
+        {shouldShowTab('appointments') && (
+          <TouchableOpacity
+            style={[styles.tab, styles.activeTab]}
+            disabled={true}
+          >
+            <Icon name="event" size={20} color="#FFFFFF" />
+            <Text style={[styles.tabText, styles.activeTabText]}>
+              Appointments ({appointments.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {shouldShowTab('orders') && (
+          <TouchableOpacity
+            style={[styles.tab, styles.activeTab]}
+            disabled={true}
+          >
+            <Icon name="shopping-bag" size={20} color="#FFFFFF" />
+            <Text style={[styles.tabText, styles.activeTabText]}>
+              Orders ({orders.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={48} color="#FF3B30" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={getCurrentData()}
+          renderItem={status === 'appointment' ? renderAppointmentCard : renderOrderCard}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={getCurrentData().length === 0 ? styles.emptyContainer : styles.listContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyStateContainer}>
+              <Icon 
+                name={status === 'appointment' ? 'event-busy' : 'shopping-bag'} 
+                size={64} 
+                color="#CCC" 
+              />
+              <Text style={styles.emptyText}>
+                No {status === 'appointment' ? 'appointments' : 'orders'} found for this user
+              </Text>
+              <Text style={styles.emptySubText}>Pull down to refresh</Text>
+            </View>
+          )}
+        />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EAED',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#155366',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EAED',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    backgroundColor: '#F5F5F5',
+  },
+  activeTab: {
+    backgroundColor: '#155366',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginVertical: 10,
+  },
+  retryButton: {
+    backgroundColor: '#155366',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 10,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 5,
+  },
+  listContainer: {
+    padding: 12,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  dateTimeContainer: {
+    flex: 1,
+  },
+  orderIdText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#155366',
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 2,
+  },
+  todayText: {
+    color: '#FF9500',
+  },
+  tomorrowText: {
+    color: '#34C759',
+  },
+  timeText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#155366',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priceChip: {
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  priceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  callButton: {
+    backgroundColor: '#155366',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 6,
+    letterSpacing: 0.5,
+  },
+  infoSection: {
+    marginTop: 4,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  serviceText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  shopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  shopText: {
+    fontSize: 14,
+    color: '#155366',
+    marginLeft: 8,
+    fontWeight: '600',
+    flex: 1,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+  },
+  notesRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 4,
+  },
+  productSection: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 12,
+  },
+  productImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#E8EAED',
+  },
+  productDetails: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  quantityPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  quantityText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  unitPriceText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  paymentText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+    fontWeight: '500',
+  },
+});
+
+export default UserAppointmentsOrders;

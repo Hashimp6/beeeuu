@@ -11,7 +11,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  StatusBar,Image
+  StatusBar,
+  Image
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import Toast from 'react-native-toast-message';
@@ -23,12 +24,29 @@ const LoginScreen = () => {
   const { login, loading, error } = useAuth();
   const navigation = useNavigation();
 
+  // Email validation function
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleLogin = async () => {
+    // Check if fields are empty
     if (!email || !password) {
       Toast.show({
         type: 'error',
         text1: 'Missing Details',
         text2: 'Please enter both email and password.',
+      });
+      return;
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address.',
       });
       return;
     }
@@ -139,7 +157,6 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  // Your existing styles remain the same
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -164,7 +181,7 @@ const styles = StyleSheet.create({
   },
   
   logo: {
-    width: 250,     // slightly smaller for balance
+    width: 250,
     height: 90,
     resizeMode: 'contain',
   },

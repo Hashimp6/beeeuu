@@ -18,7 +18,7 @@ router.put("/update/:id", protect, userController.updateUser);
 router.put("/location/:userId", userController.updateLocation);
 router.delete("/delete/:id", protect, userController.deleteUser);
 router.post("/change-password", protect, userController.changePassword);
-
+router.put("/change-address", protect, userController.updateUserContact);
 // Admin only routes
 router.get(
   "/all",

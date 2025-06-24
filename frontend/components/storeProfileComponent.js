@@ -196,24 +196,7 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
             </Text>
           </View>
           <Text style={styles.storeCategory}>{store.place}</Text>
-          <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{stats.pendingAppointments}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {stats.completedAppointments}
-              </Text>
-              <Text style={styles.statLabel}>Completed</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>${stats.totalRevenue}</Text>
-              <Text style={styles.statLabel}>Revenue</Text>
-            </View>
-          </View>
+          
 
           <TouchableOpacity style={styles.editStoreButton} onPress={handleEditStore}>
             <Icon name="edit" size={16} color="#fff" />

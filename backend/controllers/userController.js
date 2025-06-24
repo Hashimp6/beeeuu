@@ -755,6 +755,40 @@ const resetPassword = async (req, res) => {
 };
 
 
+const updateUserContact = async (req, res) => {
+  const { userId, phone, address } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+
+  try {
+    // Only update fields that are sent
+    const updateFields = {};
+    if (phone) updateFields.phone = phone;
+    if (address) updateFields.address = address;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User contact info updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error("Error updating user contact info:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   initiateRegistration,
   verifyOTPAndRegister ,
@@ -771,4 +805,5 @@ module.exports = {
   forgotPassword,
   verifyResetToken,
   resetPassword,
+  updateUserContact
 };

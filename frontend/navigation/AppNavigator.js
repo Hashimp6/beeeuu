@@ -5,8 +5,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 // Import screens
-import LoginScreen from '../screens/login/LoginScreen';
-import RegisterScreen from '../screens/login/RegisterScreen';
 import OtpVerificationScreen from '../screens/OtpScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
@@ -23,9 +21,12 @@ import StoreSearchPage from '../screens/SearchStoreScreen';
 import StoreAppointments from '../screens/StoreAppointment';
 import { useNotification } from '../context/NotificationContext';
 import OrderDetails from '../screens/OrderDataCollection';
-import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
-import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
 import StoreOrders from '../screens/StoreOrders';
+import UserAppointmentsOrders from '../screens/UserAppointmentAndOrders';
+import LoginScreen from '../screens/login/LoginScreen';
+import RegisterScreen from '../screens/login/RegisterScreen';
+import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
+import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -169,6 +170,11 @@ const AppNavigator = () => {
            <Stack.Screen
             name="OrderDetails"
             component={OrderDetails}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="UsersAppointments"
+            component={UserAppointmentsOrders}
             options={{ headerShown: false }}
           />
            <Stack.Screen

@@ -79,11 +79,7 @@ const getUserOrders = async (req, res) => {
 
     // Build query based on role
     let query = {};
-    if (role === 'seller') {
-      query.sellerId = id;
-    } else if (role === 'buyer') {
-      query.buyerId = id;
-    } else {
+    
       // If role not specified, search both
       query = {
         $or: [
@@ -91,8 +87,7 @@ const getUserOrders = async (req, res) => {
           { sellerId: id }
         ]
       };
-    }
-
+   
     // Add status filter
     if (status) {
       query.status = status.toLowerCase();
@@ -129,6 +124,7 @@ const getUserOrders = async (req, res) => {
 
     // Get total count for pagination
     const totalCount = await Order.countDocuments(query);
+console.log("orders",orders);
 
     res.status(200).json({
       message: "Orders fetched successfully",

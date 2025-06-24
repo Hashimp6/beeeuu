@@ -32,7 +32,7 @@ console.log("authuser",user);
   // Form states
   const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState(user?.name || '');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(user?.address ||'');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
   const [selectedPayment, setSelectedPayment] = useState('cod');
 

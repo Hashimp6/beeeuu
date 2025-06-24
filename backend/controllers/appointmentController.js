@@ -101,6 +101,7 @@ const getUserAppointments = async (req, res) => {
 
     // Get total count for pagination
     const totalCount = await Appointment.countDocuments(query);
+console.log("Appoi",appointments);
 
     res.status(200).json({
       message: "Appointments fetched successfully",

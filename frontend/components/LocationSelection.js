@@ -33,6 +33,30 @@ const LocationSelectionModal = ({ visible, onClose }) => {
     if (error) setError(null);
   }, [searchQuery]);
 
+  useEffect(() => {
+    const loadSavedLocation = async () => {
+      if (visible) {
+        try {
+          const storedUserJson = await AsyncStorage.getItem('user');
+          if (storedUserJson) {
+            const storedUser = JSON.parse(storedUserJson);
+            if (storedUser.locationName && storedUser.locationName !== 'Current Location') {
+              setSearchQuery(storedUser.locationName);
+            }
+          }
+        } catch (err) {
+          console.error('Error loading saved location:', err);
+        }
+      } else {
+        // Clear search query when modal is closed
+        setSearchQuery('');
+        setSuggestions([]);
+        setError(null);
+      }
+    };
+  
+    loadSavedLocation();
+  }, [visible]);
   // Function to get location suggestions - using useCallback for better performance
   const fetchLocationSuggestions = useCallback(async (query) => {
     if (!query.trim()) {

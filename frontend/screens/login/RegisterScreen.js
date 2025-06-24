@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { SERVER_URL } from '../../config';
 import { useNavigation } from "@react-navigation/native";
+import Toast from 'react-native-toast-message';
 import axios from "axios";
 
 const RegisterScreen = () => {
@@ -29,22 +30,116 @@ const RegisterScreen = () => {
   const { register } = useAuth();
   const navigation = useNavigation();
 
-  const handleRegister = async () => {
-    // Form validation
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields.");
-      return;
-    }
+  // Real-time validation states
+  const [showNameError, setShowNameError] = useState(false);
+  const [showEmailError, setShowEmailError] = useState(false);
+  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [showConfirmPasswordError, setShowConfirmPasswordError] = useState(false);
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
-      return;
-    }
+  // Enhanced validation functions
+  const validateName = (name) => {
+    return name.trim().length >= 3;
+  };
 
-    // Basic email validation
+  const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Please enter a valid email address.");
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 6;
+  };
+
+  // Real-time validation handlers
+  const handleNameChange = (text) => {
+    setName(text);
+    if (text.length > 0) {
+      setShowNameError(!validateName(text));
+    } else {
+      setShowNameError(false);
+    }
+  };
+
+  const handleEmailChange = (text) => {
+    setEmail(text);
+    if (text.length > 0) {
+      setShowEmailError(!validateEmail(text));
+    } else {
+      setShowEmailError(false);
+    }
+  };
+
+  const handlePasswordChange = (text) => {
+    setPassword(text);
+    if (text.length > 0) {
+      setShowPasswordError(!validatePassword(text));
+    } else {
+      setShowPasswordError(false);
+    }
+    
+    // Also check confirm password if it has value
+    if (confirmPassword.length > 0) {
+      setShowConfirmPasswordError(text !== confirmPassword);
+    }
+  };
+
+  const handleConfirmPasswordChange = (text) => {
+    setConfirmPassword(text);
+    if (text.length > 0) {
+      setShowConfirmPasswordError(text !== password);
+    } else {
+      setShowConfirmPasswordError(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    // Enhanced form validation with specific error messages
+    if (!name || !email || !password || !confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Missing Details',
+        text2: 'Please fill in all fields.',
+      });
+      return;
+    }
+
+    // Validate name (minimum 3 characters)
+    if (!validateName(name)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Name',
+        text2: 'Name must be at least 3 characters long.',
+      });
+      return;
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address.',
+      });
+      return;
+    }
+
+    // Validate password length (minimum 6 characters)
+    if (!validatePassword(password)) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Password',
+        text2: 'Password must be at least 6 characters long.',
+      });
+      return;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Password Mismatch',
+        text2: 'Passwords do not match.',
+      });
       return;
     }
     
@@ -63,16 +158,30 @@ const RegisterScreen = () => {
       if (response.data && response.data.message) {
         console.log("OTP request successful");
         
+        Toast.show({
+          type: 'success',
+          text1: 'Registration Successful!',
+          text2: 'Please check your email for OTP verification.',
+        });
+        
         // Navigate to OTP verification with email
         navigation.navigate("otp", { email });
       } else {
-        Alert.alert("Registration Failed", "Unexpected response from server");
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: 'Unexpected response from server.',
+        });
       }
     } catch (error) {
       console.error("Registration error:", error);
-      const 
-      errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
-      Alert.alert("Error", errorMessage);
+      const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
+      
+      Toast.show({
+        type: 'error',
+        text1: 'Registration Failed',
+        text2: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -111,8 +220,13 @@ const RegisterScreen = () => {
                     placeholderTextColor="#AAAAAA"
                     autoCapitalize="words"
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={handleNameChange}
                   />
+                  {showNameError && (
+                    <Text style={styles.errorText}>
+                      Name must be at least 3 characters long
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.inputWrapper}>
@@ -124,8 +238,13 @@ const RegisterScreen = () => {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={handleEmailChange}
                   />
+                  {showEmailError && (
+                    <Text style={styles.errorText}>
+                      Please enter a valid email address
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.inputWrapper}>
@@ -136,8 +255,13 @@ const RegisterScreen = () => {
                     placeholderTextColor="#AAAAAA"
                     secureTextEntry
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={handlePasswordChange}
                   />
+                  {showPasswordError && (
+                    <Text style={styles.errorText}>
+                      Password must be at least 6 characters long
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.inputWrapper}>
@@ -148,8 +272,13 @@ const RegisterScreen = () => {
                     placeholderTextColor="#AAAAAA"
                     secureTextEntry
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={handleConfirmPasswordChange}
                   />
+                  {showConfirmPasswordError && (
+                    <Text style={styles.errorText}>
+                      Passwords do not match
+                    </Text>
+                  )}
                 </View>
 
                 <TouchableOpacity
@@ -295,6 +424,12 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  errorText: {
+    color: "#FF4444",
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: "500",
   },
 });
 

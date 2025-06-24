@@ -6,6 +6,8 @@ import { SocketProvider } from "./context/SocketContext.js";
 import { NotificationProvider } from "./context/NotificationContext";
 import AppNavigator from "./navigation/AppNavigator.js";
 import linking from "./navigation/linkingConfig.js";
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './components/ToastConfig.js'; 
 
 export default function App() {
   return (
@@ -17,6 +19,7 @@ export default function App() {
           </NavigationContainer>
         </SocketProvider>
       </NotificationProvider>
+      <Toast config={toastConfig} />
     </AuthProvider>
   );
 }
