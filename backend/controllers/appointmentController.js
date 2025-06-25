@@ -93,8 +93,8 @@ const getUserAppointments = async (req, res) => {
     // Get appointments with pagination
     const appointments = await Appointment.find(query)
       .populate("user", "name email")
-      .populate("store", "name location")
-      .populate("product", "name")
+      .populate("store", "storeName location")
+      .populate("product")
       .sort({ date: -1 }) // Most recent first
       .limit(parseInt(limit))
       .skip(skip);

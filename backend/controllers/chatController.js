@@ -273,40 +273,48 @@ const getConversationMessages = async (req, res) => {
 // Get all conversations for the current user
 const getUserConversations = async (req, res) => {
   try {
-    // Find all conversations where the current user is a member
     const conversations = await Conversation.find({
       members: { $in: [req.user.id] }
     })
-    .populate("members", "username") // Populate members with username field
-    .sort({ updatedAt: -1 }); // Sort by most recent
-    
-    // Format conversations to include otherUser for the frontend
+    .populate({
+      path: "members",
+      select: "username storeId",
+      populate: {
+        path: "storeId",
+        select: "storeName profileImage"
+      }
+    })
+    .sort({ updatedAt: -1 });
+
     const formattedConversations = conversations.map(conversation => {
-      // Find the other user in the conversation (not the current user)
       const otherUser = conversation.members.find(
         member => member._id.toString() !== req.user.id
       );
-      
-      // Get the last message if it exists
+
       const lastMessage = conversation.messages.length > 0 
         ? conversation.messages[conversation.messages.length - 1] 
         : null;
-      
-      // Count unread messages (you'll need to implement this logic)
-      const unreadCount = 0; // Replace with actual unread count logic
-      
+
+      const unreadCount = 0; // You can update this logic later
+
       return {
         conversationId: conversation._id,
-        otherUser: otherUser || { username: "Unknown User" },
+        otherUser: {
+          _id: otherUser?._id,
+          username: otherUser?.username || "Unknown User",
+          storeName: otherUser?.storeId?.storeName || null,
+          profileImage: otherUser?.storeId?.profileImage || null
+        },
         lastMessage: lastMessage ? {
-          content: lastMessage.text,
+          content: lastMessage.text || lastMessage.image || "Appointment",
           sender: lastMessage.sender
         } : null,
         unreadCount,
         updatedAt: conversation.updatedAt || conversation._id.getTimestamp()
       };
     });
-    
+console.log("listss are ",formattedConversations);
+
     res.json({ success: true, conversations: formattedConversations });
   } catch (error) {
     console.error("Error fetching conversations:", error);

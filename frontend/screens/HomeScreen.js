@@ -100,7 +100,7 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
       id={item._id}
         image={item.profileImage || "https://images.unsplash.com/photo-1600891964599-f61ba0e24092"}
         name={item.storeName}
-        rating={`${item.rating || '0'} (${item.reviewCount || '0'})`}
+        rating={`${item.averageRating || '0'} (${item.numberOfRatings || '0'})`}
         location={locationText}
         distance={distanceText}
         category={item.category || 'Uncategorized'}

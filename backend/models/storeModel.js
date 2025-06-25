@@ -11,7 +11,15 @@ const storeSchema = new mongoose.Schema({
     type: { type: String,enum: ['Point'], default: "Point" },
     coordinates: [Number] 
   },
-
+  averageRating: {
+    type: Number,
+    default: 0
+  },
+  numberOfRatings: {
+    type: Number,
+    default: 0
+  }
+,  
 upi:{ type: String },
   phone: { type: String },
   socialMedia: { 

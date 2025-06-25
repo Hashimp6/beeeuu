@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
-  Image
+  Image,
+  TextInput,
+  Modal
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
@@ -25,6 +27,12 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Rating and feedback states
+  const [expandedCards, setExpandedCards] = useState({});
+  const [ratings, setRatings] = useState({});
+  const [feedbacks, setFeedbacks] = useState({});
+  const [submittingFeedback, setSubmittingFeedback] = useState({});
 
   const { token } = useAuth() || {};
 
@@ -222,6 +230,213 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
     }
   };
 
+  // Rating and feedback functions
+  const toggleRatingSection = (itemId) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
+
+  const setRating = (itemId, rating) => {
+    setRatings(prev => ({
+      ...prev,
+      [itemId]: rating
+    }));
+  };
+
+  const setFeedback = (itemId, feedback) => {
+    setFeedbacks(prev => ({
+      ...prev,
+      [itemId]: feedback
+    }));
+  };
+  const submitRatingFeedback = async (item) => {
+    const itemId = item._id;
+    const rating = ratings[itemId];
+    const feedback = feedbacks[itemId];
+  
+    if (!rating) {
+      Alert.alert('Rating Required', 'Please provide a rating before submitting.');
+      return;
+    }
+  
+    try {
+      setSubmittingFeedback(prev => ({ ...prev, [itemId]: true }));
+  
+      // Use the correct endpoint: /rating/add
+      const endpoint = `${SERVER_URL}/rating/add`;
+  
+      const requestBody = {
+        userId: user._id,
+        store: item.store?._id || item.storeId||item.sellerId._id, // Make sure to get the store ID
+        type: status, // 'appointment' or 'order'
+        rating: rating,
+        feedback: feedback || ''
+      };
+  
+      // Add the specific ID based on type
+      if (status === 'appointment') {
+        requestBody.appointment = itemId;
+      } else {
+        requestBody.order = itemId;
+      }
+  console.log("reqbody",requestBody);
+  
+      const response = await axios.post(
+        endpoint,
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+  
+      if (response.status === 201) { // Note: Your controller returns 201, not 200
+        Alert.alert('Success', 'Thank you for your feedback!');
+        
+        // Update the item to show it has been rated
+        if (status === 'appointment') {
+          setAppointments(prev => prev.map(apt => 
+            apt._id === itemId 
+              ? { ...apt, rating: rating, feedback: feedback, hasRated: true }
+              : apt
+          ));
+        } else {
+          setOrders(prev => prev.map(order => 
+            order._id === itemId 
+              ? { ...order, rating: rating, feedback: feedback, hasRated: true }
+              : order
+          ));
+        }
+  
+        // Collapse the rating section
+        setExpandedCards(prev => ({ ...prev, [itemId]: false }));
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      let errorMessage = 'Failed to submit rating. Please try again.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setSubmittingFeedback(prev => ({ ...prev, [itemId]: false }));
+    }
+  };
+  const renderStars = (itemId, currentRating) => {
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <TouchableOpacity
+            key={star}
+            onPress={() => setRating(itemId, star)}
+            style={styles.starButton}
+          >
+            <Icon
+              name={star <= currentRating ? 'star' : 'star-border'}
+              size={32}
+              color={star <= currentRating ? '#FFD700' : '#DDD'}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  const renderRatingFeedbackSection = (item) => {
+    const itemId = item._id;
+    const isExpanded = expandedCards[itemId];
+    const currentRating = ratings[itemId] || item.rating || 0;
+    const currentFeedback = feedbacks[itemId] || item.feedback || '';
+    const isSubmitting = submittingFeedback[itemId];
+    const hasAlreadyRated = item.hasRated || item.rating;
+
+    if (item.status !== 'completed' && item.status !== 'delivered') {
+      return null;
+    }
+    return (
+      <View style={styles.ratingSection}>
+        {hasAlreadyRated ? (
+          <View style={styles.alreadyRatedContainer}>
+            <View style={styles.ratedStarsContainer}>
+              <Text style={styles.ratedLabel}>Your Rating:</Text>
+              <View style={styles.displayStars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Icon
+                    key={star}
+                    name="star"
+                    size={20}
+                    color={star <= (item.rating || currentRating) ? '#FFD700' : '#DDD'}
+                  />
+                ))}
+              </View>
+            </View>
+            {(item.feedback || currentFeedback) && (
+              <Text style={styles.ratedFeedback}>"{item.feedback || currentFeedback}"</Text>
+            )}
+          </View>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={styles.ratingToggle}
+              onPress={() => toggleRatingSection(itemId)}
+            >
+              <Icon name="star" size={20} color="#FFD700" />
+              <Text style={styles.ratingToggleText}>
+                {isExpanded ? 'Hide Rating' : 'Rate & Review'}
+              </Text>
+              <Icon 
+                name={isExpanded ? 'expand-less' : 'expand-more'} 
+                size={20} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+
+            {isExpanded && (
+              <View style={styles.ratingForm}>
+                <Text style={styles.ratingLabel}>How was your experience?</Text>
+                {renderStars(itemId, currentRating)}
+                
+                <TextInput
+                  style={styles.feedbackInput}
+                  placeholder="Share your feedback (optional)"
+                  value={currentFeedback}
+                  onChangeText={(text) => setFeedback(itemId, text)}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={500}
+                />
+                
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (!currentRating || isSubmitting) && styles.submitButtonDisabled
+                  ]}
+                  onPress={() => submitRatingFeedback(item)}
+                  disabled={!currentRating || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Icon name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.submitButtonText}>Submit Review</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+    );
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     if (activeTab === 'appointments') {
@@ -238,13 +453,15 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
 
   const renderAppointmentCard = ({ item }) => {
     const dateTime = formatDate(item.date);
-    const formattedPrice = formatPrice(item.price);
+    const formattedPrice = formatPrice(item.product?.price || item.price); // Use product price first, then fallback to item price
     const phoneNumber = item.contactNo || item.user?.contactNo || item.phone;
     const shopName = item.store?.name || item.store?.storeName || item.store?.businessName || 'Shop';
-
+    const productImage = item.product?.image; // Get product image
+    const productName = item.productName || item.product?.name || 'Service'; // Get product name
+  
     return (
       <View style={styles.card}>
-        {/* Header with Date/Time and Call Button */}
+        {/* Header with Date/Time and Price */}
         <View style={styles.cardHeader}>
           <View style={styles.dateTimeContainer}>
             <Text style={[
@@ -265,7 +482,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             )}
           </View>
         </View>
-
+  
         {/* Status Badge - More Prominent */}
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
           <Icon 
@@ -277,22 +494,34 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             {item.status.replace('_', ' ').toUpperCase()}
           </Text>
         </View>
-
+  
+        {/* Product Info with Image - NEW SECTION */}
+        <View style={styles.productSection}>
+          {productImage && (
+            <Image 
+              source={{ uri: productImage }} 
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          )}
+          <View style={styles.productDetails}>
+            <Text style={styles.productName} numberOfLines={2}>
+              {productName}
+            </Text>
+            {formattedPrice && (
+              <Text style={styles.appointmentPriceText}>{formattedPrice}</Text>
+            )}
+          </View>
+        </View>
+  
         {/* Service Info */}
         <View style={styles.infoSection}>
-          <View style={styles.serviceRow}>
-            <Icon name="shopping-bag" size={16} color="#666" />
-            <Text style={styles.serviceText}>
-              {item.productName || item.product?.name || item.serviceName || 'Service'}
-            </Text>
-          </View>
-
           {/* Shop Name */}
           <View style={styles.shopRow}>
             <Icon name="store" size={16} color="#666" />
             <Text style={styles.shopText}>{shopName}</Text>
           </View>
-
+  
           {(item.locationName || item.store?.location || item.location) && (
             <View style={styles.locationRow}>
               <Icon name="place" size={16} color="#666" />
@@ -301,7 +530,23 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
               </Text>
             </View>
           )}
-
+  
+          {/* {item.address && (
+            <View style={styles.locationRow}>
+              <Icon name="home" size={16} color="#666" />
+              <Text style={styles.locationText}>
+                {item.address}
+              </Text>
+            </View>
+          )}
+  
+          {item.contactNo && (
+            <View style={styles.serviceRow}>
+              <Icon name="phone" size={16} color="#666" />
+              <Text style={styles.serviceText}>{item.contactNo}</Text>
+            </View>
+          )}
+   */}
           {item.notes && (
             <View style={styles.notesRow}>
               <Icon name="note" size={16} color="#666" />
@@ -311,16 +556,22 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             </View>
           )}
         </View>
+  
+        {/* Rating and Feedback Section */}
+        {renderRatingFeedbackSection(item)}
       </View>
     );
   };
 
   const renderOrderCard = ({ item }) => {
+    console.log("imss",item);
+    
     const dateTime = formatDate(item.createdAt || item.orderDate);
     const formattedPrice = formatPrice(item.totalAmount || item.amount);
     const productImage = item.productId?.image || item.product?.image;
     const productName = item.productName || item.productId?.name || item.product?.name;
     const storeName = item.sellerName || item.seller?.name || item.store?.name || 'Store';
+    const location = item.location|| 'location';
     const quantity = item.quantity || 1;
     const unitPrice = formatPrice(item.unitPrice || item.productId?.price);
 
@@ -389,32 +640,31 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             <Icon name="store" size={16} color="#666" />
             <Text style={styles.shopText}>{storeName}</Text>
           </View>
-
           {/* Customer Info */}
-          {item.customerName && (
+          {/* {item.customerName && (
             <View style={styles.serviceRow}>
               <Icon name="person" size={16} color="#666" />
               <Text style={styles.serviceText}>Customer: {item.customerName}</Text>
             </View>
-          )}
+          )} */}
 
           {/* Phone Number */}
-          {item.phoneNumber && (
+          {/* {item.phoneNumber && (
             <View style={styles.serviceRow}>
               <Icon name="phone" size={16} color="#666" />
               <Text style={styles.serviceText}>{item.phoneNumber}</Text>
             </View>
-          )}
+          )} */}
 
           {/* Delivery Address */}
-          {(item.deliveryAddress || item.shippingAddress) && (
+          {/* {(item.deliveryAddress || item.shippingAddress) && (
             <View style={styles.locationRow}>
               <Icon name="location-on" size={16} color="#666" />
               <Text style={styles.locationText} numberOfLines={2}>
                 {item.deliveryAddress || item.shippingAddress}
               </Text>
             </View>
-          )}
+          )} */}
 
           {/* Payment Method */}
           {item.paymentMethod && (
@@ -436,6 +686,9 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             </View>
           )}
         </View>
+
+        {/* Rating and Feedback Section */}
+        {renderRatingFeedbackSection(item)}
       </View>
     );
   };
@@ -470,10 +723,10 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#155366" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
+        {/* <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>{user.name || 'User'}</Text>
           <Text style={styles.headerSubtitle}>{user.phone || user.contactNo}</Text>
-        </View>
+        </View> */}
         <TouchableOpacity onPress={onRefresh}>
           <Icon name="refresh" size={24} color="#155366" />
         </TouchableOpacity>
@@ -581,6 +834,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E8EAED',
+  },
+  appointmentPriceText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '600',
+    marginTop: 4,
   },
   tab: {
     flex: 1,
@@ -798,6 +1057,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: 4,
   },
+  notesText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+  },
   productSection: {
     flexDirection: 'row',
     marginBottom: 12,
@@ -848,6 +1113,113 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '500',
   },
+  // Rating and Feedback Styles
+  ratingSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E8EAED',
+  },
+  ratingToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E8EAED',
+  },
+  ratingToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#155366',
+    marginLeft: 8,
+    flex: 1,
+  },
+  ratingForm: {
+    paddingTop: 16,
+  },
+  ratingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  starButton: {
+    paddingHorizontal: 4,
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: '#E8EAED',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#FFFFFF',
+    textAlignVertical: 'top',
+    marginBottom: 16,
+    minHeight: 80,
+  },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#155366',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#CCC',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  alreadyRatedContainer: {
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E3F2FD',
+  },
+  ratedStarsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  ratedLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#155366',
+    marginRight: 8,
+  },
+  displayStars: {
+    flexDirection: 'row',
+  },
+  ratedFeedback: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
-
-export default UserAppointmentsOrders;
+export default UserAppointmentsOrders

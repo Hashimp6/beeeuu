@@ -12,6 +12,7 @@ const upiRoute = require('./routes/upiRoute');
 const searchRoute = require('./routes/searchRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const ratingRoutes = require('./routes/ratingRoutes');
 
 dotenv.config();
 
@@ -35,4 +36,5 @@ app.use('/upi', upiRoute);
 app.use('/search', searchRoute);
 app.use('/notifications', notificationRoutes);
 app.use('/orders', orderRoutes);
+app.use('/rating', ratingRoutes);
 module.exports = app;

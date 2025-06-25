@@ -9,13 +9,13 @@ import {
   ActivityIndicator,
   StatusBar,
   RefreshControl,
+  Image,
 } from "react-native";
 import axios from "axios";
 import { SERVER_URL } from "../config";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
-
 const ChatListScreen = ({ navigation }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,85 +118,74 @@ const ChatListScreen = ({ navigation }) => {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  const renderItem = ({ item }) => {
-    console.log("Rendering conversation item:", JSON.stringify(item, null, 2));
-    
-    const otherUser = getOtherUser(item);
-    const lastMessage = item.lastMessage || (item.messages && item.messages[item.messages.length - 1]);
-    const updatedAt = item.updatedAt || item.createdAt;
+// Replace the complex display name logic in your renderItem function with this simplified version:
 
-    if (!otherUser) {
-      console.log("No other user found for conversation:", item);
-      return null;
-    }
+const renderItem = ({ item }) => {
+  console.log("Rendering conversation item:", JSON.stringify(item, null, 2));
+  
+  const otherUser = getOtherUser(item);
+  const lastMessage = item.lastMessage || (item.messages && item.messages[item.messages.length - 1]);
+  const updatedAt = item.updatedAt || item.createdAt;
 
-    // Determine display name and initials based on user role and store info
-    let displayName = "Unknown User";
-    let initials = "??";
-    let isStore = false;
+  if (!otherUser) {
+    console.log("No other user found for conversation:", item);
+    return null;
+  }
 
-    // Check if user is a seller with store information
-    if (otherUser.role === "seller" || otherUser.userType === "seller") {
-      // Check for store information in different possible structures
-      const storeInfo = otherUser.storeId || otherUser.store || otherUser.storeDetails;
-      
-      if (storeInfo && storeInfo.storeName) {
-        displayName = storeInfo.storeName;
-        initials = storeInfo.storeName.substring(0, 2).toUpperCase();
-        isStore = true;
-      } else if (otherUser.storeName) {
-        displayName = otherUser.storeName;
-        initials = otherUser.storeName.substring(0, 2).toUpperCase();
-        isStore = true;
-      } else if (otherUser.username) {
-        displayName = otherUser.username;
-        initials = otherUser.username.substring(0, 2).toUpperCase();
-      }
-    } else if (otherUser.username) {
-      displayName = otherUser.username;
-      initials = otherUser.username.substring(0, 2).toUpperCase();
-    }
+  // SIMPLIFIED LOGIC - based on your actual data structure
+  const displayName = otherUser.storeName || otherUser.username || "Unknown User";
+  const initials = displayName.substring(0, 2).toUpperCase();
+  const hasProfileImage = !!otherUser.profileImage;
+  const isStore = !!otherUser.storeName; // true if storeName exists, false otherwise
 
-    return (
-      <TouchableOpacity
-        style={styles.conversationItem}
-        onPress={() => handleChatPress(item)}
-      >
-        <View style={[
-          styles.avatar,
-          isStore && styles.storeAvatar
-        ]}>
+  return (
+    <TouchableOpacity
+      style={styles.conversationItem}
+      onPress={() => handleChatPress(item)}
+    >
+      <View style={[
+        styles.avatar,
+        isStore && styles.storeAvatar
+      ]}>
+        {hasProfileImage ? (
+          <Image 
+            source={{ uri: otherUser.profileImage }}
+            style={styles.profileImage}
+            onError={() => console.log('Error loading image:', otherUser.profileImage)}
+          />
+        ) : (
           <Text style={[
             styles.avatarText,
             isStore && styles.storeAvatarText
           ]}>
             {initials}
           </Text>
-        </View>
-        <View style={styles.conversationInfo}>
-          <View style={styles.conversationHeader}>
-            <Text style={styles.username} numberOfLines={1}>
-              {displayName}
-            </Text>
-            {isStore && (
-              <View style={styles.storeBadge}>
-                <Ionicons name="storefront" size={12} color="#4CAF50" />
-              </View>
-            )}
-            <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
-          </View>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {lastMessage && lastMessage.content ? 
-              lastMessage.content : 
-              lastMessage && lastMessage.text ?
-                lastMessage.text :
-                "Start a conversation"
-            }
+        )}
+      </View>
+      <View style={styles.conversationInfo}>
+        <View style={styles.conversationHeader}>
+          <Text style={styles.username} numberOfLines={1}>
+            {displayName}
           </Text>
+          {isStore && (
+            <View style={styles.storeBadge}>
+              <Ionicons name="storefront" size={12} color="#4CAF50" />
+            </View>
+          )}
+          <Text style={styles.timeStamp}>{formatTime(updatedAt)}</Text>
         </View>
-      </TouchableOpacity>
-    );
-  };
+        <Text style={styles.lastMessage} numberOfLines={1}>
+          {lastMessage && lastMessage.content ? 
+            lastMessage.content : 
+            lastMessage && lastMessage.text ?
+              lastMessage.text :
+              "Start a conversation"
+          }
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -256,6 +245,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  profileImage: {
+    width: 55,
+    height: 55,
+    borderRadius: 27.5,
   },
   headerTitle: {
     fontSize: 28,
