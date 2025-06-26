@@ -2,11 +2,7 @@
 // Deep linking configuration for password reset and other screens
 import { Linking } from 'react-native';
 const linking = {
-    prefixes: [
-      'beeu://', // Your app scheme
-      'https://beeu.com', // Replace with your actual domain
-      'https://www.beeu.com', // Alternative domain if needed
-    ],
+   
     config: {
       screens: {
         // Auth screens

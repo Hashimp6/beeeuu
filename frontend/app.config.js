@@ -3,10 +3,10 @@ import { join, dirname } from 'path';
 
 const isEASBuild = process.env.EAS_BUILD === 'true';
 
-if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON) && !existsSync(join('android', 'app', 'google-services.json'))) {
+if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON_BASE64) && !existsSync(join('android', 'app', 'google-services.json'))) {
   try {
     const googleServicesJson = Buffer.from(
-      process.env.GOOGLE_SERVICES_JSON,
+      process.env.GOOGLE_SERVICES_JSON_BASE64,
       'base64'
     ).toString('utf8');
 
@@ -36,6 +36,7 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     scheme: "beeu", // ✅ Add this for deep linking
+    icon: "./assets/log.png", 
     ios: {
       bundleIdentifier: "com.hashim.beeuu",
       supportsTablet: true,

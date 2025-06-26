@@ -685,6 +685,31 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const distance = R * c; // Distance in km
   return distance;
 }
+const checkStoreNameAvailability = async (req, res) => {
+  try {
+    console.log("reached");
+    
+    const { name } = req.query;
+
+    if (!name) {
+      return res.status(400).json({ message: "Store name is required" });
+    }
+
+    const existingStore = await Store.findOne({
+      storeName: { $regex: `^${name}$`, $options: "i" }, // case-insensitive exact match
+    });
+
+    if (existingStore) {
+      return res.json({ available: false, message: "Store name already exists" });
+    }
+
+    return res.json({ available: true, message: "Store name is available" });
+  } catch (err) {
+    console.error("Error checking store name:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
   module.exports = {
@@ -695,4 +720,5 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     deleteStore,
     findNearestSellers,
     getStoreByUserId ,
+    checkStoreNameAvailability 
   };

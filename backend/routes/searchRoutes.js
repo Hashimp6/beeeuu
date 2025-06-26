@@ -5,7 +5,8 @@ const {
   searchSuggestions,
   getPopularSearches,
   searchStores,
-  getStoresByCategory
+  getStoresByCategory,
+  checkStoreNameAvailability
 } = require('../controllers/searchController');
 
 // GET /api/stores/search?search=hair&category=Hair&latitude=10&longitude=76&radius=5
@@ -25,5 +26,6 @@ router.get('/suggestions', searchSuggestions);
 // Get popular search terms
 // GET /api/search/popular
 router.get('/popular', getPopularSearches);
+router.get('/checkName', checkStoreNameAvailability);
 
 module.exports = router;

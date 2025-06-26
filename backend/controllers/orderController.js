@@ -1,15 +1,19 @@
 const Order = require("../models/orderModel");
 const Store = require("../models/storeModel");
 const mongoose = require("mongoose");
+const { notifyPaymentReceived } = require("../utils/appointmentNotification");
+const { notifyNewOrder } = require("../utils/orderNotification");
 
 // You can add notification functions here if needed
 // const { notifyOrderCreated, notifyOrderStatusChanged } = require("../utils/orderNotifications");
 
 // Create new order
+
 const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
     console.log('Creating order:', orderData);
+    
     // Validate required fields
     const requiredFields = ['productId', 'productName', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber', 'quantity', 'unitPrice', 'totalAmount'];
     for (let field of requiredFields) {
@@ -46,12 +50,24 @@ const createOrder = async (req, res) => {
       .populate('sellerId', 'name address')
       .populate('productId', 'name price image');
 
-    // Send notification if needed
-    // try {
-    //   await notifyOrderCreated(populatedOrder);
-    // } catch (notificationError) {
-    //   console.error('Notification failed:', notificationError);
-    // }
+    // 🔔 SEND NOTIFICATION TO SELLER ABOUT NEW ORDER
+    try {
+      await notifyNewOrder(populatedOrder);
+      console.log('✅ New order notification sent to seller');
+    } catch (notificationError) {
+      console.error('❌ Failed to send new order notification:', notificationError);
+      // Don't fail the order creation if notification fails
+    }
+
+    // 💰 SEND PAYMENT NOTIFICATION IF PAYMENT IS COMPLETED
+    if (orderData.paymentStatus === 'completed' || orderData.paymentStatus === 'paid') {
+      try {
+        await notifyPaymentReceived(populatedOrder);
+        console.log('✅ Payment notification sent to seller');
+      } catch (notificationError) {
+        console.error('❌ Failed to send payment notification:', notificationError);
+      }
+    }
 
     res.status(201).json({
       message: "Order created successfully",
@@ -60,13 +76,12 @@ const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({ 
-      message: "Error creating order", 
-      error: error.message 
+    res.status(500).json({
+      message: "Error creating order",
+      error: error.message
     });
   }
 };
-
 // Get all orders for a user (buyer or seller) with filtering
 const getUserOrders = async (req, res) => {
   try {
