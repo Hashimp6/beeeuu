@@ -498,8 +498,16 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
             </View>
             <Icon name="chevron-right" size={20} color="#888" />
           </TouchableOpacity>
+          
         </View>
+       
       </View>
+      <TouchableOpacity
+  style={styles.tempButton}
+  onPress={() => navigation.navigate("StoreAdmin")} // 🔁 Change this to your target screen name
+>
+  <Text style={styles.tempButtonText}>new Store Admin Page</Text>
+</TouchableOpacity>
     </View>
   );
 };
@@ -614,6 +622,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 6,
   },
+  tempButton: {
+  backgroundColor: "#4CAF50",
+  paddingVertical: 12,
+  marginHorizontal: 16,
+  marginBottom: 30,
+  borderRadius: 8,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+tempButtonText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "600",
+},
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,

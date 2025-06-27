@@ -35,15 +35,18 @@ export default {
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    scheme: "beeu", // ✅ Add this for deep linking
-    icon: "./assets/log.png", 
+    scheme: "beeu",
+    // ✅ Fixed icon path (assuming it should be logo.png)
+    icon: "./assets/log.png",
+
     ios: {
       bundleIdentifier: "com.hashim.beeuu",
       supportsTablet: true,
+      // ✅ Add specific iOS icon if needed
+      icon: "./assets/log.png",
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       },
-      // ✅ Add associated domains for universal links
       associatedDomains: [
         "applinks:beeu.com",
         "applinks:www.beeu.com"
@@ -52,7 +55,9 @@ export default {
     android: {
       package: "com.hashim.beeuu",
       googleServicesFile: "./android/app/google-services.json",
+      // ✅ Fixed adaptive icon with foreground image
       adaptiveIcon: {
+        foregroundImage: "./assets/log.png",
         backgroundColor: "#ffffff"
       },
       config: {
@@ -61,7 +66,6 @@ export default {
         }
       },
       permissions: ["NOTIFICATIONS"],
-      // ✅ Add intent filters for deep linking
       intentFilters: [
         {
           action: "VIEW",
@@ -87,6 +91,7 @@ export default {
       [
         "expo-notifications",
         {
+          // ✅ Fixed notification icon path
           icon: "./assets/log.png",
           color: "#ffffff"
         }

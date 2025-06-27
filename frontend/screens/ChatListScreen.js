@@ -201,6 +201,7 @@ const renderItem = ({ item }) => {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
+   
         <Text style={styles.headerTitle}>Chats</Text>
       </View>
 
@@ -245,6 +246,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+    borderRadius: 20,
   },
   profileImage: {
     width: 55,

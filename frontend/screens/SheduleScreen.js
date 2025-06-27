@@ -6,7 +6,8 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { TextInput } from 'react-native';
@@ -22,10 +23,12 @@ const AppointmentScheduler = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-    const { user, token } = useAuth() || {};
+  const { user, token } = useAuth() || {};
+  const [expandedCategory, setExpandedCategory] = useState(null);
   const [locationName, setLocationName] = useState('');
-const [address, setAddress] = useState('');
-const [contactNo, setContactNo] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactNo, setContactNo] = useState('');
+  
   // Time slots - you can customize these
   const timeSlots = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
   
@@ -37,12 +40,31 @@ const [contactNo, setContactNo] = useState('');
 
   // Initialize when component mounts
   useEffect(() => {
-    console.log("strdxxxxd",otherUser);
+    console.log("strdxxxxd", otherUser);
+    console.log("User data:", user); // For debugging
     
     setSelectedDate(new Date());
     setSelectedTime(null);
     setCurrentMonth(new Date());
-  }, []);
+    
+    // Pre-fill form with user data if available
+    if (user) {
+      // Check for user name and set as location name if available
+      if (user.name || user.username || user.fullName) {
+        setLocationName(user.name || user.username || user.fullName || '');
+      }
+      
+      // Check for user address
+      if (user.address) {
+        setAddress(user.address);
+      }
+      
+      // Check for user phone/contact number
+      if (user.phone || user.phoneNumber || user.contactNo || user.mobile) {
+        setContactNo(user.phone || user.phoneNumber || user.contactNo || user.mobile || '');
+      }
+    }
+  }, [user]);
 
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -130,7 +152,7 @@ const [contactNo, setContactNo] = useState('');
         address: address,
         productName: otherUser.productName,
         contactNo: contactNo,
-        store:otherUser.storeId,
+        store: otherUser.storeId,
         product: otherUser.product, // Assuming this is the product ID
         status: 'pending' // Use lowercase to match your schema enum
       };
@@ -146,14 +168,16 @@ const [contactNo, setContactNo] = useState('');
             Authorization: `Bearer ${token}`,
           },
         });
-  if (response.data)
-  {  console.log("✅ Appointment message sent", response.data);}
-      else{console.log(" Appointment error")}
+        
+        if (response.data) {  
+          console.log("✅ Appointment message sent", response.data);
+        } else {
+          console.log(" Appointment error");
+        }
   
         // Navigate back to ChatDetail with the appointment message
         navigation.navigate("ChatDetail", {
           otherUser: otherUser,
-
         });
   
       } catch (error) {
@@ -166,10 +190,26 @@ const [contactNo, setContactNo] = useState('');
       Alert.alert("Error", "Please select both date and time for the appointment.");
     }
   };
+  
   const calendarDays = generateCalendarDays();
-
+  const timeSlotCategories = [
+    {
+      title: 'Morning (7:00 AM - 12:00 PM)',
+      icon: 'sunny-outline',
+      slots: ['7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM']
+    },
+    {
+      title: 'Afternoon (12:30 PM - 5:00 PM)', 
+      icon: 'partly-sunny-outline',
+      slots: ['12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM']
+    },
+    {
+      title: 'Evening (5:30 PM - 10:00 PM)',
+      icon: 'moon-outline',
+      slots: ['5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM']
+    }
+  ];
   return (
-    
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -179,176 +219,199 @@ const [contactNo, setContactNo] = useState('');
         <Text style={styles.headerTitle}>Schedule Appointment</Text>
         <View style={styles.placeholder} />
       </View>
+      
       <KeyboardAvoidingView
-  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  style={{ flex: 1 }}
->
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* Month Navigation */}
-            <View style={styles.monthNavContainer}>
-              <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-                <Ionicons name="chevron-back" size={22} color="#155366" />
-              </TouchableOpacity>
-              <Text style={styles.monthText}>
-                {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-              </Text>
-              <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-                <Ionicons name="chevron-forward" size={22} color="#155366" />
-              </TouchableOpacity>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Month Navigation */}
+          <View style={styles.monthNavContainer}>
+            <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+              <Ionicons name="chevron-back" size={22} color="#155366" />
+            </TouchableOpacity>
+            <Text style={styles.monthText}>
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </Text>
+            <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+              <Ionicons name="chevron-forward" size={22} color="#155366" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Calendar */}
+          <View style={styles.calendarContainer}>
+            {/* Day names */}
+            <View style={styles.weekRow}>
+              {dayNames.map((day, idx) => (
+                <View key={idx} style={styles.dayNameContainer}>
+                  <Text style={styles.dayName}>{day}</Text>
+                </View>
+              ))}
             </View>
 
-            {/* Calendar */}
-            <View style={styles.calendarContainer}>
-              {/* Day names */}
-              <View style={styles.weekRow}>
-                {dayNames.map((day, idx) => (
-                  <View key={idx} style={styles.dayNameContainer}>
-                    <Text style={styles.dayName}>{day}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Calendar grid */}
-              <View style={styles.daysGrid}>
-                {calendarDays.map((day, idx) => {
-                  const isSelected = selectedDate?.toDateString() === day.date.toDateString();
-                  
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      onPress={() => handleDateSelect(day)}
-                      disabled={!day.isCurrentMonth || day.isPast}
-                      style={[
-                        styles.dayCell,
-                        !day.isCurrentMonth && styles.dayOtherMonth,
-                        day.isPast && styles.dayPast,
-                        isSelected && styles.daySelected,
-                        day.isToday && styles.dayToday,
-                      ]}
-                    >
-                      <Text style={[
-                        styles.dayText,
-                        !day.isCurrentMonth && styles.dayTextOtherMonth,
-                        day.isPast && styles.dayTextPast,
-                        isSelected && styles.dayTextSelected,
-                        day.isToday && styles.dayTextToday,
-                      ]}>
-                        {day.date.getDate()}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Time selection */}
-            <View style={styles.timeSelectionContainer}>
-              <Text style={styles.sectionTitle}>Choose a Time</Text>
-              <View style={styles.timeSlotGrid}>
-                {timeSlots.map((time, idx) => (
+            {/* Calendar grid */}
+            <View style={styles.daysGrid}>
+              {calendarDays.map((day, idx) => {
+                const isSelected = selectedDate?.toDateString() === day.date.toDateString();
+                
+                return (
                   <TouchableOpacity
                     key={idx}
+                    onPress={() => handleDateSelect(day)}
+                    disabled={!day.isCurrentMonth || day.isPast}
                     style={[
-                      styles.timeSlot,
-                      selectedTime === time && styles.timeSlotSelected
+                      styles.dayCell,
+                      !day.isCurrentMonth && styles.dayOtherMonth,
+                      day.isPast && styles.dayPast,
+                      isSelected && styles.daySelected,
+                      day.isToday && styles.dayToday,
                     ]}
-                    onPress={() => setSelectedTime(time)}
-                    disabled={!selectedDate}
                   >
-                    <Ionicons 
-                      name="time-outline" 
-                      size={18} 
-                      color={selectedTime === time ? "#FFFFFF" : "#155366"} 
-                    />
                     <Text style={[
-                      styles.timeSlotText,
-                      selectedTime === time && styles.timeSlotTextSelected
+                      styles.dayText,
+                      !day.isCurrentMonth && styles.dayTextOtherMonth,
+                      day.isPast && styles.dayTextPast,
+                      isSelected && styles.dayTextSelected,
+                      day.isToday && styles.dayTextToday,
                     ]}>
-                      {time}
+                      {day.date.getDate()}
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </View>
+                );
+              })}
             </View>
-            <View style={styles.locationDetailsContainer}>
-  <Text style={styles.sectionTitle}>Location Details</Text>
-  
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Location Name</Text>
-    <TextInput
-      style={styles.textInput}
-      placeholder="Enter location name"
-      value={locationName}
-      onChangeText={setLocationName}
-      placeholderTextColor="#999999"
-    />
-  </View>
+          </View>
 
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Address</Text>
-    <TextInput
-      style={[styles.textInput, styles.addressInput]}
-      placeholder="Enter full address"
-      value={address}
-      onChangeText={setAddress}
-      multiline={true}
-      numberOfLines={3}
-      placeholderTextColor="#999999"
-    />
-  </View>
-
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Contact Number</Text>
-    <TextInput
-      style={styles.textInput}
-      placeholder="Enter contact number"
-      value={contactNo}
-      onChangeText={setContactNo}
-      keyboardType="phone-pad"
-      placeholderTextColor="#999999"
-    />
-  </View>
-</View>
-
-            {/* Selected appointment summary */}
-            {selectedDate && selectedTime && (
-              <View style={styles.appointmentSummary}>
-                <Text style={styles.summaryTitle}>Your Appointment Request</Text>
-                <View style={styles.summaryDetails}>
-                  <View style={styles.summaryRow}>
-                    <Ionicons name="calendar-outline" size={20} color="#155366" />
-                    <Text style={styles.summaryText}>{formatAppointmentDate(selectedDate)}</Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Ionicons name="time-outline" size={20} color="#155366" />
-                    <Text style={styles.summaryText}>{selectedTime}</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-          </ScrollView>
-          </KeyboardAvoidingView>
-
-          {/* Bottom buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.cancelButton} 
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-  style={[
-    styles.sendButton,
-    (!selectedDate || !selectedTime || !locationName || !address || !contactNo) && styles.sendButtonDisabled
-  ]}
-  onPress={handleSendAppointment}
-  disabled={!selectedDate || !selectedTime || !locationName || !address || !contactNo}
->
-  <Text style={styles.sendButtonText}>Book Appointment</Text>
-</TouchableOpacity>
+          {/* Time selection */}
+          <View style={styles.timeSelectionContainer}>
+  <Text style={styles.sectionTitle}>Choose a Time</Text>
+  {timeSlotCategories.map((category, categoryIdx) => (
+    <View key={categoryIdx} style={styles.categoryCard}>
+      <TouchableOpacity
+        style={styles.categoryHeader}
+        onPress={() => setExpandedCategory(expandedCategory === categoryIdx ? null : categoryIdx)}
+      >
+        <View style={styles.categoryTitleContainer}>
+          <Ionicons name={category.icon} size={20} color="#155366" />
+          <Text style={styles.categoryTitle}>{category.title}</Text>
+        </View>
+        <Ionicons 
+          name={expandedCategory === categoryIdx ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color="#155366" 
+        />
+      </TouchableOpacity>
+      
+      {expandedCategory === categoryIdx && (
+        <View style={styles.expandedContent}>
+          <View style={styles.timeSlotGrid}>
+            {category.slots.map((time, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={[
+                  styles.timeSlotCompact,
+                  selectedTime === time && styles.timeSlotSelected
+                ]}
+                onPress={() => {
+                  setSelectedTime(time);
+                  setExpandedCategory(null); // Auto-collapse after selection
+                }}
+                disabled={!selectedDate}
+              >
+                <Text style={[
+                  styles.timeSlotTextCompact,
+                  selectedTime === time && styles.timeSlotTextSelected
+                ]}>
+                  {time}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
+      )}
+    </View>
+  ))}
+</View>
+          
+          <View style={styles.locationDetailsContainer}>
+            <Text style={styles.sectionTitle}>Location Details</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Location Name</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter location name"
+                value={locationName}
+                onChangeText={setLocationName}
+                placeholderTextColor="#999999"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Address</Text>
+              <TextInput
+                style={[styles.textInput, styles.addressInput]}
+                placeholder="Enter full address"
+                value={address}
+                onChangeText={setAddress}
+                multiline={true}
+                numberOfLines={3}
+                placeholderTextColor="#999999"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Contact Number</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Enter contact number"
+                value={contactNo}
+                onChangeText={setContactNo}
+                keyboardType="phone-pad"
+                placeholderTextColor="#999999"
+              />
+            </View>
+          </View>
+
+          {/* Selected appointment summary */}
+          {selectedDate && selectedTime && (
+            <View style={styles.appointmentSummary}>
+              <Text style={styles.summaryTitle}>Your Appointment Request</Text>
+              <View style={styles.summaryDetails}>
+                <View style={styles.summaryRow}>
+                  <Ionicons name="calendar-outline" size={20} color="#155366" />
+                  <Text style={styles.summaryText}>{formatAppointmentDate(selectedDate)}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Ionicons name="time-outline" size={20} color="#155366" />
+                  <Text style={styles.summaryText}>{selectedTime}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Bottom buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.cancelButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            (!selectedDate || !selectedTime || !locationName || !address || !contactNo) && styles.sendButtonDisabled
+          ]}
+          onPress={handleSendAppointment}
+          disabled={!selectedDate || !selectedTime || !locationName || !address || !contactNo}
+        >
+          <Text style={styles.sendButtonText}>Book Appointment</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -393,6 +456,50 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  categoryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#F8F9FA',
+  },
+  categoryTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#155366',
+    marginLeft: 8,
+  },
+  expandedContent: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  timeSlotCompact: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    width: '31%',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  timeSlotTextCompact: {
+    color: '#155366',
+    fontSize: 14,
+    fontWeight: '500',
   },
   monthText: {
     fontSize: 18,

@@ -27,6 +27,7 @@ import LoginScreen from '../screens/login/LoginScreen';
 import RegisterScreen from '../screens/login/RegisterScreen';
 import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
 import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
+import StoreAdminScreen from '../screens/store/StoreHome';
 
 const Stack = createStackNavigator();
 
@@ -123,6 +124,12 @@ const AppNavigator = () => {
             <Stack.Screen 
         name="Home"
         component={AppLayout}
+        options={{ headerShown: false }}
+        initialParams={{ initialTab: 'Home' }}
+      />
+       <Stack.Screen 
+        name="StoreAdmin"
+        component={StoreAdminScreen}
         options={{ headerShown: false }}
         initialParams={{ initialTab: 'Home' }}
       />

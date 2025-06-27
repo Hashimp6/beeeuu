@@ -31,10 +31,15 @@ console.log("authuser",user);
 
   // Form states
   const [quantity, setQuantity] = useState(1);
-  const [customerName, setCustomerName] = useState(user?.name || '');
+  const [customerName, setCustomerName] = useState(user?.username || '');
   const [address, setAddress] = useState(user?.address ||'');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
   const [selectedPayment, setSelectedPayment] = useState('cod');
+
+  // Validation error states
+  const [nameError, setNameError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [addressError, setAddressError] = useState('');
 
   // Product details
   const productPrice = parseFloat(product.price) || 0;
@@ -50,6 +55,76 @@ console.log("authuser",user);
     { id: 'paytm', name: 'Paytm', icon: 'wallet-outline' },
     { id: 'upi', name: 'Other UPI', icon: 'qr-code-outline' }
   ];
+
+  // Validation functions
+  const validateName = (name) => {
+    const trimmedName = name.trim();
+    const letterCount = trimmedName.replace(/[^a-zA-Z]/g, '').length;
+    
+    if (trimmedName.length === 0) {
+      return 'Name is required';
+    }
+    if (letterCount < 3) {
+      return 'Name must contain at least 3 letters';
+    }
+    return '';
+  };
+
+  const validatePhone = (phone) => {
+    const cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digits
+    
+    if (cleanPhone.length === 0) {
+      return 'Phone number is required';
+    }
+    if (cleanPhone.length !== 10) {
+      return 'Phone number must be exactly 10 digits';
+    }
+    if (!/^[6-9]/.test(cleanPhone)) {
+      return 'Phone number must start with 6, 7, 8, or 9';
+    }
+    return '';
+  };
+
+  const validateAddress = (address) => {
+    const trimmedAddress = address.trim();
+    
+    if (trimmedAddress.length === 0) {
+      return 'Address is required';
+    }
+    if (trimmedAddress.length < 10) {
+      return 'Please enter a complete address (minimum 10 characters)';
+    }
+    return '';
+  };
+
+  // Handle input changes with validation
+  const handleNameChange = (text) => {
+    setCustomerName(text);
+    const error = validateName(text);
+    setNameError(error);
+  };
+
+  const handlePhoneChange = (text) => {
+    // Allow only digits and limit to 10 characters
+    const cleanText = text.replace(/\D/g, '').slice(0, 10);
+    setPhoneNumber(cleanText);
+    const error = validatePhone(cleanText);
+    setPhoneError(error);
+  };
+
+  const handleAddressChange = (text) => {
+    setAddress(text);
+    const error = validateAddress(text);
+    setAddressError(error);
+  };
+
+  // Check if form is valid
+  const isFormValid = () => {
+    const nameValid = validateName(customerName) === '';
+    const phoneValid = validatePhone(phoneNumber) === '';
+    const addressValid = validateAddress(address) === '';
+    return nameValid && phoneValid && addressValid;
+  };
 
   // Calculate total
   const calculateTotal = () => {
@@ -124,17 +199,18 @@ console.log("authuser",user);
 
   // Handle order placement
   const handlePlaceOrder = async () => {
-    // Validation
-    if (!customerName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
-      return;
-    }
-    if (!address.trim()) {
-      Alert.alert('Error', 'Please enter delivery address');
-      return;
-    }
-    if (!phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter phone number');
+    // Validate all fields
+    const nameValidationError = validateName(customerName);
+    const phoneValidationError = validatePhone(phoneNumber);
+    const addressValidationError = validateAddress(address);
+
+    setNameError(nameValidationError);
+    setPhoneError(phoneValidationError);
+    setAddressError(addressValidationError);
+
+    // Check if any validation errors exist
+    if (nameValidationError || phoneValidationError || addressValidationError) {
+      Alert.alert('Validation Error', 'Please fix the errors before placing the order');
       return;
     }
 
@@ -145,8 +221,8 @@ console.log("authuser",user);
       unitPrice: productPrice,
       totalAmount: calculateTotal(),
       buyerId:user._id,
-      customerName: customerName,
-      deliveryAddress: address,
+      customerName: customerName.trim(),
+      deliveryAddress: address.trim(),
       phoneNumber: phoneNumber,
       paymentMethod: selectedPayment,
       storeId: storeId,
@@ -269,37 +345,57 @@ console.log("authuser",user);
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Full Name</Text>
               <TextInput
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  nameError ? styles.textInputError : null
+                ]}
                 placeholder="Enter your full name"
                 value={customerName}
-                onChangeText={setCustomerName}
+                onChangeText={handleNameChange}
                 placeholderTextColor="#999999"
               />
+              {nameError ? (
+                <Text style={styles.errorText}>{nameError}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Delivery Address</Text>
               <TextInput
-                style={[styles.textInput, styles.addressInput]}
+                style={[
+                  styles.textInput, 
+                  styles.addressInput,
+                  addressError ? styles.textInputError : null
+                ]}
                 placeholder="Enter complete delivery address"
                 value={address}
-                onChangeText={setAddress}
+                onChangeText={handleAddressChange}
                 multiline={true}
                 numberOfLines={3}
                 placeholderTextColor="#999999"
               />
+              {addressError ? (
+                <Text style={styles.errorText}>{addressError}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Phone Number</Text>
               <TextInput
-                style={styles.textInput}
-                placeholder="Enter phone number"
+                style={[
+                  styles.textInput,
+                  phoneError ? styles.textInputError : null
+                ]}
+                placeholder="Enter 10-digit phone number"
                 value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
+                onChangeText={handlePhoneChange}
+                keyboardType="numeric"
                 placeholderTextColor="#999999"
+                maxLength={10}
               />
+              {phoneError ? (
+                <Text style={styles.errorText}>{phoneError}</Text>
+              ) : null}
             </View>
           </View>
 
@@ -369,10 +465,10 @@ console.log("authuser",user);
       <TouchableOpacity
         style={[
           styles.placeOrderButton,
-          (!customerName || !address || !phoneNumber) && styles.placeOrderButtonDisabled
+          !isFormValid() && styles.placeOrderButtonDisabled
         ]}
         onPress={handlePlaceOrder}
-        disabled={!customerName || !address || !phoneNumber}
+        disabled={!isFormValid()}
       >
         <Text style={styles.placeOrderButtonText}>Place Order</Text>
       </TouchableOpacity>
@@ -509,9 +605,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     color: '#000000',
   },
+  textInputError: {
+    borderColor: '#FF6B6B',
+    borderWidth: 1.5,
+  },
   addressInput: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   paymentContainer: {
     marginBottom: 20,

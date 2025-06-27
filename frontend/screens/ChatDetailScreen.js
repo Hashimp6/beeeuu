@@ -491,6 +491,12 @@ const ChatDetailScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
       <View style={styles.header}>
+      <TouchableOpacity 
+    style={styles.backButton} 
+    onPress={() => navigation.goBack()}
+  >
+    <Ionicons name="arrow-back" size={24} color="#fff" />
+  </TouchableOpacity>
         {otherUser.avatar ? (
           <Image 
             source={{ uri: otherUser.avatar }} 
@@ -507,7 +513,6 @@ const ChatDetailScreen = ({ navigation, route }) => {
         
         <View>
           <Text style={styles.username}>{otherUser.storeName || otherUser.username}</Text>
-          <Text style={styles.status}>Online</Text>
         </View>
       </View>
       
@@ -746,6 +751,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingHorizontal: 4,
     textAlignVertical: 'center',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+    borderRadius: 20,
   },
   attachButton: {
     padding: 4,
