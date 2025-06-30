@@ -13,6 +13,7 @@ const searchRoute = require('./routes/searchRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const ratingRoutes = require('./routes/ratingRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
 dotenv.config();
 
@@ -37,4 +38,5 @@ app.use('/search', searchRoute);
 app.use('/notifications', notificationRoutes);
 app.use('/orders', orderRoutes);
 app.use('/rating', ratingRoutes);
+app.use('/category', categoryRoutes);
 module.exports = app;

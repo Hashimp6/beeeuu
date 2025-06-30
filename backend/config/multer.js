@@ -18,12 +18,13 @@ const uploadStoreImage = multer({ storage: storeProfileStorage });
 const productImageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "product_images",  // different folder here
+    folder: "product_images",
     allowed_formats: ["jpg", "jpeg", "png"],
     transformation: [{ width: 500, height: 500, crop: "limit" }],
   }
 });
 const uploadProductImage = multer({ storage: productImageStorage });
+
 const galleryImageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -32,8 +33,8 @@ const galleryImageStorage = new CloudinaryStorage({
     transformation: [{ width: 800, height: 800, crop: "limit" }],
   },
 });
-
 const uploadGalleryImage = multer({ storage: galleryImageStorage });
+
 const chatImageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -42,10 +43,40 @@ const chatImageStorage = new CloudinaryStorage({
     transformation: [{ width: 1024, height: 1024, crop: "limit", quality: "auto" }],
   },
 });
-const uploadChatImage = multer({ 
+const uploadChatImage = multer({
   storage: chatImageStorage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit for chat images
   }
 });
-module.exports = { uploadStoreImage, uploadProductImage , uploadGalleryImage,uploadChatImage};
+
+// Storage for Category Icons (main category groups)
+const categoryIconStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "category_icons",
+    allowed_formats: ["jpg", "jpeg", "png", "svg"],
+    transformation: [{ width: 100, height: 100, crop: "limit" }],
+  }
+});
+const uploadCategoryIcon = multer({ storage: categoryIconStorage });
+
+// Storage for Subcategory Images
+const subcategoryImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "subcategory_images",
+    allowed_formats: ["jpg", "jpeg", "png"],
+    transformation: [{ width: 300, height: 300, crop: "limit" }],
+  }
+});
+const uploadSubcategoryImage = multer({ storage: subcategoryImageStorage });
+
+module.exports = {
+  uploadStoreImage,
+  uploadProductImage,
+  uploadGalleryImage,
+  uploadChatImage,
+  uploadCategoryIcon,
+  uploadSubcategoryImage
+};

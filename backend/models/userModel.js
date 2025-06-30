@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   address: { type: String},
   role: {
     type: String,
-    enum: ["user", "seller"],
+    enum: ["user", "seller","admin"],
     default: "user",
   },
   storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { SERVER_URL } from '../config';
+import SellerCard from '../components/SellersCard';
 
 const { width } = Dimensions.get('window');
 
@@ -27,74 +28,188 @@ const StoreSearchPage = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pagination, setPagination] = useState({});
-  const [imageErrors, setImageErrors] = useState({}); // Track image loading errors
+  const [imageErrors, setImageErrors] = useState({});
+  
+  // Debounce state
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
 
-  const categories = [
+  const categoryGroups = [
     {
-      id: 1,
-      name: 'Face',
-      // Using more reliable image URLs
-      image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'face-services'
+      id: 'beauty',
+      title: '💄 iBeauty',
+      icon: '💄',
+      categories: [
+        {
+          id: 1,
+          name: 'Face',
+          image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'face-services'
+        },
+        {
+          id: 2,
+          name: 'Hair',
+          image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'hair-services'
+        },
+        {
+          id: 3,
+          name: 'Nails',
+          image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'nail-services'
+        },
+        {
+          id: 4,
+          name: 'Mehandi',
+          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'henna-services'
+        },
+        {
+          id: 5,
+          name: 'Bridal Makeup',
+          image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'bridal-makeup-services'
+        },
+        {
+          id: 6,
+          name: 'Hair Styling',
+          image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'hair-styling-services'
+        },
+        {
+          id: 7,
+          name: 'Dressing',
+          image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'dressing-services'
+        },
+        {
+          id: 8,
+          name: 'Styling',
+          image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'styling-services'
+        }
+      ]
     },
     {
-      id: 2,
-      name: 'Hair',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'hair-services'
+      id: 'food',
+      title: '🍰 Food',
+      icon: '🍰',
+      categories: [
+        {
+          id: 9,
+          name: 'Desserts',
+          image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'dessert-services'
+        },
+        {
+          id: 10,
+          name: 'Cakes',
+          image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'cake-services'
+        },
+        {
+          id: 11,
+          name: 'Pickles',
+          image: 'https://images.unsplash.com/photo-1599909533124-5d3b26c2e3a0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'pickle-services'
+        },
+        {
+          id: 12,
+          name: 'Traditional Snacks',
+          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'traditional-snack-services'
+        }
+      ]
     },
     {
-      id: 3,
-      name: 'Makeup',
-      image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'makeup-services'
-    },
-    {
-      id: 4,
-      name: 'Nails',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'nail-services'
-    },
-    {
-      id: 5,
-      name: 'Henna',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'henna-services'
-    },
-    {
-      id: 6,
-      name: 'Skincare',
-      image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'skincare-services'
-    },
-    {
-      id: 7,
-      name: 'Eyebrows',
-      image: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'eyebrow-services'
-    },
-    {
-      id: 8,
-      name: 'Massage',
-      image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-      apiEndpoint: 'massage-services'
+      id: 'gifts',
+      title: '🎁 Gifts',
+      icon: '🎁',
+      categories: [
+        {
+          id: 13,
+          name: 'Gift Bouquets',
+          image: 'https://images.unsplash.com/photo-1563241527-3004b7be0ffd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'gift-bouquet-services'
+        },
+        {
+          id: 14,
+          name: 'Hampers',
+          image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'hamper-services'
+        },
+        {
+          id: 15,
+          name: 'Custom Gifts',
+          image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
+          apiEndpoint: 'custom-gift-services'
+        }
+      ]
     }
   ];
 
-  const handleImageError = (imageId) => {
-    setImageErrors(prev => ({ ...prev, [imageId]: true }));
-  };
+  // Debounce effect for search text
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 500); // 500ms delay
 
-  const handleImageLoad = (imageId) => {
-    setImageErrors(prev => ({ ...prev, [imageId]: false }));
-  };
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchText]);
 
-  const handleSearch = async () => {
+  // Auto-search when debounced text changes
+  useEffect(() => {
+    if (debouncedSearchText.trim()) {
+      performSearch(debouncedSearchText);
+    } else if (debouncedSearchText === '') {
+      // Clear results when search is empty
+      setStores([]);
+      setSelectedCategory(null);
+      setPagination({});
+    }
+  }, [debouncedSearchText]);
+
+  const performSearch = useCallback(async (searchQuery) => {
+    if (!searchQuery.trim()) return;
+
+    setSearchLoading(true);
+    setSelectedCategory(null);
+
+    try {
+      const response = await axios.get(`${SERVER_URL}/search/query`, {
+        params: { q: searchQuery },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.data.success) {
+        setStores(response.data.data.stores);
+        setPagination(response.data.data.pagination);
+      } else {
+        // Don't show alert for auto-search, just clear results
+        setStores([]);
+        setPagination({});
+      }
+
+    } catch (error) {
+      console.error('Search Error:', error);
+      // Only show alert if it's a manual search, not auto-search
+      setStores([]);
+      setPagination({});
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleManualSearch = async () => {
     if (!searchText.trim()) {
       Alert.alert('Search Error', 'Please enter a search term');
       return;
     }
 
+    // For manual search, perform immediately
     setSearchLoading(true);
     setSelectedCategory(null);
 
@@ -123,12 +238,22 @@ const StoreSearchPage = ({ navigation }) => {
     }
   };
 
+  const handleImageError = (imageId) => {
+    setImageErrors(prev => ({ ...prev, [imageId]: true }));
+  };
+
+  const handleImageLoad = (imageId) => {
+    setImageErrors(prev => ({ ...prev, [imageId]: false }));
+  };
+
   const handleCategoryPress = async (category) => {
     setLoading(category.id);
     setSelectedCategory(category);
+    // Clear search text when selecting category
+    setSearchText('');
 
     try {
-      const categoryName=category.apiEndpoint
+      const categoryName = category.apiEndpoint;
       const response = await axios.get(`${SERVER_URL}/search/category/${categoryName}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -154,12 +279,11 @@ const StoreSearchPage = ({ navigation }) => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Clear image errors on refresh
     setImageErrors({});
     if (selectedCategory) {
       await handleCategoryPress(selectedCategory);
     } else if (searchText.trim()) {
-      await handleSearch();
+      await performSearch(searchText);
     }
     setRefreshing(false);
   };
@@ -180,7 +304,6 @@ const StoreSearchPage = ({ navigation }) => {
     >
       <View style={styles.imageContainer}>
         {imageErrors[`category-${item.id}`] ? (
-          // Fallback view when image fails to load
           <View style={styles.imageFallback}>
             <Icon name="image" size={40} color="#ccc" />
             <Text style={styles.fallbackText}>{item.name}</Text>
@@ -192,7 +315,6 @@ const StoreSearchPage = ({ navigation }) => {
             resizeMode="cover"
             onError={() => handleImageError(`category-${item.id}`)}
             onLoad={() => handleImageLoad(`category-${item.id}`)}
-            // Add loading indicator for slow networks
             loadingIndicatorSource={{ uri: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' }}
           />
         )}
@@ -209,79 +331,30 @@ const StoreSearchPage = ({ navigation }) => {
   );
 
   const renderStoreCard = ({ item }) => (
-    <TouchableOpacity style={styles.storeCard} onPress={() => {
-      // Navigate to store details
-      // navigation.navigate('StoreDetails', { store: item });
-    }}>
-      <View style={styles.storeImageContainer}>
-        {imageErrors[`store-${item._id}`] ? (
-          // Fallback view when store image fails to load
-          <View style={styles.storeImageFallback}>
-            <Icon name="store" size={50} color="#ccc" />
-            <Text style={styles.fallbackText}>No Image</Text>
-          </View>
-        ) : (
-          <Image
-            source={{ 
-              uri: item.profileImage || 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Store+Image' 
-            }}
-            style={styles.storeImage}
-            resizeMode="cover"
-            onError={() => handleImageError(`store-${item._id}`)}
-            onLoad={() => handleImageLoad(`store-${item._id}`)}
-          />
-        )}
-      </View>
-      
-      <View style={styles.storeInfo}>
-        <Text style={styles.storeName}>{item.storeName}</Text>
-        <Text style={styles.storeCategory}>{item.category}</Text>
-        {item.description && (
-          <Text style={styles.storeDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-        
-        <View style={styles.storeMetaContainer}>
-          {item.place && (
-            <View style={styles.storeMetaItem}>
-              <Icon name="location-on" size={16} color="#666" />
-              <Text style={styles.storeMetaText}>{item.place}</Text>
-            </View>
-          )}
-          
-          {item.rating && (
-            <View style={styles.storeMetaItem}>
-              <Icon name="star" size={16} color="#FFD700" />
-              <Text style={styles.storeMetaText}>{item.rating}</Text>
-            </View>
-          )}
-          
-          {item.distance && (
-            <View style={styles.storeMetaItem}>
-              <Icon name="near-me" size={16} color="#666" />
-              <Text style={styles.storeMetaText}>{item.distance} km</Text>
-            </View>
-          )}
-        </View>
+    <SellerCard
+      id={item._id}
+      image={item.profileImage || 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Store+Image'}
+      name={item.storeName}
+      rating={item.rating}
+      location={item.place}
+      category={item.category}
+      description={item.description}
+    />
+  );
 
-        {item.phone && (
-          <View style={styles.contactContainer}>
-            <TouchableOpacity style={styles.contactButton}>
-              <Icon name="phone" size={18} color="#155366" />
-              <Text style={styles.contactText}>Call</Text>
-            </TouchableOpacity>
-            
-            {item.socialMedia?.whatsapp && (
-              <TouchableOpacity style={styles.contactButton}>
-                <Icon name="message" size={18} color="#25D366" />
-                <Text style={styles.contactText}>WhatsApp</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+  const renderCategorySection = (group) => (
+    <View key={group.id} style={styles.categorySection}>
+      <Text style={styles.sectionTitle}>{group.title}</Text>
+      <FlatList
+        data={group.categories}
+        renderItem={renderCategoryItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={false}
+        contentContainerStyle={styles.sectionGrid}
+      />
+    </View>
   );
 
   const renderContent = () => {
@@ -289,43 +362,42 @@ const StoreSearchPage = ({ navigation }) => {
       return (
         <View style={styles.resultsContainer}>
           <View style={styles.resultsHeader}>
-            <Text style={styles.resultsTitle}>
-              {selectedCategory ? `${selectedCategory.name} Services` : 'Search Results'}
-            </Text>
-            <TouchableOpacity onPress={clearResults} style={styles.clearButton}>
-              <Icon name="clear" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-          
-          {pagination.totalStores && (
+           
+            {pagination.totalStores && (
             <Text style={styles.resultsCount}>
               Found {pagination.totalStores} stores
             </Text>
           )}
 
+            <TouchableOpacity onPress={clearResults} style={styles.clearButton}>
+              <Icon name="clear" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
           <FlatList
-            data={stores}
-            renderItem={renderStoreCard}
-            keyExtractor={(item) => item._id}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-            contentContainerStyle={styles.storesList}
-          />
+  data={stores}
+  renderItem={renderStoreCard}
+  keyExtractor={(item) => item._id}
+  showsVerticalScrollIndicator={false}
+  refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+  }
+  contentContainerStyle={styles.storesList}
+/>
         </View>
       );
     }
 
     return (
-      <FlatList
-        data={categories}
-        renderItem={renderCategoryItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
+      <ScrollView
+        style={styles.categoriesContainer}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-      />
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {categoryGroups.map(group => renderCategorySection(group))}
+      </ScrollView>
     );
   };
 
@@ -341,12 +413,17 @@ const StoreSearchPage = ({ navigation }) => {
             value={searchText}
             onChangeText={setSearchText}
             returnKeyType="search"
-            onSubmitEditing={handleSearch}
+            onSubmitEditing={handleManualSearch}
           />
+          {searchLoading && (
+            <View style={styles.searchInputLoading}>
+              <ActivityIndicator size="small" color="#155366" />
+            </View>
+          )}
         </View>
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={handleSearch}
+          onPress={handleManualSearch}
           disabled={searchLoading}
         >
           {searchLoading ? (
@@ -383,11 +460,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 25,
     paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchInput: {
+    flex: 1,
     height: 48,
     fontSize: 16,
     color: '#333',
+  },
+  searchInputLoading: {
+    paddingRight: 8,
   },
   searchButton: {
     backgroundColor: '#155366',
@@ -405,9 +488,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  listContainer: {
-    paddingHorizontal: 7,
+  categoriesContainer: {
+    flex: 1,
     paddingBottom: 20,
+  },
+  categorySection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  sectionGrid: {
+    paddingHorizontal: 7,
     paddingTop: 10,
   },
   categoryCard: {

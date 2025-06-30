@@ -28,34 +28,31 @@ if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON_BASE64) && !existsSync(join(
 
 export default {
   expo: {
-    name: "beeu",
-    slug: "beeu",
+    name: "beeu", // Keep original name
+    slug: "beeu", // Keep original slug
     version: "1.0.0",
     owner: "hashimp6",
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    scheme: "beeu",
-    // ✅ Fixed icon path (assuming it should be logo.png)
+    scheme: "beeu", // Keep original scheme
     icon: "./assets/log.png",
 
     ios: {
-      bundleIdentifier: "com.hashim.beeuu",
+      bundleIdentifier: "com.hashim.beeuu", // Keep original bundle ID
       supportsTablet: true,
-      // ✅ Add specific iOS icon if needed
       icon: "./assets/log.png",
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       },
       associatedDomains: [
-        "applinks:beeu.com",
-        "applinks:www.beeu.com"
+        "applinks:serchby.com", // ONLY change the domain
+        "applinks:www.serchby.com" // ONLY change the domain
       ]
     },
     android: {
-      package: "com.hashim.beeuu",
+      package: "com.hashim.beeuu", // Keep original package name
       googleServicesFile: "./android/app/google-services.json",
-      // ✅ Fixed adaptive icon with foreground image
       adaptiveIcon: {
         foregroundImage: "./assets/log.png",
         backgroundColor: "#ffffff"
@@ -73,14 +70,14 @@ export default {
           data: [
             {
               scheme: "https",
-              host: "beeu.com"
+              host: "serchby.com" // ONLY change the domain
             },
             {
               scheme: "https",
-              host: "www.beeu.com"
+              host: "www.serchby.com" // ONLY change the domain
             },
             {
-              scheme: "beeu"
+              scheme: "beeu" // Keep original custom scheme
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]
@@ -91,7 +88,6 @@ export default {
       [
         "expo-notifications",
         {
-          // ✅ Fixed notification icon path
           icon: "./assets/log.png",
           color: "#ffffff"
         }

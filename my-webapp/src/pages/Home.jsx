@@ -11,7 +11,7 @@ const Welcome = () => {
         transition={{ duration: 0.8 }}
         className="text-center p-6"
       >
-        <h1 className="text-4xl md:text-6xl font-bold mb-4">Welcome to BEEEU</h1>
+        <h1 className="text-4xl md:text-6xl font-bold mb-4">Welcome to serchBy</h1>
         <p className="text-lg md:text-xl mb-6">
           Your powerful and seamless web experience starts here.
         </p>

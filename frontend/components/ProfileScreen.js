@@ -16,6 +16,7 @@ import UserProfileComponent from "./userProfileComponent";
 import StoreProfileComponent from "./storeProfileComponent";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CategoryManagementScreen from "./CategoryMgtByAdmin";
 
 const ProfileScreen = () => {
   const { logout } = useAuth();
@@ -58,8 +59,7 @@ const ProfileScreen = () => {
       </SafeAreaView>
     );
   }
-
-  const isSeller = user?.role === "seller";
+const isSeller = user?.role === "seller";
 
   return (
     
@@ -70,11 +70,13 @@ const ProfileScreen = () => {
         style={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        { !isSeller ? (
-          <UserProfileComponent user={user} />
-        ) : (
-          <StoreProfileComponent user={user} />
-        )}
+         {user?.role === "seller" ? (
+    <StoreProfileComponent user={user} />
+  ) : user?.role === "admin" ? (
+    <CategoryManagementScreen user={user} />
+  ) : (
+    <UserProfileComponent user={user} />
+  )}
 
         {!isSeller && (
           <TouchableOpacity
