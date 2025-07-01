@@ -8,17 +8,270 @@ const { notifyNewOrder } = require("../utils/orderNotification");
 // const { notifyOrderCreated, notifyOrderStatusChanged } = require("../utils/orderNotifications");
 
 // Create new order
+// import { Payment, PaymentEntry } from '../models/Payment.js'; // Add this import
+// import Order from '../models/Order.js';
+// import Store from '../models/Store.js';
+
+// const createOrder = async (req, res) => {
+//   try {
+//     const orderData = req.body;
+//     console.log('Creating order:', orderData);
+    
+//     // Validate required fields
+//     const requiredFields = ['productId', 'productName', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber', 'quantity', 'unitPrice', 'totalAmount'];
+//     for (let field of requiredFields) {
+//       if (!orderData[field]) {
+//         return res.status(400).json({ message: `${field} is required` });
+//       }
+//     }
+
+//     // Validate UPI payment specific fields
+//     if (orderData.paymentMethod && ['upi', 'gpay', 'phonepe', 'paytm'].includes(orderData.paymentMethod.toLowerCase())) {
+//       if (!orderData.referenceNumber) {
+//         return res.status(400).json({ message: 'Reference number is required for UPI payments' });
+//       }
+//     }
+
+//     // Set default values
+//     if (!orderData.status) {
+//       orderData.status = 'pending';
+//     }
+    
+//     // Handle payment status based on payment method
+//     if (!orderData.paymentStatus) {
+//       if (orderData.paymentMethod === 'cod') {
+//         orderData.paymentStatus = 'pending';
+//       } else if (['upi', 'gpay', 'phonepe', 'paytm'].includes(orderData.paymentMethod?.toLowerCase())) {
+//         orderData.paymentStatus = 'pending'; // Will be updated after verification
+//       } else {
+//         orderData.paymentStatus = 'pending';
+//       }
+//     }
+
+//     // Get seller name from store if not provided
+//     if (!orderData.sellerName && orderData.sellerId) {
+//       try {
+//         const store = await Store.findById(orderData.sellerId);
+//         if (store) {
+//           orderData.sellerName = store.name || store.storeName;
+//         }
+//       } catch (error) {
+//         console.log('Could not fetch seller name:', error);
+//       }
+//     }
+
+//     // Create the order
+//     const order = new Order(orderData);
+//     await order.save();
+
+//     // 💳 CREATE PAYMENT ENTRY FOR UPI PAYMENTS
+//     let paymentRecord = null;
+//     if (['upi', 'gpay', 'phonepe', 'paytm'].includes(orderData.paymentMethod?.toLowerCase())) {
+//       try {
+//         // Create PaymentEntry first
+//         const paymentEntry = new PaymentEntry({
+//           amountPaid: orderData.totalAmount,
+//           status: 'pending', // Will be confirmed after manual verification
+//           referenceNumber: orderData.referenceNumber,
+//           paymentDate: new Date(),
+//           verified: false // Requires manual verification
+//         });
+//         await paymentEntry.save();
+
+//         // Create main Payment record
+//         paymentRecord = new Payment({
+//           storeId: orderData.sellerId,
+//           userId: orderData.buyerId,
+//           itemId: order._id, // Reference to the order
+//           itemModel: 'Order', // You might need to add 'Order' to your enum
+//           status: 'Pending',
+//           totalAmount: orderData.totalAmount,
+//           amountPaid: 0, // Will be updated after verification
+//           payments: [paymentEntry._id]
+//         });
+//         await paymentRecord.save();
+
+//         // Update order with payment reference
+//         order.paymentId = paymentRecord._id;
+//         await order.save();
+
+//         console.log('✅ Payment record created for UPI payment');
+//       } catch (paymentError) {
+//         console.error('❌ Error creating payment record:', paymentError);
+//         // Don't fail order creation, but log the error
+//       }
+//     }
+
+//     const populatedOrder = await Order.findById(order._id)
+//       .populate('buyerId', 'name email')
+//       .populate('sellerId', 'name address')
+//       .populate('productId', 'name price image')
+//       .populate('paymentId'); // Populate payment info if exists
+
+//     // 🔔 SEND NOTIFICATION TO SELLER ABOUT NEW ORDER
+//     try {
+//       await notifyNewOrder(populatedOrder);
+//       console.log('✅ New order notification sent to seller');
+//     } catch (notificationError) {
+//       console.error('❌ Failed to send new order notification:', notificationError);
+//       // Don't fail the order creation if notification fails
+//     }
+
+//     // 💰 SEND PAYMENT NOTIFICATION ONLY FOR COMPLETED PAYMENTS (NOT UPI PENDING)
+//     if (orderData.paymentStatus === 'completed' || orderData.paymentStatus === 'paid') {
+//       try {
+//         await notifyPaymentReceived(populatedOrder);
+//         console.log('✅ Payment notification sent to seller');
+//       } catch (notificationError) {
+//         console.error('❌ Failed to send payment notification:', notificationError);
+//       }
+//     }
+
+//     // 📱 SEND UPI VERIFICATION NOTIFICATION TO ADMIN/SELLER
+//     if (['upi', 'gpay', 'phonepe', 'paytm'].includes(orderData.paymentMethod?.toLowerCase())) {
+//       try {
+//         await notifyUPIPaymentVerificationNeeded(populatedOrder, orderData.referenceNumber);
+//         console.log('✅ UPI verification notification sent');
+//       } catch (notificationError) {
+//         console.error('❌ Failed to send UPI verification notification:', notificationError);
+//       }
+//     }
+
+//     res.status(201).json({
+//       message: "Order created successfully",
+//       data: populatedOrder,
+//       orderId: order.orderId,
+//       paymentId: paymentRecord?._id,
+//       requiresVerification: ['upi', 'gpay', 'phonepe', 'paytm'].includes(orderData.paymentMethod?.toLowerCase())
+//     });
+
+//   } catch (error) {
+//     console.error('Error creating order:', error);
+//     res.status(500).json({
+//       message: "Error creating order",
+//       error: error.message
+//     });
+//   }
+// };
+
+// // 🔍 HELPER FUNCTION: Verify UPI Payment
+// const verifyUPIPayment = async (req, res) => {
+//   try {
+//     const { paymentId, verified, adminNotes } = req.body;
+
+//     const payment = await Payment.findById(paymentId).populate('payments');
+//     if (!payment) {
+//       return res.status(404).json({ message: 'Payment not found' });
+//     }
+
+//     // Update payment entry verification status
+//     if (payment.payments && payment.payments.length > 0) {
+//       const paymentEntry = await PaymentEntry.findById(payment.payments[0]);
+//       if (paymentEntry) {
+//         paymentEntry.verified = verified;
+//         paymentEntry.status = verified ? 'confirmed' : 'pending';
+//         await paymentEntry.save();
+//       }
+//     }
+
+//     // Update main payment status
+//     if (verified) {
+//       payment.status = 'Paid';
+//       payment.amountPaid = payment.totalAmount;
+//     } else {
+//       payment.status = 'Pending';
+//       payment.amountPaid = 0;
+//     }
+//     await payment.save();
+
+//     // Update related order
+//     const order = await Order.findById(payment.itemId);
+//     if (order) {
+//       order.paymentStatus = verified ? 'paid' : 'pending';
+//       if (adminNotes) {
+//         order.adminNotes = adminNotes;
+//       }
+//       await order.save();
+
+//       // Send confirmation notification
+//       if (verified) {
+//         try {
+//           await notifyPaymentReceived(order);
+//           console.log('✅ Payment confirmation sent to seller');
+//         } catch (error) {
+//           console.error('❌ Failed to send payment confirmation:', error);
+//         }
+//       }
+//     }
+
+//     res.json({
+//       message: verified ? 'Payment verified successfully' : 'Payment verification updated',
+//       payment: payment,
+//       order: order
+//     });
+
+//   } catch (error) {
+//     console.error('Error verifying payment:', error);
+//     res.status(500).json({
+//       message: 'Error verifying payment',
+//       error: error.message
+//     });
+//   }
+// };
+
+// // 📋 HELPER FUNCTION: Get Pending UPI Payments for Admin
+// const getPendingUPIPayments = async (req, res) => {
+//   try {
+//     const pendingPayments = await Payment.find({
+//       status: 'Pending'
+//     })
+//     .populate('storeId', 'name')
+//     .populate('userId', 'name email')
+//     .populate('itemId')
+//     .populate('payments')
+//     .sort({ createdAt: -1 });
+
+//     res.json({
+//       message: 'Pending payments retrieved successfully',
+//       data: pendingPayments
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching pending payments:', error);
+//     res.status(500).json({
+//       message: 'Error fetching pending payments',
+//       error: error.message
+//     });
+//   }
+// };
+
+// // Placeholder notification functions (implement based on your notification system)
+// const notifyUPIPaymentVerificationNeeded = async (order, referenceNumber) => {
+//   // Implement notification to admin/seller about UPI payment needing verification
+//   console.log(`🔔 UPI Payment verification needed for order ${order.orderId}, Reference: ${referenceNumber}`);
+// };
+
+// export { createOrder, verifyUPIPayment, getPendingUPIPayments };
 
 const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
     console.log('Creating order:', orderData);
-    
+        
     // Validate required fields
     const requiredFields = ['productId', 'productName', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber', 'quantity', 'unitPrice', 'totalAmount'];
     for (let field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({ message: `${field} is required` });
+      }
+    }
+
+    // Validate transactionId for non-COD payments
+    if (orderData.paymentMethod && orderData.paymentMethod !== 'cod') {
+      if (!orderData.transactionId) {
+        return res.status(400).json({ 
+          message: 'Transaction ID is required for non-COD payments' 
+        });
       }
     }
 
@@ -475,6 +728,87 @@ const getOrderStats = async (req, res) => {
     });
   }
 };
+const getPendingNonCodOrders = async (req, res) => {
+  const { storeId } = req.params; // Expecting storeId from URL
+
+  if (!storeId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Store ID is required'
+    });
+  }
+
+  try {
+    const pendingOrders = await Order.find({
+      sellerId: storeId,
+      paymentStatus: 'pending',
+      paymentMethod: { $ne: 'cod' }
+    });
+
+    res.status(200).json({
+      success: true,
+      count: pendingOrders.length,
+      data: pendingOrders
+    });
+  } catch (error) {
+    console.error('Error fetching orders for store:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+const confirmOrderPayment = async (req, res) => {
+  console.log("reac");
+  
+  const { orderId } = req.params; // order ID passed in URL
+
+  if (!orderId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Order ID is required'
+    });
+  }
+
+  try {
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Optional: Check if already completed
+    if (order.paymentStatus === 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment is already marked as completed'
+      });
+    }
+
+    order.paymentStatus = 'confirmed';
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment status updated to completed',
+      data: order
+    });
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+
+
 
 module.exports = {
   createOrder,
@@ -486,5 +820,7 @@ module.exports = {
   editOrder,
   deleteOrder,
   getOrdersByStatus,
-  getOrderStats
+  getOrderStats,
+  getPendingNonCodOrders,
+  confirmOrderPayment 
 };

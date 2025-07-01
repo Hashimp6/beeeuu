@@ -10,7 +10,9 @@ const {
   editOrder,
   deleteOrder,
   getOrdersByStatus,
-  getOrderStats
+  getOrderStats,
+  getPendingNonCodOrders,
+  confirmOrderPayment
 } = require('../controllers/orderController');
 
 // You might have auth middleware
@@ -23,6 +25,9 @@ router.post('/create', createOrder);
 // Query params: ?status=pending&role=buyer&startDate=2024-01-01&endDate=2024-12-31&limit=20&page=1
 router.get('/store/:id', getUserOrders);
 
+router.put('/confirm-payment/:orderId', confirmOrderPayment);
+
+router.get('/pending-non-cod/:storeId', getPendingNonCodOrders);
 // Get single order by MongoDB _id
 router.get('/details/:orderId', getOrderById);
 

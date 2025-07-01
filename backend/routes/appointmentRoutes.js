@@ -7,7 +7,9 @@ const {
   createAppointment,
   getAppointmentStats,
   manualUpdatePastAppointments,
-  getAppointmentsByStatus
+  getAppointmentsByStatus,
+  updateAdvancePayment,
+  updateAdvanceStatus
 } = require('../controllers/appointmentController');
 
 // Create new appointment
@@ -22,7 +24,8 @@ router.post('/', createAppointment);
 // /user/123?status=confirmed&date=2024-01-15 - Multiple filters
 // /user/123?limit=10&page=2 - Pagination
 router.get('/user/:id', getUserAppointments);
-
+router.put('/advance-payment/:appointmentId', updateAdvancePayment);
+router.put('/mark-advance/:appointmentId', updateAdvanceStatus);
 // Get appointment statistics/dashboard data
 router.get('/store/:id/status', getAppointmentsByStatus);
 

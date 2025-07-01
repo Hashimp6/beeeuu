@@ -20,8 +20,12 @@ import { SERVER_URL } from '../config';
 import Constants from 'expo-constants';
 
 // Get API key from environment variables
-const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
+const GOOGLE_MAPS_API_KEY = 
+  Constants.expoConfig?.extra?.googleMapsApiKey || 
+  Constants.manifest?.extra?.googleMapsApiKey ||
+  Constants.manifest2?.extra?.googleMapsApiKey;
 
+  
 const LocationSelectionModal = ({ visible, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -58,45 +62,93 @@ const LocationSelectionModal = ({ visible, onClose }) => {
     loadSavedLocation();
   }, [visible]);
   // Function to get location suggestions - using useCallback for better performance
+  // Replace your fetchLocationSuggestions function with this debug version
+
   const fetchLocationSuggestions = useCallback(async (query) => {
+    console.log('🔍 Starting location search for:', query);
+    
     if (!query.trim()) {
       setSuggestions([]);
       return;
     }
-
+  
+    console.log('🔑 API Key check:', {
+      exists: !!GOOGLE_MAPS_API_KEY,
+      firstChars: GOOGLE_MAPS_API_KEY?.substring(0, 10),
+      length: GOOGLE_MAPS_API_KEY?.length
+    });
+    
     if (!GOOGLE_MAPS_API_KEY) {
       setError('Google Maps API key is missing');
       return;
     }
-
+  
     setLoading(true);
+    
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}&types=geocode`;
+    
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          query
-        )}&key=${GOOGLE_MAPS_API_KEY}&types=geocode`
-      );
+      // Try with explicit headers and options
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          // Add user agent for React Native
+          'User-Agent': 'React Native App',
+        },
+        // Add cache control
+        cache: 'no-cache',
+      });
+      
+      console.log('📡 Response details:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
       const data = await response.json();
+      console.log('📦 API Response:', data);
       
       if (data.status === 'OK') {
+        console.log('✅ Success! Found', data.predictions?.length, 'suggestions');
         setSuggestions(data.predictions);
       } else if (data.status === 'ZERO_RESULTS') {
+        console.log('📭 Zero results');
         setSuggestions([]);
       } else {
-        console.error('Google Places API error:', data.status, data.error_message);
-        setError(`Location search failed: ${data.status}`);
+        console.error('❌ API Error:', data.status, data.error_message);
+        setError(`Location search failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
         setSuggestions([]);
       }
     } catch (err) {
-      console.error('Location suggestion error:', err);
-      setError('Network error occurred. Please try again.');
+      console.error('🚨 Full Error Details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        cause: err.cause
+      });
+      
+      // More specific error messages
+      if (err.message.includes('Network request failed')) {
+        setError('Network connection failed. Check your internet connection.');
+      } else if (err.message.includes('timeout')) {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError(`Search failed: ${err.message}`);
+      }
       setSuggestions([]);
     } finally {
       setLoading(false);
     }
   }, [GOOGLE_MAPS_API_KEY]);
-
+  
   // Better debounce implementation
   useEffect(() => {
     const timeoutId = setTimeout(() => {

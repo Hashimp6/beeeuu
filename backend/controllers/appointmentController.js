@@ -372,6 +372,78 @@ const manualUpdatePastAppointments = async (req, res) => {
   }
 };
 
+const updateAdvancePayment = async (req, res) => {
+  const { appointmentId } = req.params;
+  const { transactionId, amountPaid } = req.body;
+
+  if (!transactionId || !amountPaid) {
+    return res.status(400).json({
+      success: false,
+      message: "Transaction ID and amountPaid are required"
+    });
+  }
+
+  try {
+    const appointment = await Appointment.findById(appointmentId);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
+    }
+
+    appointment.payment = "advance";
+    appointment.transactionId = transactionId;
+    appointment.amountPaid = amountPaid;
+    await appointment.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Advance payment recorded",
+      data: appointment
+    });
+  } catch (error) {
+    console.error("Error updating advance payment:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+const updateAdvanceStatus = async (req, res) => {
+  const { appointmentId } = req.params;
+
+  try {
+    const appointment = await Appointment.findById(appointmentId);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found',
+      });
+    }
+
+    appointment.status = 'advance-recieved';
+    await appointment.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Appointment status updated to advance-recieved',
+      data: appointment,
+    });
+  } catch (error) {
+    console.error('Error updating status:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   getUserAppointments,
   updateAppointmentStatus,
@@ -379,6 +451,8 @@ module.exports = {
   createAppointment,
   getAppointmentsByStatus,
   updatePastAppointments,
+  updateAdvancePayment ,
+  updateAdvanceStatus ,
   manualUpdatePastAppointments,
   handlePaymentUpdate // New function for payment notifications
 };

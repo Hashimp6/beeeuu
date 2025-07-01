@@ -20,9 +20,13 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     // required: true
   },
+  transactionId: {
+    type: String,
+    // required: true
+  },
   status: {
     type: String,
-    enum: ["pending", "confirmed", "cancelled","completed","not-attended"],
+    enum: ["pending", "confirmed",'advance-recieved', "cancelled","completed","not-attended"],
     default: "pending"
   },
   payment: {
@@ -46,7 +50,7 @@ const appointmentSchema = new mongoose.Schema({
     type: String,
     // required: true
   },
-  locationName: {
+  locationName: { 
     type: String,
     // required: true
   },

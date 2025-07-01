@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext'; // Adjust path as needed
 import axios from 'axios';
@@ -12,12 +12,15 @@ const AppointmentCard = ({
   onAppointmentUpdate // New prop to update appointment state directly
 }) => {
   const { user } = useAuth() || {};
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   
   // Debug: Log initial data
   console.log('=== AppointmentCard Debug ===');
   console.log('appointmentData:', appointmentData);
   console.log('user:', user);
-  console.log('user.upi:', user?.upi);
   
   if (!appointmentData || !user) {
     console.log('❌ Missing data - appointmentData:', !!appointmentData, 'user:', !!user);
@@ -44,8 +47,11 @@ const AppointmentCard = ({
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed': return '#4CAF50';
+      case 'advance-recieved': return '#2196F3';
       case 'cancelled': return '#F44336';
       case 'pending': return '#FF9800';
+      case 'completed': return '#8BC34A';
+      case 'not-attended': return '#9E9E9E';
       default: return '#757575';
     }
   };
@@ -59,58 +65,8 @@ const AppointmentCard = ({
     }
   };
 
-
-
-  // Try multiple UPI app schemes for better compatibility
-  const tryOpenUPIApps = async (recipientUPI, amount, appointmentId, paymentType) => {
-    const transactionNote = `Payment for Appointment #${appointmentId.slice(-6)} - ${paymentType}`;
-    const transactionRef = `APT${appointmentId.slice(-8)}${Date.now().toString().slice(-4)}`;
-    
-    // Multiple UPI URL formats to try
-    const upiUrls = [
-      // PhonePe format
-      `phonepe://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
-      
-      // Google Pay format
-      `tez://upi/pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
-      
-      // Paytm format
-      `paytmmp://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`,
-      
-      // Standard UPI format
-      `upi://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}&tr=${transactionRef}`,
-      
-      // BHIM format
-      `bhim://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
-    ];
-
-    console.log('🔗 Trying UPI URLs:', upiUrls);
-
-    // Try each URL scheme
-    for (let i = 0; i < upiUrls.length; i++) {
-      const url = upiUrls[i];
-      try {
-        console.log(`📱 Trying UPI URL ${i + 1}:`, url);
-        const canOpen = await Linking.canOpenURL(url);
-        
-        if (canOpen) {
-          console.log(`✅ Successfully opening UPI app with URL ${i + 1}`);
-          await Linking.openURL(url);
-          return true; // Successfully opened
-        } else {
-          console.log(`❌ Cannot open URL ${i + 1}`);
-        }
-      } catch (error) {
-        console.log(`❌ Error with URL ${i + 1}:`, error.message);
-        continue;
-      }
-    }
-    
-    return false; // None of the URLs worked
-  };
-
-  // Handle UPI Payment
-  const handleUPIPayment = async (paymentType, amount) => {
+  // Get store UPI and generate deep link
+  const getStoreUPIAndGenerateLink = async (paymentMethod) => {
     try {
       console.log('🔍 Fetching store UPI details...');
       
@@ -123,14 +79,15 @@ const AppointmentCard = ({
           'Unable to find store information for payment.',
           [{ text: 'OK' }]
         );
-        return;
+        return null;
       }
 
       console.log('🏪 Fetching UPI for store ID:', storeId);
       
       // Fetch UPI from backend
-      const upiResponse = await axios.get(`${SERVER_URL}/upi/${storeId}/upi`);
+      const upiResponse = await axios.get(`${SERVER_URL}/stores/${storeId}/upi`);
       const recipientUPI = upiResponse.data?.upi;
+      
       
       console.log('💳 Store UPI fetched:', recipientUPI);
       
@@ -140,121 +97,152 @@ const AppointmentCard = ({
           'Store owner has not set up UPI payments. Please contact them directly.',
           [{ text: 'OK' }]
         );
-        return;
+        return null;
       }
 
-      console.log('💳 Attempting UPI payment...');
-      console.log('Recipient UPI:', recipientUPI);
-      console.log('Amount:', amount);
-      console.log('Payment Type:', paymentType);
-
-      // Try to open UPI apps
-      const upiOpened = await tryOpenUPIApps(recipientUPI, amount, appointmentData._id, paymentType);
+      // Calculate 30% advance amount
+      const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
+      const advanceAmount = Math.ceil(totalCost * 0.3);
       
-      if (upiOpened) {
-        // Show payment verification dialog after opening UPI app
-        setTimeout(() => {
-          Alert.alert(
-            'Payment Verification',
-            'Have you completed the payment successfully?',
-            [
-              { 
-                text: 'No, Cancel', 
-                style: 'cancel',
-                onPress: () => console.log('❌ Payment cancelled by user')
-              },
-              { 
-                text: 'Yes, Paid', 
-                onPress: () => handlePaymentVerification(paymentType, amount)
-              }
-            ]
-          );
-        }, 3000); // Wait 3 seconds for UPI app to process
-        
-      } else {
-        // Fallback: Show manual payment options
-        Alert.alert(
-          'Choose Payment Method',
-          `UPI ID: ${recipientUPI}\nAmount: ₹${amount}\nAppointment: #${appointmentData._id.slice(-6)}`,
-          [
-            { 
-              text: 'Copy UPI ID', 
-              onPress: () => {
-                // You might want to use Clipboard.setString() here
-                console.log('📋 UPI ID copied:', recipientUPI);
-                Alert.alert('Copied!', 'UPI ID copied to clipboard. You can paste it in your UPI app.');
-              }
-            },
-            { 
-              text: 'Open PhonePe', 
-              onPress: () => {
-                Linking.openURL('phonepe://').catch(() => {
-                  Alert.alert('PhonePe not installed', 'Please install PhonePe or use another UPI app.');
-                });
-              }
-            },
-            { 
-              text: 'Manual Payment', 
-              onPress: () => {
-                Alert.alert(
-                  'Manual Payment',
-                  `Please open your UPI app and send ₹${amount} to:\n\n${recipientUPI}\n\nReference: Appointment #${appointmentData._id.slice(-6)}`,
-                  [{ text: 'OK' }]
-                );
-              }
-            }
-          ]
-        );
+      const transactionNote = `Payment for Appointment #${appointmentData._id.slice(-6)} - Advance`;
+      const transactionRef = `APT${appointmentData._id.slice(-8)}${Date.now().toString().slice(-4)}`;
+      
+      let deepLink = '';
+      
+      if (paymentMethod === 'phonepe') {
+        deepLink = `phonepe://pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${advanceAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      } else if (paymentMethod === 'googlepay') {
+        deepLink = `tez://upi/pay?pa=${recipientUPI}&pn=${encodeURIComponent(appointmentData.storeName || 'Store Owner')}&am=${advanceAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
       }
+
+      return {
+        deepLink,
+        amount: advanceAmount,
+        upi: recipientUPI
+      };
 
     } catch (error) {
-      console.error('❌ Error handling UPI payment:', error);
+      console.error('❌ Error fetching store UPI:', error);
       Alert.alert(
-        'Payment Error',
-        'Unable to process UPI payment. Please try again or contact support.',
+        'Error',
+        'Unable to fetch payment details. Please try again.',
         [{ text: 'OK' }]
       );
+      return null;
     }
   };
 
-  // Handle payment verification after UPI transaction
-  const handlePaymentVerification = async (paymentType, amount) => {
-    try {
-      console.log('✅ User confirmed payment completion');
-      console.log('Payment Type:', paymentType);
-      console.log('Amount:', amount);
-
-      // Call your payment callback or API to update payment status
-      if (onPayment) {
-        await onPayment(appointmentData._id, paymentType, amount);
-      }
+  // Handle payment method selection and deep link generation
+  const handlePaymentMethodSelect = async (method) => {
+    setSelectedPaymentMethod(method);
+    
+    const paymentData = await getStoreUPIAndGenerateLink(method);
+    
+    if (paymentData) {
+      console.log(`📱 Opening ${method} with amount: ₹${paymentData.amount}`);
       
-      // You might also want to call an API to update payment status
-      // const response = await axios.patch(`${SERVER_URL}/appointments/${appointmentData._id}/payment`, {
-      //   paymentType,
-      //   amount,
-      //   paymentMethod: 'UPI',
-      //   transactionId: `UPI_${Date.now()}` // You can generate a proper transaction ID
-      // });
+      try {
+        const canOpen = await Linking.canOpenURL(paymentData.deepLink);
+        
+        if (canOpen) {
+          await Linking.openURL(paymentData.deepLink);
+          console.log(`✅ Successfully opened ${method}`);
+        } else {
+          Alert.alert(
+            `${method === 'phonepe' ? 'PhonePe' : 'Google Pay'} Not Found`,
+            `Please install ${method === 'phonepe' ? 'PhonePe' : 'Google Pay'} app to continue with payment.`,
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error(`❌ Error opening ${method}:`, error);
+        Alert.alert(
+          'Error',
+          `Unable to open ${method === 'phonepe' ? 'PhonePe' : 'Google Pay'}. Please try again.`,
+          [{ text: 'OK' }]
+        );
+      }
+    }
+  };
+
+  // NEW: Handle transaction ID submission with API call
+  const handleTransactionSubmit = async () => {
+    if (!transactionId.trim()) {
+      Alert.alert('Missing Transaction ID', 'Please enter the transaction ID to complete the payment.');
+      return;
+    }
+
+    if (!selectedPaymentMethod) {
+      Alert.alert('Payment Method Not Selected', 'Please select a payment method first.');
+      return;
+    }
+
+    setIsSubmittingPayment(true);
+
+    try {
+      console.log('💳 Submitting payment with transaction ID:', transactionId,selectedPaymentMethod,advanceAmount);
+      
+      const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
+      const advanceAmount = Math.ceil(totalCost * 0.3);
+      
+      // NEW: API call to update appointment with payment details
+      const response = await axios.put(`${SERVER_URL}/appointments/advance-payment/${appointmentData._id}`, {
+        transactionId: transactionId.trim(),
+        paymentMethod: selectedPaymentMethod,
+        amountPaid: advanceAmount,
+        payment: 'advance', // Update payment status to advance
+        status: 'advance-recieved' // Update status to advance-recieved
+      });
+
+      console.log('✅ Payment updated successfully:', response.data);
+      
+      // Call payment callback if provided (for additional handling)
+      if (onPayment) {
+        await onPayment(appointmentData._id, 'advance', advanceAmount, {
+          transactionId: transactionId.trim(),
+          paymentMethod: selectedPaymentMethod,
+          amount: advanceAmount
+        });
+      }
+
+      // Update the appointment state immediately with new data
+      if (onAppointmentUpdate) {
+        onAppointmentUpdate(appointmentData._id, {
+          transactionId: transactionId.trim(),
+          amountPaid: advanceAmount,
+          payment: 'advance',
+          status: 'advance-recieved'
+        });
+      }
 
       Alert.alert(
-        'Payment Recorded',
-        'Your payment has been recorded. The store owner will verify the transaction.',
-        [{ text: 'OK' }]
+        'Payment Submitted Successfully',
+        'Your advance payment has been recorded. The store owner has been notified.',
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            setShowPaymentModal(false);
+            setTransactionId('');
+            setSelectedPaymentMethod('');
+            
+            // Refresh the appointment data
+            if (onRefresh) {
+              onRefresh();
+            }
+          }
+        }]
       );
-
-      // Refresh the appointment data
-      if (onRefresh) {
-        onRefresh();
-      }
 
     } catch (error) {
-      console.error('❌ Error recording payment:', error);
+      console.error('❌ Error submitting payment:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to submit payment details. Please try again.';
       Alert.alert(
-        'Error',
-        'Failed to record payment. Please contact support.',
+        'Payment Submission Error',
+        errorMessage,
         [{ text: 'OK' }]
       );
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -275,9 +263,7 @@ const AppointmentCard = ({
               console.log(`✅ ${actionName} appointment:`, appointmentData._id);
               
               const response = await axios.patch(
-                `${SERVER_URL}/appointments/${appointmentData._id}`,
-                { status: newStatus }
-              );
+                `${SERVER_URL}/appointments/mark-advance/${appointmentData._id}` );
               
               console.log(`✅ Appointment ${actionName.toLowerCase()} successfully:`, response.data);
               
@@ -312,67 +298,16 @@ const AppointmentCard = ({
     );
   };
 
-  // UPDATED: Handle Pay Advance with UPI
+  // Show payment modal
   const handlePayAdvance = () => {
     const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
-    const amountPaid = appointmentData.amountPaid || 0;
-    const remainingAmount = totalCost - amountPaid;
-    const advanceAmount = Math.ceil(totalCost * 0.3); // 30% advance or adjust as needed
+    const advanceAmount = Math.ceil(totalCost * 0.3);
     
     console.log('💰 Pay button pressed');
     console.log('Total cost:', totalCost);
-    console.log('Amount paid:', amountPaid);
-    console.log('Remaining amount:', remainingAmount);
     console.log('Advance amount (30%):', advanceAmount);
     
-    Alert.alert(
-      'Payment Options',
-      `Total: ₹${totalCost}\nPaid: ₹${amountPaid}\nRemaining: ₹${remainingAmount}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: `Pay Advance (₹${advanceAmount})`, 
-          onPress: () => {
-            console.log('💰 Pay Advance selected');
-            handleUPIPayment('advance', advanceAmount);
-          }
-        },
-        { 
-          text: `Pay Full (₹${remainingAmount})`, 
-          onPress: () => {
-            console.log('💸 Pay Full selected');
-            handleUPIPayment('full', remainingAmount);
-          }
-        }
-      ]
-    );
-  };
-
-  const handlePayment = () => {
-    const remainingAmount = appointmentData.cost - (appointmentData.amountPaid || 0);
-    console.log('💳 Payment button pressed. Remaining amount:', remainingAmount);
-    Alert.alert(
-      'Payment Options',
-      `Total: ₹${appointmentData.cost}\nPaid: ₹${appointmentData.amountPaid || 0}\nRemaining: ₹${remainingAmount}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Pay Advance', 
-          onPress: () => {
-            console.log('💰 Pay Advance selected');
-            const advanceAmount = Math.ceil(appointmentData.cost * 0.3);
-            handleUPIPayment('advance', advanceAmount);
-          }
-        },
-        { 
-          text: 'Pay Full', 
-          onPress: () => {
-            console.log('💸 Pay Full selected');
-            handleUPIPayment('full', remainingAmount);
-          }
-        }
-      ]
-    );
+    setShowPaymentModal(true);
   };
 
   const renderActionButtons = () => {
@@ -441,6 +376,19 @@ const AppointmentCard = ({
             </TouchableOpacity>
           </View>
         );
+      } else if (status === 'advance-recieved') {
+        console.log('💰 Advance received - showing limited options');
+        return (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.cancelButton]} 
+              onPress={() => updateAppointmentStatus('cancelled', 'Cancel')}
+            >
+              <Ionicons name="close" size={14} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        );
       } else {
         console.log('❓ Sender with unknown status:', status);
       }
@@ -478,6 +426,107 @@ const AppointmentCard = ({
     console.log('🔇 No buttons shown - no conditions met');
     console.log('Final check - isUserSender:', isUserSender, 'isUserReceiver:', isUserReceiver, 'status:', status);
     return null;
+  };
+
+  // Payment Modal Component
+  const renderPaymentModal = () => {
+    const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
+    const advanceAmount = Math.ceil(totalCost * 0.3);
+
+    return (
+      <Modal
+        visible={showPaymentModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Payment Options</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowPaymentModal(false);
+                  setTransactionId('');
+                  setSelectedPaymentMethod('');
+                }}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#757575" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <Text style={styles.paymentAmount}>
+                Advance Amount: ₹{advanceAmount} (30% of ₹{totalCost})
+              </Text>
+
+              <Text style={styles.sectionTitle}>Select Payment Method:</Text>
+              
+              <View style={styles.paymentMethodContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.paymentMethodButton,
+                    selectedPaymentMethod === 'phonepe' && styles.selectedPaymentMethod
+                  ]}
+                  onPress={() => handlePaymentMethodSelect('phonepe')}
+                >
+                  <View style={styles.paymentMethodContent}>
+                    <Ionicons name="phone-portrait" size={24} color="#673AB7" />
+                    <Text style={styles.paymentMethodText}>PhonePe</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.paymentMethodButton,
+                    selectedPaymentMethod === 'googlepay' && styles.selectedPaymentMethod
+                  ]}
+                  onPress={() => handlePaymentMethodSelect('googlepay')}
+                >
+                  <View style={styles.paymentMethodContent}>
+                    <Ionicons name="card" size={24} color="#4285F4" />
+                    <Text style={styles.paymentMethodText}>Google Pay</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {selectedPaymentMethod && (
+                <View style={styles.transactionSection}>
+                  <Text style={styles.sectionTitle}>Enter Transaction ID:</Text>
+                  <Text style={styles.instructionText}>
+                    Complete the payment in {selectedPaymentMethod === 'phonepe' ? 'PhonePe' : 'Google Pay'} and enter the transaction ID below:
+                  </Text>
+                  <TextInput
+                    style={styles.transactionInput}
+                    placeholder="Enter transaction ID after payment"
+                    value={transactionId}
+                    onChangeText={setTransactionId}
+                    autoCapitalize="characters"
+                  />
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.submitButton,
+                      (!transactionId.trim() || isSubmittingPayment) && styles.disabledButton
+                    ]}
+                    onPress={handleTransactionSubmit}
+                    disabled={!transactionId.trim() || isSubmittingPayment}
+                  >
+                    <Text style={[
+                      styles.submitButtonText,
+                      (!transactionId.trim() || isSubmittingPayment) && styles.disabledButtonText
+                    ]}>
+                      {isSubmittingPayment ? 'Submitting...' : 'Submit Payment'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   };
 
   return (
@@ -536,7 +585,7 @@ const AppointmentCard = ({
             <Text style={styles.statusLabel}>Status</Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(appointmentData.status) }]}>
               <Text style={styles.statusText}>
-                {appointmentData.status?.toUpperCase() || 'PENDING'}
+                {appointmentData.status?.toUpperCase().replace('-', ' ') || 'PENDING'}
               </Text>
             </View>
           </View>
@@ -551,6 +600,14 @@ const AppointmentCard = ({
           </View>
         </View>
         
+        {/* Transaction ID (if available) */}
+        {appointmentData.transactionId && (
+          <View style={styles.transactionRow}>
+            <Ionicons name="receipt-outline" size={14} color="#757575" />
+            <Text style={styles.transactionText}>Transaction ID: {appointmentData.transactionId}</Text>
+          </View>
+        )}
+        
         {/* Contact (if available) */}
         {appointmentData.contactNo && (
           <View style={styles.contactRow}>
@@ -562,120 +619,124 @@ const AppointmentCard = ({
 
       {/* Action Buttons */}
       {renderActionButtons()}
+
+      {/* Payment Modal */}
+      {renderPaymentModal()}
     </View>
   );
 };
 
+// Add styles for new elements
 const styles = StyleSheet.create({
   appointmentCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    marginVertical: 2,
+    padding: 16,
+    margin: 8,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#E3F2FD',
-    maxWidth: 280,
-    minWidth: 260,
+    shadowRadius: 4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    marginBottom: 12,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginLeft: 6,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#333',
   },
   roleIndicator: {
-    fontSize: 11,
-    color: '#757575',
-    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   content: {
-    padding: 12,
+    marginBottom: 16,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   column: {
     flex: 1,
-    paddingRight: 8,
+    marginRight: 8,
   },
   label: {
-    fontSize: 11,
-    color: '#757575',
-    fontWeight: '500',
-    marginBottom: 2,
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
   value: {
-    fontSize: 13,
-    color: '#333333',
-    fontWeight: '400',
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
   paidAmount: {
-    fontSize: 11,
     color: '#4CAF50',
+    fontSize: 12,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
     marginBottom: 8,
   },
   statusContainer: {
-    alignItems: 'center',
     flex: 1,
+    marginRight: 8,
   },
   statusLabel: {
-    fontSize: 10,
-    color: '#757575',
+    fontSize: 12,
+    color: '#666',
     marginBottom: 4,
-    fontWeight: '500',
   },
   statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 12,
-    minWidth: 60,
-    alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   statusText: {
+    fontSize: 10,
     color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  transactionText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
   },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginBottom: 4,
   },
   contactText: {
     fontSize: 12,
-    color: '#333333',
+    color: '#666',
     marginLeft: 6,
   },
   buttonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+    justifyContent: 'flex-end',
     gap: 8,
   },
   actionButton: {
@@ -684,9 +745,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
-    flex: 1,
+    minWidth: 80,
     justifyContent: 'center',
-    gap: 4,
   },
   acceptButton: {
     backgroundColor: '#4CAF50',
@@ -700,7 +760,118 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    // Content styles
+  },
+  paymentAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    backgroundColor: '#F5F5F5',
+    padding: 12,
+    borderRadius: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  paymentMethodContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  paymentMethodButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 16,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  selectedPaymentMethod: {
+    borderColor: '#2196F3',
+    backgroundColor: '#E3F2FD',
+  },
+  paymentMethodContent: {
+    alignItems: 'center',
+  },
+  paymentMethodText: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  transactionSection: {
+    marginTop: 20,
+  },
+  instructionText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+
+  transactionInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    marginBottom: 16,
+    backgroundColor: '#FAFAFA',
+  },
+  submitButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
+  },
+  disabledButtonText: {
+    color: '#999999',
   },
 });
 

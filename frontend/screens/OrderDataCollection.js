@@ -10,7 +10,8 @@ import {
   TextInput,
   Alert,
   Image,
-  Linking
+  Linking,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -35,11 +36,15 @@ console.log("authuser",user);
   const [address, setAddress] = useState(user?.address ||'');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
   const [selectedPayment, setSelectedPayment] = useState('cod');
+  const [transactionId, setTransactionId] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   // Validation error states
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
+  const [transactionError, setTransactionError] = useState('');
 
   // Product details
   const productPrice = parseFloat(product.price) || 0;
@@ -52,8 +57,6 @@ console.log("authuser",user);
     { id: 'cod', name: 'Cash on Delivery', icon: 'cash-outline' },
     { id: 'gpay', name: 'Google Pay', icon: 'logo-google' },
     { id: 'phonepe', name: 'PhonePe', icon: 'card-outline' },
-    { id: 'paytm', name: 'Paytm', icon: 'wallet-outline' },
-    { id: 'upi', name: 'Other UPI', icon: 'qr-code-outline' }
   ];
 
   // Validation functions
@@ -97,6 +100,18 @@ console.log("authuser",user);
     return '';
   };
 
+  const validateTransactionId = (txnId) => {
+    const trimmedId = txnId.trim();
+    
+    if (trimmedId.length === 0) {
+      return 'Transaction ID is required for digital payments';
+    }
+    if (trimmedId.length < 8) {
+      return 'Please enter a valid transaction ID';
+    }
+    return '';
+  };
+
   // Handle input changes with validation
   const handleNameChange = (text) => {
     setCustomerName(text);
@@ -118,11 +133,24 @@ console.log("authuser",user);
     setAddressError(error);
   };
 
+  const handleTransactionIdChange = (text) => {
+    setTransactionId(text);
+    const error = validateTransactionId(text);
+    setTransactionError(error);
+  };
+
   // Check if form is valid
   const isFormValid = () => {
     const nameValid = validateName(customerName) === '';
     const phoneValid = validatePhone(phoneNumber) === '';
     const addressValid = validateAddress(address) === '';
+    
+    // For digital payments, also check transaction ID
+    if (selectedPayment !== 'cod') {
+      const transactionValid = validateTransactionId(transactionId) === '';
+      return nameValid && phoneValid && addressValid && transactionValid && paymentCompleted;
+    }
+    
     return nameValid && phoneValid && addressValid;
   };
 
@@ -152,48 +180,125 @@ console.log("authuser",user);
   // Handle payment selection
   const handlePaymentSelect = (paymentId) => {
     setSelectedPayment(paymentId);
+    setTransactionId('');
+    setTransactionError('');
+    setPaymentCompleted(false);
+    
+    // If selecting digital payment, show payment modal
+    if (paymentId !== 'cod') {
+      setShowPaymentModal(true);
+    }
   };
 
-  // Handle payment processing
-  const processPayment = async () => {
-    if (selectedPayment === 'cod') {
-      return { success: true, method: 'cod' };
+  // Generate payment deep link
+  const generatePaymentDeepLink = (paymentMethod) => {
+    const amount = calculateTotal();
+    const merchantName = store.storeName || 'Merchant';
+    const merchantUPI = store.upi || 'merchant@paytm';
+    
+    console.log("merchant upi",merchantUPI);
+    
+    let deepLink = '';
+    
+    switch (paymentMethod) {
+      case 'gpay':
+        deepLink = `gpay://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
+        break;
+      case 'phonepe':
+        deepLink = `phonepe://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
+        break;
+      case 'paytm':
+        deepLink = `paytmmp://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
+        break;
+      case 'upi':
+        deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
+        break;
     }
+    
+    console.log(`🔗 Generated ${paymentMethod.toUpperCase()} Deep Link:`, deepLink);
+    return deepLink;
+  };
 
-    // For digital payments, open respective apps
+  // Handle payment app opening
+  const openPaymentApp = async (paymentMethod) => {
     try {
-      let paymentUrl = '';
-      const amount = calculateTotal();
+      const deepLink = generatePaymentDeepLink(paymentMethod);
       
-      switch (selectedPayment) {
-        case 'gpay':
-          paymentUrl = `gpay://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
-          break;
-        case 'phonepe':
-          paymentUrl = `phonepe://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
-          break;
-        case 'paytm':
-          paymentUrl = `paytmmp://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
-          break;
-        case 'upi':
-          paymentUrl = `upi://pay?pa=${store.upiId || 'merchant@paytm'}&pn=${store.storeName || 'Store'}&am=${amount}&cu=INR`;
-          break;
-      }
-
-      if (paymentUrl) {
-        const supported = await Linking.canOpenURL(paymentUrl);
+      if (deepLink) {
+        const supported = await Linking.canOpenURL(deepLink);
         if (supported) {
-          await Linking.openURL(paymentUrl);
-          return { success: true, method: selectedPayment };
+          await Linking.openURL(deepLink);
+          return true;
         } else {
-          Alert.alert('Error', 'Payment app not installed');
-          return { success: false };
+          // Try alternative deep links
+          const alternativeLinks = getAlternativeDeepLinks(paymentMethod);
+          for (const altLink of alternativeLinks) {
+            const altSupported = await Linking.canOpenURL(altLink);
+            if (altSupported) {
+              console.log(`🔗 Using alternative deep link:`, altLink);
+              await Linking.openURL(altLink);
+              return true;
+            }
+          }
+          
+          Alert.alert(
+            'App Not Found', 
+            `${paymentMethod.toUpperCase()} app is not installed on your device. Please install the app or use a different payment method.`
+          );
+          return false;
         }
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      Alert.alert('Error', 'Failed to process payment');
-      return { success: false };
+      console.error('Payment app error:', error);
+      Alert.alert('Error', 'Failed to open payment app. Please try again.');
+      return false;
+    }
+  };
+
+  // Get alternative deep links for better compatibility
+  const getAlternativeDeepLinks = (paymentMethod) => {
+    const amount = calculateTotal();
+    const merchantName = store.storeName || 'Merchant';
+    const merchantUPI = store.upiId || 'merchant@paytm';
+    
+    switch (paymentMethod) {
+      case 'gpay':
+        return [
+          `gpay://upi/pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`,
+          `tez://upi/pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`
+        ];
+      case 'phonepe':
+        return [
+          `phonepe://upi/pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`,
+          `phonepe://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`
+        ];
+      case 'paytm':
+        return [
+          `paytmmp://upi/pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`,
+          `paytm://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`
+        ];
+      default:
+        return [];
+    }
+  };
+
+  // Handle payment process
+  const handlePaymentProcess = async () => {
+    const success = await openPaymentApp(selectedPayment);
+    if (success) {
+      // Don't close modal immediately, let user complete payment and enter transaction ID
+    }
+  };
+
+  // Confirm payment completion
+  const confirmPaymentCompletion = () => {
+    const error = validateTransactionId(transactionId);
+    setTransactionError(error);
+    
+    if (!error) {
+      setPaymentCompleted(true);
+      setShowPaymentModal(false);
+      Alert.alert('Payment Confirmed', 'Payment details saved. You can now place your order.');
     }
   };
 
@@ -208,8 +313,15 @@ console.log("authuser",user);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
 
+    // For digital payments, validate transaction ID
+    let transactionValidationError = '';
+    if (selectedPayment !== 'cod') {
+      transactionValidationError = validateTransactionId(transactionId);
+      setTransactionError(transactionValidationError);
+    }
+
     // Check if any validation errors exist
-    if (nameValidationError || phoneValidationError || addressValidationError) {
+    if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
       Alert.alert('Validation Error', 'Please fix the errors before placing the order');
       return;
     }
@@ -220,26 +332,19 @@ console.log("authuser",user);
       quantity: quantity,
       unitPrice: productPrice,
       totalAmount: calculateTotal(),
-      buyerId:user._id,
+      buyerId: user._id,
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
       phoneNumber: phoneNumber,
       paymentMethod: selectedPayment,
+      transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
       storeId: storeId,
       sellerId: store._id,
       status: 'pending'
     };
 
     try {
-      console.log("order data ",orderData);
-      
-      // Process payment first (except for COD)
-      if (selectedPayment !== 'cod') {
-        const paymentResult = await processPayment();
-        if (!paymentResult.success) {
-          return;
-        }
-      }
+      console.log("order data ", orderData);
 
       // Send order to server
       const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
@@ -259,7 +364,7 @@ console.log("authuser",user);
           [
             {
               text: 'OK',
-             
+              onPress: () => navigation.goBack()
             }
           ]
         );
@@ -283,14 +388,14 @@ console.log("authuser",user);
       </View>
 
       <KeyboardAvoidingView
-  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  style={{ flex: 1 }}
-  keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0} // optional tweak for iOS
->
-<ScrollView
-    contentContainerStyle={styles.scrollContent}
-    keyboardShouldPersistTaps="handled"
-  >    
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >    
           {/* Product Details */}
           <View style={styles.productContainer}>
             <Text style={styles.sectionTitle}>Product Details</Text>
@@ -431,6 +536,45 @@ console.log("authuser",user);
             </View>
           </View>
 
+          {/* Transaction ID Input for Digital Payments */}
+          {selectedPayment !== 'cod' && (
+            <View style={styles.transactionContainer}>
+              <Text style={styles.sectionTitle}>Transaction Details</Text>
+              {!paymentCompleted && (
+                <View style={styles.paymentInstructions}>
+                  <Ionicons name="information-circle" size={24} color="#FF9800" />
+                  <Text style={styles.instructionText}>
+                    Complete payment using {paymentOptions.find(p => p.id === selectedPayment)?.name} and enter your transaction ID below.
+                  </Text>
+                </View>
+              )}
+              
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Transaction ID / Reference Number</Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    transactionError ? styles.textInputError : null
+                  ]}
+                  placeholder="Enter transaction ID after payment"
+                  value={transactionId}
+                  onChangeText={handleTransactionIdChange}
+                  placeholderTextColor="#999999"
+                />
+                {transactionError ? (
+                  <Text style={styles.errorText}>{transactionError}</Text>
+                ) : null}
+              </View>
+
+              {paymentCompleted && (
+                <View style={styles.paymentSuccess}>
+                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                  <Text style={styles.successText}>Payment details confirmed!</Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Order Summary */}
           <View style={styles.orderSummary}>
             <Text style={styles.sectionTitle}>Order Summary</Text>
@@ -455,28 +599,111 @@ console.log("authuser",user);
           </View>
 
         </ScrollView>
+        
         <View style={styles.buttonContainer}>
-      <TouchableOpacity 
-        style={styles.cancelButton} 
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.placeOrderButton,
-          !isFormValid() && styles.placeOrderButtonDisabled
-        ]}
-        onPress={handlePlaceOrder}
-        disabled={!isFormValid()}
-      >
-        <Text style={styles.placeOrderButtonText}>Place Order</Text>
-      </TouchableOpacity>
-    </View>
+          <TouchableOpacity 
+            style={styles.cancelButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.placeOrderButton,
+              !isFormValid() && styles.placeOrderButtonDisabled
+            ]}
+            onPress={handlePlaceOrder}
+            disabled={!isFormValid()}
+          >
+            <Text style={styles.placeOrderButtonText}>Place Order</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
-      {/* Bottom buttons */}
-     
+      {/* Payment Modal */}
+      <Modal
+        visible={showPaymentModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Pay via {paymentOptions.find(p => p.id === selectedPayment)?.name}
+              </Text>
+              <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
+                <Ionicons name="close" size={24} color="#155366" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalContent}>
+              <View style={styles.paymentDetails}>
+                <Text style={styles.paymentAmount}>Amount: ₹{calculateTotal()}</Text>
+                <Text style={styles.paymentMerchant}>Pay to: {store.storeName || 'Merchant'}</Text>
+                {store.upiId && (
+                  <Text style={styles.paymentUPI}>UPI ID: {store.upiId}</Text>
+                )}
+              </View>
+
+              <TouchableOpacity 
+                style={styles.openPaymentAppButton}
+                onPress={handlePaymentProcess}
+              >
+                <Ionicons name="card" size={24} color="#FFFFFF" />
+                <Text style={styles.openPaymentAppText}>
+                  Open {paymentOptions.find(p => p.id === selectedPayment)?.name}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.paymentInstructions}>
+                <Text style={styles.instructionTitle}>Instructions:</Text>
+                <Text style={styles.instructionText}>
+                  1. Click "Open {paymentOptions.find(p => p.id === selectedPayment)?.name}" button above
+                </Text>
+                <Text style={styles.instructionText}>
+                  2. Complete the payment in the app
+                </Text>
+                <Text style={styles.instructionText}>
+                  3. Copy the transaction ID/reference number
+                </Text>
+                <Text style={styles.instructionText}>
+                  4. Enter it below and click "Confirm Payment"
+                </Text>
+              </View>
+
+              <View style={styles.transactionInputContainer}>
+                <Text style={styles.inputLabel}>Transaction ID</Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    transactionError ? styles.textInputError : null
+                  ]}
+                  placeholder="Paste transaction ID here"
+                  value={transactionId}
+                  onChangeText={handleTransactionIdChange}
+                  placeholderTextColor="#999999"
+                />
+                {transactionError ? (
+                  <Text style={styles.errorText}>{transactionError}</Text>
+                ) : null}
+              </View>
+
+              <TouchableOpacity 
+                style={[
+                  styles.confirmPaymentButton,
+                  !transactionId.trim() && styles.confirmPaymentButtonDisabled
+                ]}
+                onPress={confirmPaymentCompletion}
+                disabled={!transactionId.trim()}
+              >
+                <Text style={styles.confirmPaymentText}>Confirm Payment</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -647,6 +874,37 @@ const styles = StyleSheet.create({
   paymentOptionTextSelected: {
     color: '#FFFFFF',
   },
+  transactionContainer: {
+    marginBottom: 20,
+  },
+  paymentInstructions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  instructionText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#E65100',
+  },
+  paymentSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  successText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '500',
+  },
   orderSummary: {
     backgroundColor: '#E0F2F1',
     borderRadius: 12,
@@ -721,6 +979,95 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '500',
   },
-});
-
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#155366',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  paymentDetails: {
+    backgroundColor: '#E0F2F1',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  paymentAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#155366',
+    marginBottom: 8,
+  },
+  paymentMerchant: {
+    fontSize: 16,
+    color: '#155366',
+    marginBottom: 4,
+  },
+  paymentUPI: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  openPaymentAppButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#155366',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  openPaymentAppText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  instructionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#155366',
+    marginBottom: 8,
+  },
+  transactionInputContainer: {
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  confirmPaymentButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  confirmPaymentButtonDisabled: {
+    backgroundColor: '#C8E6C9',
+  },
+  confirmPaymentText: { 
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+})
 export default OrderDetails;

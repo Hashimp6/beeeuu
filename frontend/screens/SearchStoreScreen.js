@@ -185,6 +185,8 @@ const StoreSearchPage = ({ navigation }) => {
       });
 
       if (response.data.success) {
+        console.log("store1s",response.data.data.stores);
+        
         setStores(response.data.data.stores);
         setPagination(response.data.data.pagination);
       } else {
@@ -222,6 +224,7 @@ const StoreSearchPage = ({ navigation }) => {
       });
 
       if (response.data.success) {
+        console.log("store2s",response.data.data.stores);
         setStores(response.data.data.stores);
         setPagination(response.data.data.pagination);
       } else {
@@ -261,6 +264,7 @@ const StoreSearchPage = ({ navigation }) => {
       });
 
       if (response.data.success) {
+        console.log("store3s",response.data.data.stores);
         setStores(response.data.data.stores);
         setPagination(response.data.data.pagination);
       } else {
@@ -335,7 +339,7 @@ const StoreSearchPage = ({ navigation }) => {
       id={item._id}
       image={item.profileImage || 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Store+Image'}
       name={item.storeName}
-      rating={item.rating}
+      rating={item.averageRating}
       location={item.place}
       category={item.category}
       description={item.description}

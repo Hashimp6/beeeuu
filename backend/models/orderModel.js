@@ -57,7 +57,13 @@ const orderSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  
+ // In your Order schema
+transactionId: {
+  type: String,
+  required: function() {
+    return this.paymentMethod && this.paymentMethod !== 'cod';
+  }
+},
   // Payment Information
   paymentMethod: {
     type: String,
@@ -66,7 +72,7 @@ const orderSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
+    enum: ['pending', 'confirmed', 'failed', 'refunded'],
     default: 'pending'
   },
   

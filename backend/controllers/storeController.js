@@ -710,7 +710,22 @@ const checkStoreNameAvailability = async (req, res) => {
   }
 };
 
+const getStoreUpi = async (req, res) => {
+  const { storeId } = req.params;
 
+  try {
+    const store = await Store.findById(storeId).select('upi name');
+
+    if (!store) {
+      return res.status(404).json({ success: false, message: 'Store not found' });
+    }
+
+    res.status(200).json({ success: true, upi: store.upi, storeName: store.name });
+  } catch (error) {
+    console.error('Error fetching UPI:', error.message);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
 
   module.exports = {
     registerStore,
@@ -720,5 +735,6 @@ const checkStoreNameAvailability = async (req, res) => {
     deleteStore,
     findNearestSellers,
     getStoreByUserId ,
-    checkStoreNameAvailability 
+    checkStoreNameAvailability ,
+    getStoreUpi
   };
