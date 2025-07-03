@@ -50,7 +50,7 @@ const emailTemplates = {
 
   // Password Reset Template
   passwordReset: (resetLink, username) => ({
-    subject: "Password Reset Request - BueBee",
+    subject: "Password Reset Request - SerchBy",
     text: `Hello ${username}, you have requested to reset your password. Click this link: ${resetLink}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
@@ -152,7 +152,7 @@ const sendMail = async (to, otp) => {
     const template = emailTemplates.otpVerification(otp);
     
     const mailOptions = {
-      from: '"BueBee" <buebee@gmail.com>',
+      from: '"Serchby" <serchby@gmail.com>',
       to: to,
       subject: template.subject,
       text: template.text,
@@ -176,7 +176,7 @@ const sendPasswordResetEmail = async (to, resetLink, username) => {
     const template = emailTemplates.passwordReset(resetLink, username);
     
     const mailOptions = {
-      from: '"BueBee" <buebee@gmail.com>',
+      from: '"SerchBy" <serchby@gmail.com>',
       to: to,
       subject: template.subject,
       text: template.text,
@@ -198,7 +198,7 @@ const sendPasswordResetConfirmation = async (to, username) => {
     const template = emailTemplates.passwordResetConfirmation(username);
     
     const mailOptions = {
-      from: '"BueBee" <buebee@gmail.com>',
+      from: '"SerchBy" <serchby@gmail.com>',
       to: to,
       subject: template.subject,
       text: template.text,

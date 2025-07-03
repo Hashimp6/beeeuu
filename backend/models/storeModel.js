@@ -6,7 +6,6 @@ const storeSchema = new mongoose.Schema({
   profileImage: { type: String }, 
   place: { type: String },
   category: { type: String },
-  rating: { type: String },
   location: {
     type: { type: String,enum: ['Point'], default: "Point" },
     coordinates: [Number] 

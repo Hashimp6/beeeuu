@@ -606,7 +606,7 @@ const forgotPassword = async (req, res) => {
     };
 
     // Create reset link (adjust URL to match your frontend)
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const resetLink = `https://serchby.com/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
     
     // Send password reset email
     await sendMail.sendPasswordResetEmail(email, resetLink, user.username);
@@ -682,6 +682,7 @@ const verifyResetToken = async (req, res) => {
 // Reset password with token
 const resetPassword = async (req, res) => {
   try {
+    console.log("krr", req.body);
     const { token, email, newPassword } = req.body;
 
     if (!token || !email || !newPassword) {
