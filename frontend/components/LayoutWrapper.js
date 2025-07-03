@@ -73,7 +73,7 @@ const AppLayoutWrapper = ({ children, screenName }) => {
       {/* Header */}
       <View style={styles.header}>
         <Image 
-          source={require('../assets/log.png')} 
+          source={require('../assets/icon.png')} 
           style={styles.logo}
         />
 

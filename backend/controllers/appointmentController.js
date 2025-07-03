@@ -375,6 +375,8 @@ const manualUpdatePastAppointments = async (req, res) => {
 const updateAdvancePayment = async (req, res) => {
   const { appointmentId } = req.params;
   const { transactionId, amountPaid } = req.body;
+  console.log("body",req.body);
+  
 
   if (!transactionId || !amountPaid) {
     return res.status(400).json({
@@ -444,6 +446,44 @@ const updateAdvanceStatus = async (req, res) => {
 };
 
 
+const getAdvancePaymentAppointments = async (req, res) => {
+  const { storeId } = req.params;
+
+  try {
+    const appointments = await Appointment.find({
+      store: storeId,
+      payment: 'advance'
+    })
+    .populate('user', 'name email') // optional: populate user info
+    .populate('product', 'name') // optional
+    .populate('store', 'name upi'); // optional
+
+    if (!appointments || appointments.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No appointments with advance payment found for this store."
+      });
+    }
+console.log("apps",appointments);
+
+    res.status(200).json({
+      success: true,
+      data: appointments
+    });
+
+  } catch (error) {
+    console.error('Error fetching advance appointments:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+
+
+
 module.exports = {
   getUserAppointments,
   updateAppointmentStatus,
@@ -454,5 +494,6 @@ module.exports = {
   updateAdvancePayment ,
   updateAdvanceStatus ,
   manualUpdatePastAppointments,
+  getAdvancePaymentAppointments,
   handlePaymentUpdate // New function for payment notifications
 };

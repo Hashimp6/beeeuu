@@ -9,7 +9,8 @@ const {
   manualUpdatePastAppointments,
   getAppointmentsByStatus,
   updateAdvancePayment,
-  updateAdvanceStatus
+  updateAdvanceStatus,
+  getAdvancePaymentAppointments
 } = require('../controllers/appointmentController');
 
 // Create new appointment
@@ -35,7 +36,7 @@ router.get('/:appointmentId', getAppointmentById);
 // Update appointment status (universal - handles all status changes)
 // Usage: PUT /appointments/123 with body: { "status": "confirmed", "notes": "Optional notes" }
 router.patch('/:appointmentId', updateAppointmentStatus);
-
+router.get('/store/:storeId/advance-payments', getAdvancePaymentAppointments);
 // Manual trigger to update past appointments (useful for testing or manual runs)
 router.post('/update-past', manualUpdatePastAppointments);
 

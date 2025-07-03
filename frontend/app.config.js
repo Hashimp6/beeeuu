@@ -28,33 +28,35 @@ if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON_BASE64) && !existsSync(join(
 
 export default {
   expo: {
-    name: "beeu", // Keep original name
-    slug: "beeu", // Keep original slug
+    name: "beeu",
+    slug: "beeu",
     version: "1.0.0",
     owner: "hashimp6",
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    scheme: "beeu", // Keep original scheme
-    icon: "./assets/log.png",
-
+    scheme: "beeu",
+    icon: "./assets/logo.png", // Main app icon
+    
     ios: {
-      bundleIdentifier: "com.hashim.beeuu", // Keep original bundle ID
+      bundleIdentifier: "com.hashim.beeuu",
       supportsTablet: true,
-      icon: "./assets/log.png",
+      icon: "./assets/logo.png", // iOS specific icon (should be same as main)
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       },
       associatedDomains: [
-        "applinks:serchby.com", // ONLY change the domain
-        "applinks:www.serchby.com" // ONLY change the domain
+        "applinks:serchby.com",
+        "applinks:www.serchby.com"
       ]
     },
+    
     android: {
-      package: "com.hashim.beeuu", // Keep original package name
+      package: "com.hashim.beeuu",
       googleServicesFile: "./android/app/google-services.json",
+      icon: "./assets/logo.png", // Android specific icon
       adaptiveIcon: {
-        foregroundImage: "./assets/log.png",
+        foregroundImage: "./assets/logo.png", // Fixed typo: was "log.png"
         backgroundColor: "#ffffff"
       },
       config: {
@@ -70,29 +72,35 @@ export default {
           data: [
             {
               scheme: "https",
-              host: "serchby.com" // ONLY change the domain
+              host: "serchby.com"
             },
             {
               scheme: "https",
-              host: "www.serchby.com" // ONLY change the domain
+              host: "www.serchby.com"
             },
             {
-              scheme: "beeu" // Keep original custom scheme
+              scheme: "beeu"
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
+    
+    web: {
+      favicon: "./assets/logo.png" // Web favicon
+    },
+    
     plugins: [
       [
         "expo-notifications",
         {
-          icon: "./assets/log.png",
+          icon: "./assets/logo.png", // Fixed: was "log.png"
           color: "#ffffff"
         }
       ]
     ],
+    
     extra: {
       eas: {
         projectId: "02f51a23-2820-4320-a2b6-3a62255abb20"

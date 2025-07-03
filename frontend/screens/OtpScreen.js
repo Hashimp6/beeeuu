@@ -96,7 +96,7 @@ const OtpVerificationScreen = () => {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image 
-                source={require('../assets/log.png')}
+                source={require('../assets/icon.png')}
                 style={styles.logo}
               />
             </View>

@@ -18,22 +18,54 @@ import { SERVER_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
-const PaymentConfirmationComponent = ({ storeId }) => {
+const PaymentConfirmationComponent = ({ storeId,type }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(null);
 
-  // Fetch pending non-COD orders
+  // Fetch pending payments based on type
   const fetchPendingOrders = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
-      const res = await axios.get(`${SERVER_URL}/orders/pending-non-cod/${storeId}`);
-      console.log("Orders data:", res.data.data);
-      setOrders(res.data.data);
+      
+      let combinedData = [];
+      
+      if (type === 'order' ) {
+        // Fetch orders
+        const ordersRes = await axios.get(`${SERVER_URL}/orders/pending-non-cod/${storeId}`);
+        console.log("Orders data:", ordersRes.data.data);
+        
+        const ordersWithType = (ordersRes.data.data || []).map(order => ({
+          ...order,
+          type: 'order'
+        }));
+        
+        combinedData = [...combinedData, ...ordersWithType];
+      }
+      
+      if (type === 'appointment' ) {
+        console.log("type is appointment");
+        
+        // Fetch appointments
+        const appointmentsRes = await axios.get(`${SERVER_URL}/appointments/store/${storeId}/advance-payments`);
+        console.log("Appointments data:", appointmentsRes.data.data);
+        
+        const appointmentsWithType = (appointmentsRes.data.data || []).map(appointment => ({
+          ...appointment,
+          type: 'appointment'
+        }));
+        
+        combinedData = [...combinedData, ...appointmentsWithType];
+      }
+      
+      // Sort by creation date (newest first)
+      combinedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setOrders(combinedData);
     } catch (error) {
-      console.error('Error fetching orders:', error.message);
-      Alert.alert('Error', 'Failed to fetch orders.');
+      console.error('Error fetching data:', error.message);
+      Alert.alert('Error', 'Failed to fetch pending payments.');
     } finally {
       setLoading(false);
       if (isRefresh) setRefreshing(false);
@@ -42,24 +74,44 @@ const PaymentConfirmationComponent = ({ storeId }) => {
 
   useEffect(() => {
     fetchPendingOrders();
-  }, [storeId]);
+  }, [storeId, type]); // Added type as dependency
 
-  // Confirm payment
-  const handleConfirmPayment = async (orderId) => {
+  // Confirm payment based on type
+  const handleConfirmPayment = async (item) => {
+    const isAppointment = item.type === 'appointment';
+    const confirmTitle = isAppointment ? 'Confirm Advance Payment' : 'Confirm Payment';
+    const confirmMessage = isAppointment 
+      ? 'Are you sure you want to mark this advance payment as confirmed?' 
+      : 'Are you sure you want to mark this payment as confirmed?';
+    
     Alert.alert(
-      'Confirm Payment',
-      'Are you sure you want to mark this payment as confirmed?',
+      confirmTitle,
+      confirmMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Confirm',
           onPress: async () => {
             try {
-              setConfirmingPayment(orderId);
-              console.log("orderId",orderId);
+              setConfirmingPayment(item._id);
+              console.log("Item ID:", item._id, "Type:", item.type);
               
-              await axios.put(`${SERVER_URL}/orders/confirm-payment/${orderId}`);
-              Alert.alert('Success', 'Payment marked as completed');
+              let apiUrl;
+              if (isAppointment) {
+                // For appointments, use the advance payments API
+                apiUrl = `${SERVER_URL}/appointments/mark-advance/${item._id}`;
+              } else {
+                // For orders, use the existing orders API
+                apiUrl = `${SERVER_URL}/orders/confirm-payment/${item._id}`;
+              }
+              
+              await axios.put(apiUrl);
+              
+              const successMessage = isAppointment 
+                ? 'Advance payment marked as confirmed' 
+                : 'Payment marked as completed';
+              
+              Alert.alert('Success', successMessage);
               fetchPendingOrders();
             } catch (error) {
               console.error('Payment confirmation error:', error.message);
@@ -89,6 +141,19 @@ const PaymentConfirmationComponent = ({ storeId }) => {
       case 'netbanking': return '#FF9800';
       default: return '#9C27B0';
     }
+  };
+
+  // Get type-specific icon and color
+  const getTypeIcon = (itemType) => {
+    return itemType === 'appointment' ? 'event' : 'shopping-cart';
+  };
+
+  const getTypeColor = (itemType) => {
+    return itemType === 'appointment' ? '#9C27B0' : '#155366';
+  };
+
+  const getTypeName = (itemType) => {
+    return itemType === 'appointment' ? 'Appointment' : 'Order';
   };
 
   // Handle phone call
@@ -144,135 +209,211 @@ const PaymentConfirmationComponent = ({ storeId }) => {
     return '#95a5a6'; // Gray for older
   };
 
-  const renderOrderCard = ({ item }) => (
-    <View style={styles.orderCard}>
-      {/* Header with product name and amount */}
-      <View style={styles.cardHeader}>
-        <View style={styles.headerTop}>
-          <View style={styles.productInfo}>
-            <Text style={styles.productName} numberOfLines={2}>
-              {item.productName}
-            </Text>
-            <View style={styles.orderIdContainer}>
-              <Text style={styles.orderId}>#{item.orderId}</Text>
+  const renderOrderCard = ({ item }) => {
+    const isAppointment = item.type === 'appointment';
+    const displayName = isAppointment 
+      ? (item.serviceName || item.appointmentType || 'Appointment') 
+      : item.productName;
+    const displayId = isAppointment 
+      ? (item.appointmentId || item._id) 
+      : item.orderId;
+    
+    return (
+      <View style={styles.orderCard}>
+        {/* Header with product/service name and amount */}
+        <View style={styles.cardHeader}>
+          <View style={styles.headerTop}>
+            <View style={styles.productInfo}>
+              <View style={styles.typeIndicator}>
+                <Icon 
+                  name={getTypeIcon(item.type)} 
+                  size={16} 
+                  color={getTypeColor(item.type)} 
+                />
+                <Text style={[styles.typeName, { color: getTypeColor(item.type) }]}>
+                  {getTypeName(item.type)}
+                </Text>
+              </View>
+              <Text style={styles.productName} numberOfLines={2}>
+                {displayName}
+              </Text>
+              <View style={styles.orderIdContainer}>
+                <Text style={styles.orderId}>#{displayId}</Text>
+              </View>
+            </View>
+            <View style={[styles.amountContainer, { backgroundColor: getTypeColor(item.type) }]}>
+              <Text style={styles.amount}>₹{item.totalAmount || item.amount}</Text>
+              {item.quantity && (
+                <Text style={styles.quantity}>Qty: {item.quantity}</Text>
+              )}
             </View>
           </View>
-          <View style={styles.amountContainer}>
-            <Text style={styles.amount}>₹{item.totalAmount}</Text>
-            <Text style={styles.quantity}>Qty: {item.quantity}</Text>
+          
+          {/* Date and Time Info */}
+          <View style={styles.dateTimeContainer}>
+            <View style={styles.dateTimeRow}>
+              <Icon name="schedule" size={16} color={getTimeAgoColor(item.createdAt)} />
+              <Text style={[styles.dateTimeText, { color: getTimeAgoColor(item.createdAt) }]}>
+                {formatDateTime(item.createdAt)}
+              </Text>
+            </View>
+            <View style={[styles.urgencyBadge, { backgroundColor: getTimeAgoColor(item.createdAt) + '15' }]}>
+              <Text style={[styles.urgencyText, { color: getTimeAgoColor(item.createdAt) }]}>
+                {new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60) ? 'URGENT' : 
+                 new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60 * 6) ? 'HIGH' : 
+                 new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60 * 24) ? 'NORMAL' : 'OLD'}
+              </Text>
+            </View>
           </View>
         </View>
-        
-        {/* Date and Time Info */}
-        <View style={styles.dateTimeContainer}>
-          <View style={styles.dateTimeRow}>
-            <Icon name="schedule" size={16} color={getTimeAgoColor(item.createdAt)} />
-            <Text style={[styles.dateTimeText, { color: getTimeAgoColor(item.createdAt) }]}>
-              {formatDateTime(item.createdAt)}
-            </Text>
+
+        {/* Customer Information */}
+        <View style={styles.customerSection}>
+          <View style={styles.customerHeader}>
+            <Text style={styles.customerSectionTitle}>Customer Details</Text>
+            <TouchableOpacity
+              style={styles.callButton}
+              onPress={() => handleCallCustomer(item.phoneNumber)}
+            >
+              <Icon name="phone" size={18} color="#fff" />
+              <Text style={styles.callButtonText}>Call</Text>
+            </TouchableOpacity>
           </View>
-          <View style={[styles.urgencyBadge, { backgroundColor: getTimeAgoColor(item.createdAt) + '15' }]}>
-            <Text style={[styles.urgencyText, { color: getTimeAgoColor(item.createdAt) }]}>
-              {new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60) ? 'URGENT' : 
-               new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60 * 6) ? 'HIGH' : 
-               new Date(item.createdAt).getTime() > Date.now() - (1000 * 60 * 60 * 24) ? 'NORMAL' : 'OLD'}
-            </Text>
+          
+          <View style={styles.infoRow}>
+            <Icon name="person" size={18} color="#666" />
+            <Text style={styles.infoText}>{item.customerName}</Text>
           </View>
+          <View style={styles.infoRow}>
+            <Icon name="phone" size={18} color="#666" />
+            <Text style={styles.infoText}>{item.phoneNumber}</Text>
+          </View>
+          
+          {/* Show appointment date/time if it's an appointment */}
+          {isAppointment && item.appointmentDate && (
+            <View style={styles.infoRow}>
+              <Icon name="event" size={18} color="#666" />
+              <Text style={styles.infoText}>
+                {new Date(item.appointmentDate).toLocaleDateString('en-IN')}
+                {item.appointmentTime && ` at ${item.appointmentTime}`}
+              </Text>
+            </View>
+          )}
         </View>
+
+        {/* Payment Information */}
+        <View style={styles.paymentSection}>
+          <View style={styles.paymentMethodContainer}>
+            <View style={[styles.paymentMethodBadge, { backgroundColor: getPaymentMethodColor(item.paymentMethod) + '15' }]}>
+              <Icon 
+                name={getPaymentMethodIcon(item.paymentMethod)} 
+                size={16} 
+                color={getPaymentMethodColor(item.paymentMethod)} 
+              />
+              <Text style={[styles.paymentMethodText, { color: getPaymentMethodColor(item.paymentMethod) }]}>
+                {item.paymentMethod.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+          
+          {item.transactionId && (
+            <View style={styles.transactionContainer}>
+              <Text style={styles.transactionLabel}>Reference Number:</Text>
+              <Text style={styles.transactionId}>{item.transactionId}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Button */}
+        <TouchableOpacity
+          style={[
+            styles.confirmButton,
+            { backgroundColor: getTypeColor(item.type) },
+            confirmingPayment === item._id && styles.confirmButtonDisabled
+          ]}
+          onPress={() => handleConfirmPayment(item)}
+          disabled={confirmingPayment === item._id}
+        >
+          {confirmingPayment === item._id ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Icon name="check-circle" size={18} color="#fff" />
+              <Text style={styles.confirmButtonText}>
+                {isAppointment ? 'Confirm Advance Payment' : 'Confirm Payment'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
+    );
+  };
 
-      {/* Customer Information */}
-      <View style={styles.customerSection}>
-        <View style={styles.customerHeader}>
-          <Text style={styles.customerSectionTitle}>Customer Details</Text>
-          <TouchableOpacity
-            style={styles.callButton}
-            onPress={() => handleCallCustomer(item.phoneNumber)}
-          >
-            <Icon name="phone" size={18} color="#fff" />
-            <Text style={styles.callButtonText}>Call</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Icon name="person" size={18} color="#666" />
-          <Text style={styles.infoText}>{item.customerName}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Icon name="phone" size={18} color="#666" />
-          <Text style={styles.infoText}>{item.phoneNumber}</Text>
-        </View>
+  const renderEmptyState = () => {
+    const getEmptyMessage = () => {
+      switch (type) {
+        case 'order':
+          return 'No pending order payments found.';
+        case 'appointment':
+          return 'No pending appointment payments found.';
+        default:
+          return 'All payments have been confirmed or no pending orders/appointments found.';
+      }
+    };
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Icon name="payment" size={80} color="#ddd" />
+        <Text style={styles.emptyTitle}>No Pending Payments</Text>
+        <Text style={styles.emptySubtitle}>
+          {getEmptyMessage()}
+        </Text>
+        <TouchableOpacity 
+          style={styles.refreshButton}
+          onPress={() => fetchPendingOrders(true)}
+        >
+          <Icon name="refresh" size={20} color="#155366" />
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
+    );
+  };
 
-      {/* Payment Information */}
-      <View style={styles.paymentSection}>
-        <View style={styles.paymentMethodContainer}>
-          <View style={[styles.paymentMethodBadge, { backgroundColor: getPaymentMethodColor(item.paymentMethod) + '15' }]}>
-            <Icon 
-              name={getPaymentMethodIcon(item.paymentMethod)} 
-              size={16} 
-              color={getPaymentMethodColor(item.paymentMethod)} 
-            />
-            <Text style={[styles.paymentMethodText, { color: getPaymentMethodColor(item.paymentMethod) }]}>
-              {item.paymentMethod.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-        
-        {item.transactionId && (
-          <View style={styles.transactionContainer}>
-            <Text style={styles.transactionLabel}>Reference Number:</Text>
-            <Text style={styles.transactionId}>{item.transactionId}</Text>
-          </View>
-        )}
+  const renderHeader = () => {
+    const orderCount = orders.filter(item => item.type === 'order').length;
+    const appointmentCount = orders.filter(item => item.type === 'appointment').length;
+    
+    const getHeaderTitle = () => {
+      switch (type) {
+        case 'order':
+          return 'Order Payment Confirmations';
+        case 'appointment':
+          return 'Appointment Payment Confirmations';
+        default:
+          return 'Payment Confirmations';
+      }
+    };
+
+    const getHeaderSubtitle = () => {
+      switch (type) {
+        case 'order':
+          return `${orderCount} pending order payment${orderCount !== 1 ? 's' : ''}`;
+        case 'appointment':
+          return `${appointmentCount} pending appointment payment${appointmentCount !== 1 ? 's' : ''}`;
+        default:
+          return `${orderCount} pending order payment${orderCount !== 1 ? 's' : ''}${appointmentCount > 0 ? `, ${appointmentCount} pending appointment payment${appointmentCount !== 1 ? 's' : ''}` : ''}`;
+      }
+    };
+    
+    return (
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
+        <Text style={styles.headerSubtitle}>
+          {getHeaderSubtitle()}
+        </Text>
       </View>
-
-      {/* Action Button */}
-      <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          confirmingPayment === item._id && styles.confirmButtonDisabled
-        ]}
-        onPress={() => handleConfirmPayment(item._id)}
-        disabled={confirmingPayment === item._id}
-      >
-        {confirmingPayment === item._id ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <>
-            <Icon name="check-circle" size={18} color="#fff" />
-            <Text style={styles.confirmButtonText}>Confirm Payment</Text>
-          </>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="payment" size={80} color="#ddd" />
-      <Text style={styles.emptyTitle}>No Pending Payments</Text>
-      <Text style={styles.emptySubtitle}>
-        All payments have been confirmed or no non-COD orders found.
-      </Text>
-      <TouchableOpacity 
-        style={styles.refreshButton}
-        onPress={() => fetchPendingOrders(true)}
-      >
-        <Icon name="refresh" size={20} color="#155366" />
-        <Text style={styles.refreshButtonText}>Refresh</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Payment Confirmations</Text>
-      <Text style={styles.headerSubtitle}>
-        {orders.length} pending payment{orders.length !== 1 ? 's' : ''}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -287,7 +428,7 @@ const PaymentConfirmationComponent = ({ storeId }) => {
     <SafeAreaView style={styles.container}>
       <FlatList
         data={orders}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => `${item.type}-${item._id}`}
         renderItem={renderOrderCard}
         contentContainerStyle={styles.listContainer}
         ListHeaderComponent={renderHeader}
@@ -363,6 +504,18 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  typeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  typeName: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   productName: {
     fontSize: 18,
     fontWeight: '600',
@@ -382,7 +535,6 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   amountContainer: {
-    backgroundColor: '#155366',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
@@ -512,13 +664,11 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   confirmButton: {
-    backgroundColor: '#28a745',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: '#28a745',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,

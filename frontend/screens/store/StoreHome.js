@@ -158,7 +158,7 @@ const StoreAdminScreen= () => {
       count: 5 
     },
     { 
-      title: "Payment Confirmation", 
+      title: "Payment-Confirmation", 
       icon: "money", 
       color: "#34495e", 
       status: "all",
@@ -187,7 +187,7 @@ const StoreAdminScreen= () => {
       status: "cancelled" 
     },
     { 
-        title: "Payment Confirmation", 
+        title: "Payment-Confirmation", 
         icon: "payment", 
         color: "#3498db", 
         status: "processing" 
@@ -199,8 +199,10 @@ const StoreAdminScreen= () => {
 //   ) : (
   
 //   );
-return selectedView === 'payment' ? (
-    <PaymentConfirmationComponent storeId={store._id} />
+return selectedView === 'order' ? (
+    <PaymentConfirmationComponent storeId={store._id} type="order" />
+  ) : selectedView === 'appointment' ? (
+    <PaymentConfirmationComponent storeId={store._id} type="appointment" />
   ) : (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
     {/* Store Header */}
@@ -262,8 +264,8 @@ return selectedView === 'payment' ? (
             key={index}
             style={[styles.gridItem, { backgroundColor: item.color + '15' }]}
             onPress={() => {
-              if (item.title === 'Payment Confirmation') {
-                setSelectedView('payment');
+              if (item.title === 'Payment-Confirmation') {
+                setSelectedView('appointment');
               } else {
                 navigation.navigate("StoreOrders", { 
                   status: item.status, 
@@ -295,10 +297,16 @@ return selectedView === 'payment' ? (
           <TouchableOpacity
             key={index}
             style={[styles.gridItem, { backgroundColor: item.color + '15' }]}
-            onPress={() => navigation.navigate("StoreOrders", { 
-              status: item.status, 
-              storeId: store._id 
-            })}
+            onPress={() => {
+                if (item.title === 'Payment-Confirmation') {
+                  setSelectedView('order');
+                } else {
+                  navigation.navigate("StoreOrders", { 
+                    status: item.status, 
+                    storeId: store._id 
+                  });
+                }
+              }}
           >
             <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
               <Icon name={item.icon} size={24} color="#fff" />
