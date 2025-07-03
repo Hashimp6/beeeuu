@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/UserContext';
+import toast from 'react-hot-toast';
+
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -20,7 +24,6 @@ const LoginPage = () => {
 
   // Enhanced validation functions
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePassword = (password) => password.length >= 6;
 
   // Real-time validation handlers
   const handleInputChange = (field, value) => {
@@ -32,55 +35,48 @@ const LoginPage = () => {
         case 'email':
           setValidationErrors(prev => ({ ...prev, email: !validateEmail(value) }));
           break;
-        case 'password':
-          setValidationErrors(prev => ({ ...prev, password: !validatePassword(value) }));
-          break;
+          case 'password':
+  setValidationErrors(prev => ({ ...prev, password: false }));
+  break;
       }
     } else {
       setValidationErrors(prev => ({ ...prev, [field]: false }));
     }
   };
 
+ 
   const handleSubmit = async () => {
     const { email, password } = formData;
-    
-    // Form validation
+  
     if (!email || !password) {
-      alert('Please fill in all fields.');
+      toast.error('Please fill in all fields.');
       return;
     }
-
+  
     if (!validateEmail(email)) {
-      alert('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
       return;
     }
-
-    if (!validatePassword(password)) {
-      alert('Password must be at least 6 characters long.');
-      return;
-    }
-
+  
+    setIsLoading(true);
+  
     try {
-      setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate success
-      alert('Login successful! Welcome back.');
-      
-      // Reset form
-      setFormData({
-        email: '',
-        password: ''
-      });
-      
-    } catch (error) {
-      alert('Login failed. Please check your credentials.');
-    } finally {
+      const result = await login(email, password);
       setIsLoading(false);
+  
+      if (result.success) {
+        toast.success('Login successful!');
+
+        navigate('/home');
+      } else {
+        toast.error(result.message || 'Login failed.');
+      }
+    } catch (err) {
+      setIsLoading(false);
+      toast.error('Something went wrong. Please try again.');
     }
   };
+  
 
   // Icon Components
   const EmailIcon = () => (
@@ -196,11 +192,7 @@ const LoginPage = () => {
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
-              {validationErrors.password && (
-                <p className="mt-2 text-sm text-red-500 font-medium">
-                  Password must be at least 6 characters long
-                </p>
-              )}
+            
             </div>
           </div>
 
@@ -223,7 +215,7 @@ const LoginPage = () => {
             <div className="text-sm">
               <button
                 type="button"
-                onClick={() => alert('Navigate to Forgot Password')}
+                onClick={() => navigate('/forgot-password')}
                 className="font-medium text-black hover:text-gray-700 transition-colors duration-200"
               >
                 Forgot password?

@@ -24,14 +24,12 @@ if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON_BASE64) && process.env.GOOGL
     writeFileSync(rootFilePath, googleServicesJson);
     console.log('✅ google-services.json created in root directory');
 
-    // Write to android directory if it exists
-    if (existsSync(join(process.cwd(), 'android'))) {
-      if (!existsSync(androidDirPath)) {
-        mkdirSync(androidDirPath, { recursive: true });
-      }
-      writeFileSync(androidFilePath, googleServicesJson);
-      console.log('✅ google-services.json created in android/app directory');
+    // Write to android directory (create if it doesn't exist)
+    if (!existsSync(androidDirPath)) {
+      mkdirSync(androidDirPath, { recursive: true });
     }
+    writeFileSync(androidFilePath, googleServicesJson);
+    console.log('✅ google-services.json created in android/app directory');
 
   } catch (error) {
     console.error('❌ Failed to write google-services.json:', error.message);

@@ -1,314 +1,374 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { SERVER_URL } from '../../Config';
 
-const RegisterPage = () => {
-    const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  
+const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
+  const [name, setName] = useState("");
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Real-time validation states
-  const [validationErrors, setValidationErrors] = useState({
-    name: false,
-    email: false,
-    password: false,
-    confirmPassword: false
-  });
+  const [showNameError, setShowNameError] = useState(false);
+  const [showEmailError, setShowEmailError] = useState(false);
+  const [showPasswordError, setShowPasswordError] = useState(false);
+  const [showConfirmPasswordError, setShowConfirmPasswordError] = useState(false);
 
   // Enhanced validation functions
-  const validateName = (name) => name.trim().length >= 3;
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePassword = (password) => password.length >= 6;
+  const validateName = (name) => {
+    const trimmedName = name.trim();
+    // Check minimum length and contains only letters and spaces
+    return trimmedName.length >= 3 && /^[a-zA-Z\s]+$/.test(trimmedName);
+  };
 
-  // Real-time validation handlers
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmedEmail = email.trim().toLowerCase();
     
-    // Real-time validation
-    if (value.length > 0) {
-      switch (field) {
-        case 'name':
-          setValidationErrors(prev => ({ ...prev, name: !validateName(value) }));
-          break;
-        case 'email':
-          setValidationErrors(prev => ({ ...prev, email: !validateEmail(value) }));
-          break;
-        case 'password':
-          setValidationErrors(prev => ({ ...prev, password: !validatePassword(value) }));
-          // Also check confirm password if it has value
-          if (formData.confirmPassword.length > 0) {
-            setValidationErrors(prev => ({ ...prev, confirmPassword: value !== formData.confirmPassword }));
-          }
-          break;
-        case 'confirmPassword':
-          setValidationErrors(prev => ({ ...prev, confirmPassword: value !== formData.password }));
-          break;
-      }
+    // Basic email format validation
+    if (!emailRegex.test(trimmedEmail)) {
+      return { isValid: false, error: 'Invalid email format' };
+    }
+    
+    // Check for common email providers
+    const commonProviders = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'aol.com', 'icloud.com'];
+    const domain = trimmedEmail.split('@')[1];
+    
+    if (!commonProviders.includes(domain)) {
+      return { isValid: false, error: 'Please use a common email provider (Gmail, Yahoo, Outlook, etc.)' };
+    }
+    
+    return { isValid: true, error: null };
+  };
+
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    // Minimum length check
+    if (password.length < 6) {
+      errors.push('at least 6 characters');
+    }
+    
+    // Contains uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      errors.push('one uppercase letter');
+    }
+    
+    // Contains lowercase letter
+    if (!/[a-z]/.test(password)) {
+      errors.push('one lowercase letter');
+    }
+    
+    // Contains number
+    if (!/[0-9]/.test(password)) {
+      errors.push('one number');
+    }
+    
+    // Contains special character
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('one special character (!@#$%^&*(),.?":{}|<>)');
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors: errors
+    };
+  };
+
+  // Get validation error messages
+  const getNameError = (name) => {
+    const trimmedName = name.trim();
+    if (trimmedName.length < 3) {
+      return 'Name must be at least 3 characters long';
+    }
+    if (!/^[a-zA-Z\s]+$/.test(trimmedName)) {
+      return 'Name should only contain letters and spaces';
+    }
+    return null;
+  };
+
+  const getEmailError = (email) => {
+    const validation = validateEmail(email);
+    return validation.error;
+  };
+
+  const getPasswordError = (password) => {
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      return `Password must contain: ${validation.errors.join(', ')}`;
+    }
+    return null;
+  };
+
+  // Toast notification function
+  const showToast = (type, title, message) => {
+    // You can replace this with your preferred toast library
+    if (type === 'error') {
+      alert(`${title}: ${message}`);
     } else {
-      setValidationErrors(prev => ({ ...prev, [field]: false }));
+      alert(`${title}: ${message}`);
     }
   };
 
-  const handleSubmit = async () => {
+  // Real-time validation handlers
+  const handleNameChange = (text) => {
+    setName(text);
+    if (text.length > 0) {
+      setShowNameError(!validateName(text));
+    } else {
+      setShowNameError(false);
+    }
+  };
+
+  const handleEmailChange = (text) => {
+    setEmail(text);
+    if (text.length > 0) {
+      const validation = validateEmail(text);
+      setShowEmailError(!validation.isValid);
+    } else {
+      setShowEmailError(false);
+    }
+  };
+
+  const handlePasswordChange = (text) => {
+    setPassword(text);
+    if (text.length > 0) {
+      const validation = validatePassword(text);
+      setShowPasswordError(!validation.isValid);
+    } else {
+      setShowPasswordError(false);
+    }
     
-    const { name, email, password, confirmPassword } = formData;
-    
-    // Form validation
+    // Also check confirm password if it has value
+    if (confirmPassword.length > 0) {
+      setShowConfirmPasswordError(text !== confirmPassword);
+    }
+  };
+
+  const handleConfirmPasswordChange = (text) => {
+    setConfirmPassword(text);
+    if (text.length > 0) {
+      setShowConfirmPasswordError(text !== password);
+    } else {
+      setShowConfirmPasswordError(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    // Enhanced form validation with specific error messages
     if (!name || !email || !password || !confirmPassword) {
-      alert('Please fill in all fields.');
+      showToast('error', 'Missing Details', 'Please fill in all fields.');
       return;
     }
 
+    // Validate name
     if (!validateName(name)) {
-      alert('Name must be at least 3 characters long.');
+      showToast('error', 'Invalid Name', getNameError(name));
       return;
     }
 
-    if (!validateEmail(email)) {
-      alert('Please enter a valid email address.');
+    // Validate email format
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      showToast('error', 'Invalid Email', emailValidation.error);
       return;
     }
 
-    if (!validatePassword(password)) {
-      alert('Password must be at least 6 characters long.');
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      showToast('error', 'Invalid Password', getPasswordError(password));
       return;
     }
 
+    // Check if passwords match
     if (password !== confirmPassword) {
-      alert('Passwords do not match.');
+      showToast('error', 'Password Mismatch', 'Passwords do not match.');
       return;
     }
-
+    
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate success
-      alert('Registration successful! Please check your email for OTP verification.');
-      
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
+      console.log("fine");
+    
+      // Send registration request using axios
+      const response = await axios.post(`${SERVER_URL}users/register`, {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password
       });
-      
+    
+      const data = response.data;
+    
+      // Check response data structure
+      if (response.status === 200 && data.message) {
+        console.log("OTP request successful");
+        
+        showToast('success', 'Registration Successful!', 'Please check your email for OTP verification.');
+    
+        // Navigate to OTP verification with email
+        onNavigateToOTP(email.trim().toLowerCase());
+      } else {
+        showToast('error', 'Registration Failed', data.message || 'Unexpected response from server.');
+      }
     } catch (error) {
-      alert('Registration failed. Please try again.');
+      console.error("Registration error:", error);
+    
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Registration failed. Please try again.";
+    
+      showToast('error', 'Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
+    
   };
 
-  // Icon Components
-  const UserIcon = () => (
-    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-
-  const EmailIcon = () => (
-    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-    </svg>
-  );
-
-  const LockIcon = () => (
-    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  );
-
-  const EyeIcon = () => (
-    <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  );
-
-  const EyeOffIcon = () => (
-    <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-    </svg>
-  );
-
-  const CheckIcon = () => (
-    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  );
+  // Check if form is valid for button state
+  const isFormValid = () => {
+    return (
+      name.trim().length > 0 &&
+      email.trim().length > 0 &&
+      password.length > 0 &&
+      confirmPassword.length > 0 &&
+      validateName(name) &&
+      validateEmail(email).isValid &&
+      validatePassword(password).isValid &&
+      password === confirmPassword
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Logo */}
-        <div className="text-center">
-          <div className="mx-auto mb-6">
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Main Container */}
+      <div className="flex-1 flex items-center justify-center px-6 sm:px-8 lg:px-12">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-10">
             <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="h-20 w-auto mx-auto object-contain"
+              src="/logo.png"
+              alt="Logo"
+              className="w-60 h-20 object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-black">Create Account</h1>
-        </div>
 
-        {/* Form */}
-        <div className="mt-8 space-y-6">
+          {/* Title */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-black mb-2">Create Account</h1>
+          </div>
+
+          {/* Form */}
           <div className="space-y-5">
             {/* Name Input */}
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">Full Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <UserIcon />
-                </div>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full pl-12 pr-4 py-4 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 ${
-                    validationErrors.name ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                  placeholder="Enter your full name"
-                />
-              </div>
-              {validationErrors.name && (
-                <p className="mt-2 text-sm text-red-500 font-medium">
-                  Name must be at least 3 characters long
+            <div className={`bg-gray-100 rounded-2xl px-5 py-4 border ${
+              showNameError ? 'border-red-300' : 'border-gray-200'
+            }`}>
+              <label className="block text-xs text-gray-500 mb-1.5">Full Name</label>
+              <input
+                type="text"
+                className="w-full text-base text-black font-medium bg-transparent border-none outline-none placeholder-gray-400"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+              />
+              {showNameError && (
+                <p className="text-red-500 text-xs mt-1 font-medium">
+                  {getNameError(name)}
                 </p>
               )}
             </div>
 
             {/* Email Input */}
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">Email</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <EmailIcon />
-                </div>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-12 pr-4 py-4 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 ${
-                    validationErrors.email ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                  placeholder="Enter your email address"
-                />
-              </div>
-              {validationErrors.email && (
-                <p className="mt-2 text-sm text-red-500 font-medium">
-                  Please enter a valid email address
+            <div className={`bg-gray-100 rounded-2xl px-5 py-4 border ${
+              showEmailError ? 'border-red-300' : 'border-gray-200'
+            }`}>
+              <label className="block text-xs text-gray-500 mb-1.5">Email</label>
+              <input
+                type="email"
+                className="w-full text-base text-black font-medium bg-transparent border-none outline-none placeholder-gray-400"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+              />
+              {showEmailError && (
+                <p className="text-red-500 text-xs mt-1 font-medium">
+                  {getEmailError(email)}
                 </p>
               )}
             </div>
 
             {/* Password Input */}
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <LockIcon />
-                </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-12 pr-12 py-4 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 ${
-                    validationErrors.password ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                  placeholder="Create a password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center transition-colors duration-200"
-                >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
-              </div>
-              {validationErrors.password && (
-                <p className="mt-2 text-sm text-red-500 font-medium">
-                  Password must be at least 6 characters long
+            <div className={`bg-gray-100 rounded-2xl px-5 py-4 border ${
+              showPasswordError ? 'border-red-300' : 'border-gray-200'
+            }`}>
+              <label className="block text-xs text-gray-500 mb-1.5">Password</label>
+              <input
+                type="password"
+                className="w-full text-base text-black font-medium bg-transparent border-none outline-none placeholder-gray-400"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+              />
+              {showPasswordError && (
+                <p className="text-red-500 text-xs mt-1 font-medium">
+                  {getPasswordError(password)}
                 </p>
               )}
             </div>
 
             {/* Confirm Password Input */}
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">Confirm Password</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <LockIcon />
-                </div>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={`w-full pl-12 pr-12 py-4 bg-gray-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 ${
-                    validationErrors.confirmPassword ? 'border-red-400' : 'border-gray-200'
-                  }`}
-                  placeholder="Confirm your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center transition-colors duration-200"
-                >
-                  {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
-              </div>
-              {validationErrors.confirmPassword && (
-                <p className="mt-2 text-sm text-red-500 font-medium">
+            <div className={`bg-gray-100 rounded-2xl px-5 py-4 border ${
+              showConfirmPasswordError ? 'border-red-300' : 'border-gray-200'
+            }`}>
+              <label className="block text-xs text-gray-500 mb-1.5">Confirm Password</label>
+              <input
+                type="password"
+                className="w-full text-base text-black font-medium bg-transparent border-none outline-none placeholder-gray-400"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+              />
+              {showConfirmPasswordError && (
+                <p className="text-red-500 text-xs mt-1 font-medium">
                   Passwords do not match
                 </p>
               )}
             </div>
-          </div>
 
-          {/* Submit Button */}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-2xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-          >
-            {isLoading ? (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Creating Account...
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <CheckIcon />
-                <span className="ml-2">Create Account</span>
-              </div>
-            )}
-          </button>
+            {/* Register Button */}
+            <button
+              className={`w-full font-bold text-base h-14 rounded-2xl flex items-center justify-center mt-6 shadow-lg transition-colors ${
+                isFormValid() && !isLoading
+                  ? 'bg-black text-white hover:bg-gray-800'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              onClick={handleRegister}
+              disabled={!isFormValid() || isLoading}
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                "Create Account"
+              )}
+            </button>
 
-          {/* Footer */}
-          <div className="text-center mt-6">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
+            {/* Footer */}
+            <div className="flex justify-center mt-6">
+              <span className="text-gray-600 text-sm">
+                Already have an account?{" "}
+              </span>
               <button
-                type="button"
+                className="text-black text-sm font-bold ml-1 hover:underline"
                 onClick={() => navigate('/login')}
-                className="font-bold text-black hover:text-gray-700 transition-colors duration-200"
               >
                 Sign In
               </button>
-            </p>
+            </div>
           </div>
         </div>
       </div>

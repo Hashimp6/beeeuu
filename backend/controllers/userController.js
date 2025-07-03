@@ -573,6 +573,7 @@ const cleanupResetTokens = () => {
 // Initiate forgot password - send reset link via email
 const forgotPassword = async (req, res) => {
   try {
+    console.log("usttt",req.body);
     const { email } = req.body;
 
     if (!email) {
@@ -584,6 +585,7 @@ const forgotPassword = async (req, res) => {
 
     // Check if user exists (but don't reveal if email doesn't exist for security)
     const user = await User.findOne({ email });
+    console.log("usr",user);
     
     // Always return success message for security (don't reveal if email exists)
     if (!user) {

@@ -199,144 +199,184 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
     );
   };
 
+  // Render Distance Filter
+  const renderDistanceFilter = () => (
+    <View style={styles.dropdownWrapper}>
+      <TouchableOpacity 
+        style={[styles.filterButton, showDistanceDropdown && styles.filterButtonActive]}
+        onPress={toggleDistanceDropdown}
+        activeOpacity={0.7}
+      >
+        <View style={styles.filterButtonContent}>
+          <Ionicons name="location-outline" size={16} color="#155366" />
+          <Text style={styles.filterButtonText}>{selectedDistance}km</Text>
+          <Ionicons 
+            name={showDistanceDropdown ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color="#155366" 
+          />
+        </View>
+      </TouchableOpacity>
+      
+      {showDistanceDropdown && (
+        <View style={styles.attachedDropdown}>
+          {distanceOptions.map((distance, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.dropdownItem,
+                selectedDistance === distance && styles.selectedDropdownItem,
+                index === distanceOptions.length - 1 && styles.lastDropdownItem
+              ]}
+              onPress={() => handleDistanceSelect(distance)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                selectedDistance === distance && styles.selectedDropdownItemText
+              ]}>
+                {distance} km
+              </Text>
+              {selectedDistance === distance && (
+                <Ionicons name="checkmark" size={18} color="#155366" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
+  // Render Sort Filter
+  const renderSortFilter = () => (
+    <View style={styles.dropdownWrapper}>
+      <TouchableOpacity 
+        style={[styles.filterButton, showSortDropdown && styles.filterButtonActive]}
+        onPress={toggleSortDropdown}
+        activeOpacity={0.7}
+      >
+        <View style={styles.filterButtonContent}>
+          <Ionicons name="funnel-outline" size={16} color="#155366" />
+          <Text style={styles.filterButtonText}>
+            {sortOptions.find(opt => opt.value === selectedSortBy)?.label}
+          </Text>
+          <Ionicons 
+            name={showSortDropdown ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color="#155366" 
+          />
+        </View>
+      </TouchableOpacity>
+      
+      {showSortDropdown && (
+        <View style={styles.attachedDropdown}>
+          {sortOptions.map((option, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.dropdownItem,
+                selectedSortBy === option.value && styles.selectedDropdownItem,
+                index === sortOptions.length - 1 && styles.lastDropdownItem
+              ]}
+              onPress={() => handleSortSelect(option.value)}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.dropdownItemText,
+                selectedSortBy === option.value && styles.selectedDropdownItemText
+              ]}>
+                {option.label}
+              </Text>
+              {selectedSortBy === option.value && (
+                <Ionicons name="checkmark" size={18} color="#155366" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
+  // Render Loading State
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#155366" />
+      <Text style={styles.loadingText}>Finding nearby stores...</Text>
+    </View>
+  );
+
+  // Render Error State
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Ionicons name="alert-circle-outline" size={60} color="#FF6B6B" />
+      <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity 
+        style={styles.retryButton} 
+        onPress={() => fetchNearbyStores(1, true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="refresh-outline" size={20} color="#FFFFFF" />
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Render Empty State
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="storefront-outline" size={80} color="#C7C7CC" />
+      <Text style={styles.emptyTitle}>No stores found nearby</Text>
+      <Text style={styles.emptySubText}>
+        Try adjusting your distance filter or check back later
+      </Text>
+      <TouchableOpacity 
+        style={styles.adjustFiltersButton} 
+        onPress={() => setSelectedDistance(100)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.adjustFiltersText}>Expand Search Area</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
+      {/* Header */}
+      {/* <View style={styles.header}>
+        <Text style={styles.headerTitle}>Nearby Stores</Text>
+        <Text style={styles.headerSubtitle}>
+          {totalStores > 0 ? `${totalStores} stores found` : 'Discovering local stores'}
+        </Text>
+      </View> */}
+
       {/* Filter Section */}
-      <View style={styles.filterSection}>
-        <View style={styles.filterRow}>
           <View style={styles.filterButtons}>
-            {/* Distance Filter */}
-            <View style={styles.dropdownWrapper}>
-              <TouchableOpacity 
-                style={[styles.filterButton, showDistanceDropdown && styles.filterButtonActive]}
-                onPress={toggleDistanceDropdown}
-              >
-                <View style={styles.filterButtonContent}>
-                  <Ionicons name="location-outline" size={14} color="#155366" />
-                  <Text style={styles.filterButtonText}>{selectedDistance}km</Text>
-                  <Ionicons 
-                    name={showDistanceDropdown ? "chevron-up" : "chevron-down"} 
-                    size={14} 
-                    color="#155366" 
-                  />
-                </View>
-              </TouchableOpacity>
-              
-              {showDistanceDropdown && (
-                <View style={styles.attachedDropdown}>
-                  {distanceOptions.map((distance, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.dropdownItem,
-                        selectedDistance === distance && styles.selectedDropdownItem,
-                        index === distanceOptions.length - 1 && styles.lastDropdownItem
-                      ]}
-                      onPress={() => handleDistanceSelect(distance)}
-                    >
-                      <Text style={[
-                        styles.dropdownItemText,
-                        selectedDistance === distance && styles.selectedDropdownItemText
-                      ]}>
-                        {distance} km
-                      </Text>
-                      {selectedDistance === distance && (
-                        <Ionicons name="checkmark" size={16} color="#155366" />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
-            {/* Sort Filter */}
-            <View style={styles.dropdownWrapper}>
-              <TouchableOpacity 
-                style={[styles.filterButton, showSortDropdown && styles.filterButtonActive]}
-                onPress={toggleSortDropdown}
-              >
-                <View style={styles.filterButtonContent}>
-                  <Ionicons name="funnel-outline" size={14} color="#155366" />
-                  <Text style={styles.filterButtonText}>
-                    {sortOptions.find(opt => opt.value === selectedSortBy)?.label}
-                  </Text>
-                  <Ionicons 
-                    name={showSortDropdown ? "chevron-up" : "chevron-down"} 
-                    size={14} 
-                    color="#155366" 
-                  />
-                </View>
-              </TouchableOpacity>
-              
-              {showSortDropdown && (
-                <View style={styles.attachedDropdown}>
-                  {sortOptions.map((option, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.dropdownItem,
-                        selectedSortBy === option.value && styles.selectedDropdownItem,
-                        index === sortOptions.length - 1 && styles.lastDropdownItem
-                      ]}
-                      onPress={() => handleSortSelect(option.value)}
-                    >
-                      <Text style={[
-                        styles.dropdownItemText,
-                        selectedSortBy === option.value && styles.selectedDropdownItemText
-                      ]}>
-                        {option.label}
-                      </Text>
-                      {selectedSortBy === option.value && (
-                        <Ionicons name="checkmark" size={16} color="#155366" />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Results count */}
-          <Text style={styles.resultsText}>
-            {totalStores} stores found
-          </Text>
+            {renderDistanceFilter()}
+            {renderSortFilter()}
         </View>
-      </View>
 
       {/* Content */}
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#155366" />
-          <Text style={styles.loadingText}>Loading nearby stores...</Text>
-        </View>
+        renderLoadingState()
       ) : error ? (
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={50} color="#FF3B30" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton} 
-            onPress={() => fetchNearbyStores(1, true)}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        renderErrorState()
       ) : (
         <FlatList
           data={stores}
           renderItem={renderStoreItem}
           keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
-          contentContainerStyle={styles.storesList}
+          contentContainerStyle={[
+            styles.storesList,
+            stores.length === 0 && styles.emptyListContainer
+          ]}
           showsVerticalScrollIndicator={false}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           ListFooterComponent={renderLoadMoreButton}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="storefront-outline" size={60} color="#ccc" />
-              <Text style={styles.emptyText}>No stores found nearby</Text>
-              <Text style={styles.emptySubText}>Try changing your filters or check back later</Text>
-            </View>
-          }
+          ListEmptyComponent={renderEmptyState}
+          onEndReached={loadMoreStores}
+          onEndReachedThreshold={0.5}
         />
       )}
     </View>
@@ -346,39 +386,49 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
   },
   filterSection: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     marginBottom: 8,
-    borderRadius: 8,
+    borderRadius: 12,
+    marginHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
     zIndex: 1000,
   },
   filterRow: {
     flexDirection: 'column',
-    gap: 8,
+    gap: 10,
   },
   filterButtons: {
     flexDirection: 'row',
-    flex: 1,
-    gap: 8,
-  },
-  resultsText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    fontWeight: '500',
+    gap: 10,
   },
   dropdownWrapper: {
     flex: 1,
@@ -387,27 +437,35 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: '#F0F9FF',
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#B2E6E0',
+    borderColor: '#155366',
     paddingVertical: 8,
     paddingHorizontal: 8,
+    minHeight: 48,
   },
   filterButtonActive: {
     borderColor: '#155366',
-    backgroundColor: '#E0F4F3',
+    backgroundColor: '#E8F5E8',
+    shadowColor: '#155366',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 8,
   },
   filterButtonText: {
     color: '#155366',
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
-    flex: 1,
     textAlign: 'center',
   },
   attachedDropdown: {
@@ -416,28 +474,28 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#B2E6E0',
+    borderColor: '#E0F2F1',
     borderTopWidth: 0,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
     shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowRadius: 8,
+    elevation: 8,
     zIndex: 1001,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
@@ -448,8 +506,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F9FF',
   },
   dropdownItemText: {
-    fontSize: 14,
-    color: '#333',
+    fontSize: 15,
+    color: '#333333',
+    fontWeight: '500',
   },
   selectedDropdownItemText: {
     color: '#155366',
@@ -459,25 +518,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 32,
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: 16,
     fontSize: 16,
-    color: '#555',
+    color: '#666666',
+    fontWeight: '500',
   },
   storesList: {
-    paddingBottom: 20,
+    paddingHorizontal: 8,
+    paddingBottom: 24,
+  },
+  emptyListContainer: {
+    flexGrow: 1,
   },
   loadMoreButton: {
     backgroundColor: '#155366',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginHorizontal: 20,
-    marginTop: 15,
-    marginBottom: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#155366',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   loadMoreText: {
     color: '#FFFFFF',
@@ -488,42 +561,71 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 32,
   },
-  errorText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#555',
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginTop: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
+  errorText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
   retryButton: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     backgroundColor: '#155366',
-    borderRadius: 8,
+    borderRadius: 12,
+    gap: 8,
   },
   retryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingHorizontal: 32,
+    paddingTop: 60,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    color: '#555',
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginTop: 24,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   emptySubText: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 8,
+    fontSize: 16,
+    color: '#666666',
     textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  adjustFiltersButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0F2F1',
+  },
+  adjustFiltersText: {
+    color: '#155366',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

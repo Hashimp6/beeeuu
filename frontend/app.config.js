@@ -11,12 +11,12 @@ export default {
     userInterfaceStyle: "light",
     newArchEnabled: true,
     scheme: "serchby",
-    icon: "./assets/logo.png",
+    icon: "./assets/icon.png",
     
     ios: {
       bundleIdentifier: "com.hashim.serchby",
       supportsTablet: true,
-      icon: "./assets/logo.png",
+      icon: "./assets/icon.png",
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       },
@@ -30,9 +30,9 @@ export default {
       package: "com.hashim.serchby",
       // Remove this line since you're using base64 approach
       // googleServicesFile: "./android/app/google-services.json",
-      icon: "./assets/logo.png",
+      icon: "./assets/icon.png",
       adaptiveIcon: {
-        foregroundImage: "./assets/logo.png",
+        foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"
       },
       config: {
@@ -64,14 +64,14 @@ export default {
     },
     
     web: {
-      favicon: "./assets/logo.png"
+      favicon: "./assets/icon.png"
     },
     
     plugins: [
       [
         "expo-notifications",
         {
-          icon: "./assets/logo.png",
+          icon: "./assets/icon.png",
           color: "#ffffff"
         }
       ]

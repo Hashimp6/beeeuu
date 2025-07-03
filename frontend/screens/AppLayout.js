@@ -131,7 +131,7 @@ const AppLayout = () => {
       {/* Header */}
       <View style={styles.header}>
         <Image 
-          source={require('../assets/icon.png')} // adjust path as needed
+          source={require('../assets/logo.png')} // adjust path as needed
           style={styles.logo}
         />
 
