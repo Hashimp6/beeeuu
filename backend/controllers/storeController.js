@@ -411,266 +411,7 @@ const findNearestSellers = async (req, res) => {
       res.status(500).json({ message: "Failed to delete store", error: error.message });
     }
   };
-  
- 
-// Search stores with multiple filters
-// const searchStores = async (req, res) => {
-//   try {
-//     const {
-//       category,
-//       search, // For searching in storeName and category
-//       latitude,
-//       longitude,
-//       radius = 10, // Default radius in kilometers
-//       page = 1,
-//       limit = 20,
-//       sortBy = 'rating',
-//       sortOrder = 'asc'
-//     } = req.query;
 
-//     // Build the search query
-//     let query = {};
-    
-//     // Category filter
-//     if (category) {
-//       query.category = { $regex: category, $options: 'i' }; // Case-insensitive
-//     }
-    
-//     // Text search in storeName and category
-//     if (search) {
-//       query.$or = [
-//         { storeName: { $regex: search, $options: 'i' } },
-//         { category: { $regex: search, $options: 'i' } },
-//         { description: { $regex: search, $options: 'i' } }
-//       ];
-//     }
-    
-//     // Location-based search
-//     if (latitude && longitude) {
-//       const radiusInRadians = radius / 6371; // Convert km to radians (Earth's radius ≈ 6371 km)
-      
-//       query.location = {
-//         $geoWithin: {
-//           $centerSphere: [[parseFloat(longitude), parseFloat(latitude)], radiusInRadians]
-//         }
-//       };
-//     }
-
-//     // Calculate pagination
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-//     // Build sort object
-//     const sort = {};
-//     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-//     // Execute the search query
-//     const stores = await Store.find(query)
-//       .populate('userId', 'name email') // Populate user info if needed
-//       .sort(sort)
-//       .skip(skip)
-//       .limit(parseInt(limit))
-//       .lean(); // Use lean() for better performance
-
-//     // Get total count for pagination
-//     const totalStores = await Store.countDocuments(query);
-//     const totalPages = Math.ceil(totalStores / parseInt(limit));
-
-//     // If location is provided, calculate distance for each store
-//     let storesWithDistance = stores;
-//     if (latitude && longitude) {
-//       storesWithDistance = stores.map(store => {
-//         if (store.location && store.location.coordinates) {
-//           const distance = calculateDistance(
-//             parseFloat(latitude),
-//             parseFloat(longitude),
-//             store.location.coordinates[1], // latitude
-//             store.location.coordinates[0]  // longitude
-//           );
-//           return { ...store, distance: Math.round(distance * 100) / 100 }; // Round to 2 decimal places
-//         }
-//         return store;
-//       });
-
-//       // Sort by distance if location search is used
-//       if (sortBy === 'distance') {
-//         storesWithDistance.sort((a, b) => {
-//           const distA = a.distance || Infinity;
-//           const distB = b.distance || Infinity;
-//           return sortOrder === 'asc' ? distA - distB : distB - distA;
-//         });
-//       }
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         stores: storesWithDistance,
-//         pagination: {
-//           currentPage: parseInt(page),
-//           totalPages,
-//           totalStores,
-//           hasNextPage: parseInt(page) < totalPages,
-//           hasPrevPage: parseInt(page) > 1,
-//           limit: parseInt(limit)
-//         },
-//         filters: {
-//           category,
-//           search,
-//           location: latitude && longitude ? { latitude, longitude, radius } : null
-//         }
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Search stores error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error searching stores',
-//       error: error.message
-//     });
-//   }
-// };
-
-// Get stores by category only
-// const getStoresByCategory = async (req, res) => {
-//   try {
-//     const { category } = req.params;
-//     const { page = 1, limit = 20 } = req.query;
-
-//     const skip = (parseInt(page) - 1) * parseInt(limit);
-
-//     const stores = await Store.find({ 
-//       category: { $regex: category, $options: 'i' } 
-//     })
-//       // .populate('userId', 'name email')
-//       .sort({ rating: 1 })
-//       .skip(skip)
-//       .limit(parseInt(limit))
-//       .lean();
-
-//     const totalStores = await Store.countDocuments({ 
-//       category: { $regex: category, $options: 'i' } 
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         stores,
-//         category,
-//         pagination: {
-//           currentPage: parseInt(page),
-//           totalPages: Math.ceil(totalStores / parseInt(limit)),
-//           totalStores,
-//           limit: parseInt(limit)
-//         }
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Get stores by category error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching stores by category',
-//       error: error.message
-//     });
-//   }
-// };
-
-// Get nearby stores using geospatial query
-// const getNearbyStores = async (req, res) => {
-//   try {
-//     const { latitude, longitude, radius = 10, limit = 10 } = req.query;
-
-//     if (!latitude || !longitude) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Latitude and longitude are required'
-//       });
-//     }
-
-//     const stores = await Store.aggregate([
-//       {
-//         $geoNear: {
-//           near: {
-//             type: "Point",
-//             coordinates: [parseFloat(longitude), parseFloat(latitude)]
-//           },
-//           distanceField: "distance",
-//           maxDistance: radius * 1000, // Convert km to meters
-//           spherical: true
-//         }
-//       },
-//       {
-//         $limit: parseInt(limit)
-//       },
-//       {
-//         $lookup: {
-//           from: "users",
-//           localField: "userId",
-//           foreignField: "_id",
-//           as: "user",
-//           pipeline: [{ $project: { name: 1, email: 1 } }]
-//         }
-//       },
-//       {
-//         $addFields: {
-//           distance: { $round: [{ $divide: ["$distance", 1000] }, 2] } // Convert to km and round
-//         }
-//       }
-//     ]);
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         stores,
-//         searchLocation: { latitude, longitude, radius },
-//         count: stores.length
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Get nearby stores error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching nearby stores',
-//       error: error.message
-//     });
-//   }
-// };
-
-// Get all unique categories
-// const getCategories = async (req, res) => {
-//   try {
-//     const categories = await Store.distinct('category');
-//     const categoriesWithCount = await Store.aggregate([
-//       {
-//         $group: {
-//           _id: '$category',
-//           count: { $sum: 1 }
-//         }
-//       },
-//       {
-//         $sort: { count: -1 }
-//       }
-//     ]);
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         categories,
-//         categoriesWithCount
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Get categories error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching categories',
-//       error: error.message
-//     });
-//   }
-// };
 
 // Helper function to calculate distance between two points
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -727,6 +468,339 @@ const getStoreUpi = async (req, res) => {
   }
 };
 
+
+const getNearbyStores = async (req, res) => {
+  try {
+    const {
+      latitude,
+      longitude,
+      radius = 50, // Default radius in kilometers (matching your frontend default)
+      page = 1,
+      limit = 20,
+      sortBy = 'distance', // 'distance', 'averageRating', 'storeName'
+      sortOrder = 'asc', // 'asc' or 'desc'
+      category, // Optional category filter
+      search // Optional search term
+    } = req.query;
+
+    // Validate required parameters
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude and longitude are required'
+      });
+    }
+
+    console.log('Fetching nearby stores with params:', {
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      radius: parseFloat(radius),
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder,
+      category,
+      search
+    });
+
+    // Build aggregation pipeline
+    let pipeline = [];
+
+    // Step 1: Use $geoNear for location-based search (must be first stage)
+    pipeline.push({
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [parseFloat(longitude), parseFloat(latitude)]
+        },
+        distanceField: 'distance',
+        maxDistance: parseFloat(radius) * 1000, // Convert km to meters
+        spherical: true,
+        distanceMultiplier: 0.001 // Convert distance from meters to kilometers
+      }
+    });
+
+    // Step 2: Build match conditions for additional filters
+    let matchConditions = {};
+
+    // Category filter
+    if (category && category.trim() !== '') {
+      matchConditions.category = { $regex: category.trim(), $options: 'i' };
+    }
+
+    // Search filter (search in storeName, description, place)
+    if (search && search.trim() !== '') {
+      matchConditions.$or = [
+        { storeName: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } },
+        { place: { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+
+    // Add match stage if we have conditions
+    if (Object.keys(matchConditions).length > 0) {
+      pipeline.push({ $match: matchConditions });
+    }
+
+    // Step 3: Populate user information
+    pipeline.push({
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userInfo',
+        pipeline: [{ $project: { username: 1, email: 1, phone: 1 } }]
+      }
+    });
+
+    // Step 4: Add computed fields and format
+    pipeline.push({
+      $addFields: {
+        distance: { $round: ['$distance', 2] }, // Round distance to 2 decimal places
+        user: { $arrayElemAt: ['$userInfo', 0] }
+      }
+    });
+
+    // Step 5: Remove the userInfo array since we have user field now
+    pipeline.push({
+      $project: {
+        userInfo: 0
+      }
+    });
+
+    // Create a copy of pipeline for counting total documents
+    let countPipeline = [...pipeline];
+
+    // Step 6: Apply sorting
+    let sortStage = {};
+    
+    switch (sortBy) {
+      case 'distance':
+        sortStage.distance = sortOrder === 'desc' ? -1 : 1;
+        break;
+      case 'averageRating':
+        sortStage.averageRating = sortOrder === 'desc' ? -1 : 1;
+        // Secondary sort by distance for stores with same rating
+        sortStage.distance = 1;
+        break;
+      case 'storeName':
+        sortStage.storeName = sortOrder === 'desc' ? -1 : 1;
+        break;
+      default:
+        sortStage.distance = 1; // Default to distance ascending
+    }
+
+    pipeline.push({ $sort: sortStage });
+
+    // Step 7: Apply pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: parseInt(limit) });
+
+    // Execute the main query
+    const stores = await Store.aggregate(pipeline);
+
+    // Get total count for pagination
+    countPipeline.push({ $count: 'total' });
+    const countResult = await Store.aggregate(countPipeline);
+    const totalStores = countResult.length > 0 ? countResult[0].total : 0;
+    const totalPages = Math.ceil(totalStores / parseInt(limit));
+
+    // Format the response
+    const formattedStores = stores.map(store => ({
+      _id: store._id,
+      storeName: store.storeName,
+      description: store.description,
+      profileImage: store.profileImage,
+      place: store.place,
+      category: store.category,
+      rating: store.rating,
+      averageRating: store.averageRating || 0,
+      numberOfRatings: store.numberOfRatings || 0,
+      location: store.location,
+      distance: store.distance,
+      upi: store.upi,
+      phone: store.phone,
+      socialMedia: store.socialMedia,
+      user: store.user,
+      createdAt: store.createdAt
+    }));
+
+    // Response data
+    const responseData = {
+      stores: formattedStores,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalStores,
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1,
+        limit: parseInt(limit)
+      },
+      filters: {
+        location: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+          radius: parseFloat(radius)
+        },
+        sortBy,
+        sortOrder,
+        category: category || null,
+        search: search || null
+      }
+    };
+
+    console.log(`Found ${totalStores} stores within ${radius}km`);
+
+    res.status(200).json({
+      success: true,
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('Error fetching nearby stores:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch nearby stores',
+      error: error.message
+    });
+  }
+};
+
+// Alternative simpler version without aggregation (if you prefer)
+const getNearbyStoresSimple = async (req, res) => {
+  try {
+    const {
+      latitude,
+      longitude,
+      radius = 50,
+      page = 1,
+      limit = 20,
+      sortBy = 'distance',
+      sortOrder = 'asc',
+      category,
+      search
+    } = req.query;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude and longitude are required'
+      });
+    }
+
+    // Build query for location
+    const radiusInRadians = parseFloat(radius) / 6371; // Convert km to radians
+    
+    let query = {
+      location: {
+        $geoWithin: {
+          $centerSphere: [[parseFloat(longitude), parseFloat(latitude)], radiusInRadians]
+        }
+      }
+    };
+
+    // Add category filter
+    if (category && category.trim() !== '') {
+      query.category = { $regex: category.trim(), $options: 'i' };
+    }
+
+    // Add search filter
+    if (search && search.trim() !== '') {
+      query.$or = [
+        { storeName: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } },
+        { place: { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build sort object (excluding distance since we'll calculate it)
+    let sort = {};
+    if (sortBy !== 'distance') {
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sort.createdAt = -1; // Default sort
+    }
+
+    // Execute query
+    const stores = await Store.find(query)
+      .populate('userId', 'username email phone')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Calculate distances and sort by distance if needed
+    const storesWithDistance = stores.map(store => {
+      let distance = 0;
+      if (store.location && store.location.coordinates) {
+        distance = calculateDistance(
+          parseFloat(latitude),
+          parseFloat(longitude),
+          store.location.coordinates[1], // latitude
+          store.location.coordinates[0]  // longitude
+        );
+      }
+      return {
+        ...store,
+        distance: Math.round(distance * 100) / 100 // Round to 2 decimal places
+      };
+    });
+
+    // Sort by distance if requested
+    if (sortBy === 'distance') {
+      storesWithDistance.sort((a, b) => {
+        const distA = a.distance || 0;
+        const distB = b.distance || 0;
+        return sortOrder === 'desc' ? distB - distA : distA - distB;
+      });
+    }
+
+    // Get total count
+    const totalStores = await Store.countDocuments(query);
+    const totalPages = Math.ceil(totalStores / parseInt(limit));
+
+    const responseData = {
+      stores: storesWithDistance,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalStores,
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1,
+        limit: parseInt(limit)
+      },
+      filters: {
+        location: {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+          radius: parseFloat(radius)
+        },
+        sortBy,
+        sortOrder,
+        category: category || null,
+        search: search || null
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('Error fetching nearby stores:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch nearby stores',
+      error: error.message
+    });
+  }
+};
+
   module.exports = {
     registerStore,
     getAllStores,
@@ -736,5 +810,7 @@ const getStoreUpi = async (req, res) => {
     findNearestSellers,
     getStoreByUserId ,
     checkStoreNameAvailability ,
-    getStoreUpi
+    getStoreUpi,
+    getNearbyStores,
+    getNearbyStoresSimple
   };

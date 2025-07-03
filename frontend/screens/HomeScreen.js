@@ -10,45 +10,47 @@ import { SERVER_URL } from '../config';
 const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   const { user, logout } = useAuth();
   const [stores, setStores] = useState([]);
-  const [filteredStores, setFilteredStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [totalStores, setTotalStores] = useState(0);
+  const limit = 20;
   
   // Filter states
   const [selectedDistance, setSelectedDistance] = useState(50);
-  const [selectedSortBy, setSelectedSortBy] = useState('nearby');
+  const [selectedSortBy, setSelectedSortBy] = useState('distance');
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
-  // Filter data for API usage
-  const [filterData, setFilterData] = useState({
-    distance: 50,
-    sortBy: 'nearby'
-  });
-
-  const distanceOptions = [50, 100, 150, 250, 500];
+  const distanceOptions = [10, 25, 50, 100, 150, 250, 500];
   const sortOptions = [
-    { value: 'nearby', label: 'Nearby' },
-    { value: 'rating', label: 'By Rating' },
-    { value: 'name', label: 'By Name' }
+    { value: 'distance', label: 'Nearby' },
+    { value: 'averageRating', label: 'By Rating' },
+    { value: 'storeName', label: 'By Name' }
   ];
 
-  const fetchNearbyStores = async () => {
+  const fetchNearbyStores = async (page = 1, resetStores = true) => {
     try {
-      setLoading(true);
-      setError(null);
-  
+      if (page === 1) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
+
       // Use the userLocation prop if available, otherwise fall back to AsyncStorage
       let latitude, longitude;
       
       if (userLocation && userLocation.latitude && userLocation.longitude) {
-        // Use the props passed from parent component
         latitude = userLocation.latitude;
         longitude = userLocation.longitude;
         console.log("Using location from props:", latitude, longitude);
       } else {
-        // Fall back to AsyncStorage if props are not available
         const storedUserJson = await AsyncStorage.getItem('user');
         if (!storedUserJson) {
           throw new Error('User data not found');
@@ -56,7 +58,6 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
     
         let storedUser = JSON.parse(storedUserJson);
         
-        // If location not available, add default coordinates
         if (!storedUser.latitude || !storedUser.longitude) {
           storedUser.latitude = 9.9312;
           storedUser.longitude = 76.2673;
@@ -65,15 +66,36 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
         latitude = storedUser.latitude;
         longitude = storedUser.longitude;
       }
-  
-      // Make API call to get nearby stores with distance filter
-      const response = await axios.get(
-        `${SERVER_URL}/stores/nearby?latitude=${latitude}&longitude=${longitude}&maxDistance=${selectedDistance}`
-      );
+
+      // Build query parameters
+      const params = {
+        latitude,
+        longitude,
+        radius: selectedDistance,
+        page,
+        limit,
+        sortBy: selectedSortBy,
+        sortOrder: selectedSortBy === 'averageRating' ? 'desc' : 'asc'
+      };
+
+      console.log('API Request params:', params);
+
+      // Make API call to get nearby stores with filters
+      const response = await axios.get(`${SERVER_URL}/stores/nearby`, { params });
       
-      // Update state with fetched stores
-      setStores(response.data.stores);
-      applyFilters(response.data.stores);
+      const { stores: newStores, pagination } = response.data.data;
+      
+      if (resetStores || page === 1) {
+        setStores(newStores);
+        setCurrentPage(1);
+      } else {
+        setStores(prevStores => [...prevStores, ...newStores]);
+        setCurrentPage(page);
+      }
+
+      setHasNextPage(pagination.hasNextPage);
+      setTotalStores(pagination.totalStores);
+
     } catch (err) {
       console.error('Error fetching nearby stores:', err);
       setError(err.message || 'Failed to fetch nearby stores');
@@ -84,62 +106,35 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
       );
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   };
 
-  // Apply sorting filters
-  const applyFilters = (storeList = stores) => {
-    let filtered = [...storeList];
-
-    // Filter by distance (this should be handled by API, but we can also filter client-side)
-    filtered = filtered.filter(store => {
-      const distance = store.distance?.value || 0;
-      return distance <= selectedDistance;
-    });
-
-    // Sort by selected option
-    switch (selectedSortBy) {
-      case 'nearby':
-        filtered.sort((a, b) => (a.distance?.value || 0) - (b.distance?.value || 0));
-        break;
-      case 'rating':
-        filtered.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
-        break;
-      case 'name':
-        filtered.sort((a, b) => (a.storeName || '').localeCompare(b.storeName || ''));
-        break;
-      default:
-        break;
+  // Load next page
+  const loadMoreStores = () => {
+    if (hasNextPage && !loadingMore) {
+      fetchNearbyStores(currentPage + 1, false);
     }
-
-    setFilteredStores(filtered);
   };
 
-  // Log when userLocation or locationUpdateTrigger changes
+  // Effects
   useEffect(() => {
     console.log('Location updated:', userLocation);
     console.log('Trigger value:', locationUpdateTrigger);
-    fetchNearbyStores();
-  }, [userLocation, locationUpdateTrigger, selectedDistance]);
+    fetchNearbyStores(1, true);
+  }, [userLocation, locationUpdateTrigger]);
 
-  // Apply filters when sort option changes
+  // Refetch when filters change
   useEffect(() => {
-    applyFilters();
-  }, [selectedSortBy]);
-
-  // Update filter data when selections change
-  useEffect(() => {
-    setFilterData({
-      distance: selectedDistance,
-      sortBy: selectedSortBy
-    });
+    fetchNearbyStores(1, true);
   }, [selectedDistance, selectedSortBy]);
 
   // Pull-to-refresh functionality
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchNearbyStores();
+    setCurrentPage(1);
+    fetchNearbyStores(1, true);
   };
 
   // Handle distance selection
@@ -157,26 +152,18 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   // Toggle dropdown visibility
   const toggleDistanceDropdown = () => {
     setShowDistanceDropdown(!showDistanceDropdown);
-    setShowSortDropdown(false); // Close other dropdown
+    setShowSortDropdown(false);
   };
 
   const toggleSortDropdown = () => {
     setShowSortDropdown(!showSortDropdown);
-    setShowDistanceDropdown(false); // Close other dropdown
+    setShowDistanceDropdown(false);
   };
 
   // Render each store item
   const renderStoreItem = ({ item }) => {
-    const distanceText =
-      item.distance?.value && typeof item.distance.value === 'number'
-        ? `${item.distance.value.toFixed(1)} km`
-        : '0 km';
-  
-    const locationText =
-      item.place ||
-      (item.location?.coordinates
-        ? `${item.location.coordinates[1].toFixed(4)}, ${item.location.coordinates[0].toFixed(4)}`
-        : 'Unknown location');
+    const distanceText = item.distance ? `${item.distance} km` : '0 km';
+    const locationText = item.place || item.address || 'Unknown location';
   
     return (
       <SellerCard
@@ -190,6 +177,25 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
         description={item.description}
         price={item.price || '₹0'}
       />
+    );
+  };
+
+  // Render Load More button
+  const renderLoadMoreButton = () => {
+    if (!hasNextPage) return null;
+
+    return (
+      <TouchableOpacity 
+        style={styles.loadMoreButton} 
+        onPress={loadMoreStores}
+        disabled={loadingMore}
+      >
+        {loadingMore ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <Text style={styles.loadMoreText}>Load More Stores</Text>
+        )}
+      </TouchableOpacity>
     );
   };
 
@@ -289,6 +295,11 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
               )}
             </View>
           </View>
+
+          {/* Results count */}
+          <Text style={styles.resultsText}>
+            {totalStores} stores found
+          </Text>
         </View>
       </View>
 
@@ -304,20 +315,21 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity 
             style={styles.retryButton} 
-            onPress={fetchNearbyStores}
+            onPress={() => fetchNearbyStores(1, true)}
           >
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={filteredStores.length > 0 ? filteredStores : []}
+          data={stores}
           renderItem={renderStoreItem}
           keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
           contentContainerStyle={styles.storesList}
           showsVerticalScrollIndicator={false}
           refreshing={refreshing}
           onRefresh={handleRefresh}
+          ListFooterComponent={renderLoadMoreButton}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="storefront-outline" size={60} color="#ccc" />
@@ -354,15 +366,19 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     gap: 8,
   },
   filterButtons: {
     flexDirection: 'row',
     flex: 1,
     gap: 8,
+  },
+  resultsText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   dropdownWrapper: {
     flex: 1,
@@ -452,6 +468,22 @@ const styles = StyleSheet.create({
   storesList: {
     paddingBottom: 20,
   },
+  loadMoreButton: {
+    backgroundColor: '#155366',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginTop: 15,
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -494,4 +526,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-export default HomeScreen
+
+export default HomeScreen;
