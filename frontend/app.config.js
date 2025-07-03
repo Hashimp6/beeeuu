@@ -28,18 +28,18 @@ if ((isEASBuild || process.env.GOOGLE_SERVICES_JSON_BASE64) && !existsSync(join(
 
 export default {
   expo: {
-    name: "beeu",
-    slug: "beeu",
+    name: "SerchBy",
+    slug: "SerchBy",
     version: "1.0.0",
     owner: "hashimp6",
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    scheme: "beeu",
+    scheme: "serchby",
     icon: "./assets/logo.png", // Main app icon
     
     ios: {
-      bundleIdentifier: "com.hashim.beeuu",
+      bundleIdentifier: "com.hashim.serchby",
       supportsTablet: true,
       icon: "./assets/logo.png", // iOS specific icon (should be same as main)
       config: {
@@ -52,7 +52,7 @@ export default {
     },
     
     android: {
-      package: "com.hashim.beeuu",
+      package: "com.hashim.serchby",
       googleServicesFile: "./android/app/google-services.json",
       icon: "./assets/logo.png", // Android specific icon
       adaptiveIcon: {
@@ -103,7 +103,7 @@ export default {
     
     extra: {
       eas: {
-        projectId: "02f51a23-2820-4320-a2b6-3a62255abb20"
+        projectId: "6b962b7b-711f-49d3-9550-bfa7f33a296f"
       },
       googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
     }

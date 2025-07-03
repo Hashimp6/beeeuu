@@ -65,7 +65,7 @@ console.log("name is",name);
     };
 
     // Send OTP email
-    // await sendMail(email, otp);
+    await sendMail(email, otp);
     console.log("OTP sent:", otp); // For development only, remove in production
 
     // Clean up expired registrations
