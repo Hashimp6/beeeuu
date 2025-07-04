@@ -800,6 +800,29 @@ const getNearbyStoresSimple = async (req, res) => {
     });
   }
 };
+const findStoreByName = async (req, res) => {
+  try {
+    console.log("ptm",req.params);
+    
+    const { name } = req.params;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Store name is required in URL parameter' });
+    }
+
+    const regex = new RegExp(name, 'i'); // case-insensitive match
+    const store = await Store.findOne({ storeName: regex });
+
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    return res.status(200).json({ success: true, data: store });
+  } catch (error) {
+    console.error('Error fetching store by name:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 
   module.exports = {
     registerStore,
@@ -812,5 +835,6 @@ const getNearbyStoresSimple = async (req, res) => {
     checkStoreNameAvailability ,
     getStoreUpi,
     getNearbyStores,
-    getNearbyStoresSimple
+    getNearbyStoresSimple,
+    findStoreByName
   };

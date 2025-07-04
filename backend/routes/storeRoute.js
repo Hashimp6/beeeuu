@@ -10,12 +10,14 @@ const {
   getStoreByUserId,
   checkStoreNameAvailability,
   getStoreUpi,
-  getNearbyStores
+  getNearbyStores,
+  findStoreByName
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
 
 
+router.get('/storeprofile/:name', findStoreByName);
 router.get("/nearby",getNearbyStores);
  router.get("/:storeId", getStoreById);
  router.get("/user/:userId", getStoreByUserId);

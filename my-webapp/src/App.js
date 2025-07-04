@@ -7,6 +7,7 @@ import OtpVerificationPage from "./pages/auth/Otp";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword";
 import CustomToaster from "./components/ToastComponent";
 import ResetPasswordPage from "./pages/auth/ResetPassword";
+import StoreProfile from "./pages/user/StoreProfile";
 
 function App() {
   return (<>
@@ -19,6 +20,7 @@ function App() {
         <Route path="/otp" element={<OtpVerificationPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
 
         <Route path="/home" element={<HomeLayout />} />
       </Routes>

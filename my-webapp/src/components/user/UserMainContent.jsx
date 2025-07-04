@@ -4,12 +4,13 @@ import { useAuth } from '../../context/UserContext';
 import StoreCard from '../StoreCard';
 import axios from 'axios';
 import { SERVER_URL } from '../../Config';
-import StoreProfile from './StoreProfile';
+import { useNavigate } from 'react-router-dom'; // Add this import
 
 const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   const { user, token } = useAuth();
+  const navigate = useNavigate(); // Add this hook
   console.log("user and token:", user, token);
-  const [selectedStore, setSelectedStore] = useState(null);
+  
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -143,36 +144,13 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
     fetchStores(searchQuery, newFilters);
   };
 
+  // Updated handleCardClick to navigate to store profile page
   const handleCardClick = (store) => {
-    setSelectedStore(store);
+    // Navigate to store profile page with store name as URL parameter
+    const storeSlug = store.storeName.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/storeprofile/${storeSlug}`, { state: { store } });
   };
 
-  const handleBack = () => {
-    setSelectedStore(null);
-  };
-
-  const handleChatNow = () => {
-    console.log('Starting chat with:', selectedStore.storeName);
-    // Implement chat navigation
-  };
-
-  const handleShare = () => {
-    console.log('Sharing store:', selectedStore.storeName);
-    // Implement share functionality
-  };
-
-
-  // If a store is selected, show the detail view
-  if (selectedStore) {
-    return (
-      <StoreProfile
-        store={selectedStore}
-        onBack={handleBack}
-        onChatNow={handleChatNow}
-        onShare={handleShare}
-      />
-    );
-  }
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left Sidebar with Filters */}
@@ -323,7 +301,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
         )}
 
         {!loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store) => (
               <StoreCard
                 key={store._id || store.id || Math.random()}

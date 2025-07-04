@@ -1,36 +1,213 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, ExternalLink, Clock, Award, Users, Sparkles, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, ExternalLink, Clock, Award, Users, Sparkles, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail, Loader2 } from 'lucide-react';
+import { SERVER_URL } from '../../Config';
+import axios from 'axios';
 
-const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
+const StoreProfile = () => {
+  console.log("prms",useParams());
+  
+  const { storeName } = useParams();
+  const navigate = useNavigate();
+  
+  const [store, setStore] = useState(null);
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [gallery, setGallery] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [likedProducts, setLikedProducts] = useState(new Set());
   const [showShareModal, setShowShareModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Mock enhanced store data
-  const enhancedStore = {
+  // Fetch store details from API
+  useEffect(() => {
+    const fetchStoreDetails = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+    
+       const response = await axios.get(`${SERVER_URL}/stores/storeprofile/${storeName}`);
+    
+        const storeData = response.data.data;
+    console.log("sttt",storeData);
+    
+        setStore(storeData);
+    
+        // If the API returns products and gallery, set them
+        if (storeData.products) {
+          setProducts(storeData.products);
+        }
+        if (storeData.gallery) {
+          setGallery(storeData.gallery);
+        }
+    
+      } catch (err) {
+        console.error('Error fetching store details:', err);
+        const message =
+          err.response?.data?.message || err.message || 'Something went wrong';
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (storeName) {
+      fetchStoreDetails();
+    }
+  }, [storeName]);
+
+  // Mock enhanced store data (fallback for missing fields)
+  const enhancedStore = store ? {
     ...store,
-    verified: true,
-    responseTime: '~2 hrs',
-    completedOrders: 89,
-    yearEstablished: '2020',
-    specialties: ['Premium Quality', 'Fast Service', 'Expert Team'],
-    workingHours: 'Mon-Sat: 9AM-8PM'
-  };
+    verified: store.verified || true,
+    responseTime: store.responseTime || '~2 hrs',
+    completedOrders: store.completedOrders || 89,
+    yearEstablished: store.yearEstablished || '2020',
+    specialties: store.specialties || ['Premium Quality', 'Fast Service', 'Expert Team'],
+    workingHours: store.workingHours || 'Mon-Sat: 9AM-8PM',
+    averageRating: store.averageRating || store.rating || 4.5,
+    numberOfRatings: store.numberOfRatings || store.reviewCount || 150
+  } : null;
+
+  // Generate mock data if not provided by API
+  useEffect(() => {
+    if (store && !products.length && !store.products) {
+      // Mock products data
+      setProducts([
+        {
+          _id: '1',
+          name: 'Premium Hair Styling',
+          description: 'Professional hair styling service with premium products and expert consultation',
+          price: 1500,
+          originalPrice: 2000,
+          type: 'service',
+          image: 'https://picsum.photos/400/300?random=1',
+          rating: 4.9,
+          duration: '60 min',
+          popular: true,
+          discount: 25,
+          category: 'Hair Care'
+        },
+        {
+          _id: '2',
+          name: 'Organic Skincare Kit',
+          description: 'Complete skincare routine with 100% organic ingredients for all skin types',
+          price: 2500,
+          originalPrice: 3200,
+          type: 'product',
+          image: 'https://picsum.photos/400/300?random=2',
+          rating: 4.7,
+          inStock: true,
+          discount: 22,
+          category: 'Skincare'
+        },
+        {
+          _id: '3',
+          name: 'Luxury Facial Treatment',
+          description: 'Rejuvenating facial treatment with gold mask and premium anti-aging serums',
+          price: 3500,
+          type: 'service',
+          image: 'https://picsum.photos/400/300?random=3',
+          rating: 4.8,
+          duration: '90 min',
+          premium: true,
+          category: 'Facial'
+        },
+        {
+          _id: '4',
+          name: 'Hair Care Bundle',
+          description: 'Complete hair care set with natural shampoo, conditioner, and nourishing oil',
+          price: 1200,
+          originalPrice: 1500,
+          type: 'product',
+          image: 'https://picsum.photos/400/300?random=4',
+          rating: 4.6,
+          inStock: true,
+          discount: 20,
+          category: 'Hair Care'
+        },
+        {
+          _id: '5',
+          name: 'Bridal Makeup Package',
+          description: 'Complete bridal makeup with trial session and touch-up kit included',
+          price: 8500,
+          type: 'service',
+          image: 'https://picsum.photos/400/300?random=5',
+          rating: 4.9,
+          duration: '4 hours',
+          premium: true,
+          category: 'Makeup'
+        },
+        {
+          _id: '6',
+          name: 'Vitamin C Serum',
+          description: 'High-potency vitamin C serum for brightening and anti-aging benefits',
+          price: 899,
+          originalPrice: 1299,
+          type: 'product',
+          image: 'https://picsum.photos/400/300?random=6',
+          rating: 4.5,
+          inStock: true,
+          discount: 31,
+          category: 'Skincare'
+        }
+      ]);
+    }
+
+    if (store && !gallery.length && !store.gallery) {
+      // Mock gallery data
+      setGallery([
+        {
+          _id: '1',
+          image: 'https://picsum.photos/600/400?random=10',
+          caption: 'Modern salon interior with premium equipment',
+          category: 'Interior'
+        },
+        {
+          _id: '2',
+          image: 'https://picsum.photos/600/400?random=11',
+          caption: 'Professional styling session in progress',
+          category: 'Services'
+        },
+        {
+          _id: '3',
+          image: 'https://picsum.photos/600/400?random=12',
+          caption: 'Premium product collection showcase',
+          category: 'Products'
+        },
+        {
+          _id: '4',
+          image: 'https://picsum.photos/600/400?random=13',
+          caption: 'Before and after transformation',
+          category: 'Results'
+        },
+        {
+          _id: '5',
+          image: 'https://picsum.photos/600/400?random=14',
+          caption: 'Team of expert professionals',
+          category: 'Team'
+        },
+        {
+          _id: '6',
+          image: 'https://picsum.photos/600/400?random=15',
+          caption: 'Award-winning service recognition',
+          category: 'Awards'
+        }
+      ]);
+    }
+  }, [store, products.length, gallery.length]);
 
   // Generate share URL and content
   const generateShareContent = () => {
     const currentUrl = window.location.href;
-    const storeUrl = `${window.location.origin}/store/${enhancedStore.storeName?.toLowerCase().replace(/\s+/g, '-')}`;
+    const storeUrl = `${window.location.origin}/storeprofile/${storeName}`;
     
     return {
       url: storeUrl,
-      title: `${enhancedStore.storeName} - ${enhancedStore.category}`,
-      description: `Check out ${enhancedStore.storeName} in ${enhancedStore.place}! ⭐ ${enhancedStore.rating} rating with ${enhancedStore.reviewCount}+ reviews. Premium ${enhancedStore.category} services available.`,
-      hashtags: ['LocalBusiness', enhancedStore.category?.replace(/\s+/g, ''), enhancedStore.place?.replace(/\s+/g, '')]
+      title: `${enhancedStore?.storeName || storeName} - ${enhancedStore?.category || 'Business'}`,
+      description: `Check out ${enhancedStore?.storeName || storeName} in ${enhancedStore?.place || 'your area'}! ⭐ ${enhancedStore?.averageRating || '4.5'} rating with ${enhancedStore?.numberOfRatings || '100'}+ reviews. Premium ${enhancedStore?.category || 'business'} services available.`,
+      hashtags: ['LocalBusiness', enhancedStore?.category?.replace(/\s+/g, '') || 'Business', enhancedStore?.place?.replace(/\s+/g, '') || 'Local']
     };
   };
 
@@ -48,7 +225,6 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
         setShowShareModal(false);
       } catch (error) {
         console.log('Error sharing:', error);
-        // Fallback to custom share modal
         setShowShareModal(true);
       }
     } else {
@@ -65,7 +241,6 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = textToCopy;
       document.body.appendChild(textArea);
@@ -284,6 +459,33 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
     }
   };
 
+  const onBack = () => {
+    navigate(-1); // Go back to previous page
+  };
+
+  const onChatNow = () => {
+    // Implement chat functionality
+    console.log('Starting chat with store:', enhancedStore?.storeName);
+  };
+// Add this before the existing return statement:
+if (loading) {
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <Loader2 size={48} className="animate-spin text-teal-600" />
+    </div>
+  );
+}
+
+if (error) {
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="min-h-screen bg-white">
       {/* Header Navigation */}
@@ -330,18 +532,18 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <div className="flex items-center gap-3 mb-2">
                 <img
-                  src={enhancedStore.profileImage || 'https://picsum.photos/60/60?random=store'}
-                  alt={enhancedStore.storeName}
+                  src={enhancedStore?.profileImage || 'https://picsum.photos/60/60?random=store'}
+                  alt={enhancedStore?.storeName}
                   className="w-12 h-12 rounded-lg object-cover"
                 />
                 <div>
-                  <h4 className="font-semibold text-gray-900">{enhancedStore.storeName}</h4>
-                  <p className="text-sm text-gray-600">{enhancedStore.category} • {enhancedStore.place}</p>
+                  <h4 className="font-semibold text-gray-900">{enhancedStore?.storeName}</h4>
+                  <p className="text-sm text-gray-600">{enhancedStore?.category} • {enhancedStore?.place}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Star size={16} className="text-yellow-400 fill-current" />
-                <span>{enhancedStore.averageRating} ({enhancedStore.numberOfRatings} reviews)</span>
+                <span>{enhancedStore?.averageRating} ({enhancedStore?.numberOfRatings} reviews)</span>
               </div>
             </div>
 
@@ -445,10 +647,10 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
             {/* Left Content */}
             <div className="text-white">
               <div className="flex items-center gap-3 mb-6">
-                <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-                  {enhancedStore.storeName}
-                </h1>
-                {enhancedStore.verified && (
+              <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
+  {enhancedStore?.storeName || storeName}
+</h1>
+                {enhancedStore?.verified && (
                   <div className="bg-white/20 backdrop-blur-sm p-2 rounded-full">
                     <CheckCircle size={32} className="text-teal-300" />
                   </div>
@@ -456,27 +658,27 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
               </div>
               
               <p className="text-xl lg:text-2xl text-teal-100 mb-4 font-medium">
-                {enhancedStore.category}
+                {enhancedStore?.category}
               </p>
               
               <div className="flex items-center gap-2 text-white/90 mb-8">
                 <MapPin size={20} />
-                <span className="text-lg">{enhancedStore.place}</span>
+                <span className="text-lg">{enhancedStore?.place}</span>
               </div>
 
               <div className="flex flex-wrap gap-4 mb-8">
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                   <Star size={18} className="text-yellow-400 fill-current" />
-                  <span className="font-semibold">{enhancedStore.averageRating}</span>
-                  <span className="text-white/80">({enhancedStore.numberOfRatings} reviews)</span>
+                  <span className="font-semibold">{enhancedStore?.averageRating}</span>
+                  <span className="text-white/80">({enhancedStore?.numberOfRatings} reviews)</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                   <Clock size={18} className="text-teal-300" />
-                  <span className="text-white/90">{enhancedStore.responseTime}</span>
+                  <span className="text-white/90">{enhancedStore?.responseTime}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
                   <TrendingUp size={18} className="text-green-400" />
-                  <span className="text-white/90">{enhancedStore.completedOrders}+ orders</span>
+                  <span className="text-white/90">{enhancedStore?.completedOrders}+ orders</span>
                 </div>
               </div>
 
@@ -488,7 +690,7 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
                   Start Conversation
                 </button>
                 <button
-                  onClick={() => openPhone(enhancedStore.phone)}
+                  onClick={() => openPhone(enhancedStore?.phone)}
                   className="bg-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Call Now
@@ -496,7 +698,7 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {enhancedStore.specialties.map((specialty, index) => (
+                {enhancedStore?.specialties.map((specialty, index) => (
                   <span
                     key={index}
                     className="bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium border border-white/20"
@@ -512,8 +714,8 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
               <div className="relative">
                 <div className="w-80 h-80 lg:w-96 lg:h-96 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
                   <img
-                    src={enhancedStore.profileImage || 'https://picsum.photos/500/500?random=store'}
-                    alt={enhancedStore.storeName}
+                    src={enhancedStore?.profileImage || 'https://picsum.photos/500/500?random=store'}
+                    alt={enhancedStore?.storeName}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -535,36 +737,36 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-8">
               <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore.yearEstablished}</div>
+                <div className="text-2xl font-bold text-black">{enhancedStore?.yearEstablished}</div>
                 <div className="text-sm text-gray-500">Established</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore.completedOrders}+</div>
+                <div className="text-2xl font-bold text-black">{enhancedStore?.completedOrders}+</div>
                 <div className="text-sm text-gray-500">Happy Customers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore.rating}</div>
+                <div className="text-2xl font-bold text-black">{enhancedStore?.rating}</div>
                 <div className="text-sm text-gray-500">Star Rating</div>
               </div>
             </div>
             
             <div className="flex gap-4">
               <button
-                onClick={() => openPhone(enhancedStore.phone)}
+                onClick={() => openPhone(enhancedStore?.phone)}
                 className="flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-xl hover:bg-teal-700 transition-colors duration-200 font-medium"
               >
                 <Phone size={20} />
                 Call
               </button>
               <button
-                onClick={() => openWhatsapp(enhancedStore.socialMedia?.whatsapp || enhancedStore.phone)}
+                onClick={() => openWhatsapp(enhancedStore?.socialMedia?.whatsapp || enhancedStore?.phone)}
                 className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors duration-200 font-medium"
               >
                 <MessageCircle size={20} />
                 WhatsApp
               </button>
               <button
-                onClick={() => openInstagram(enhancedStore.socialMedia?.instagram)}
+                onClick={() => openInstagram(enhancedStore?.socialMedia?.instagram)}
                 className="flex items-center gap-2 bg-pink-600 text-white px-6 py-3 rounded-xl hover:bg-pink-700 transition-colors duration-200 font-medium"
               >
                 <Instagram size={20} />
@@ -818,7 +1020,7 @@ const StoreProfile = ({ store, onBack, onChatNow, onShare }) => {
               Start Chat
             </button>
             <button
-              onClick={() => openPhone(enhancedStore.phone)}
+              onClick={() => openPhone(enhancedStore?.phone)}
               className="bg-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-teal-400"
             >
               Call Now
