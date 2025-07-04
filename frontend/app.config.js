@@ -28,8 +28,6 @@ export default {
     
     android: {
       package: "com.hashim.serchby",
-      // Remove this line since you're using base64 approach
-      // googleServicesFile: "./android/app/google-services.json",
       icon: "./assets/icon.png",
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
@@ -53,9 +51,16 @@ export default {
             {
               scheme: "https",
               host: "www.serchby.com"
-            },
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        },
+        // Separate intent filter for custom scheme
+        {
+          action: "VIEW",
+          data: [
             {
-              scheme: "beeu"
+              scheme: "serchby"
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]
