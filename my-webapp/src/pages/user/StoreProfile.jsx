@@ -490,27 +490,28 @@ if (error) {
     <div className="min-h-screen bg-white">
       {/* Header Navigation */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors duration-200 font-medium"
-            >
-              <ArrowLeft size={20} />
-              <span>Back to Stores</span>
-            </button>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={shareViaWebShare}
-                className="flex items-center gap-2 bg-teal-50 text-teal-600 px-4 py-2 rounded-lg hover:bg-teal-100 transition-colors duration-200 font-medium"
-              >
-                <Share2 size={18} />
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center justify-between h-14 sm:h-16">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors duration-200 font-medium text-sm sm:text-base"
+      >
+        <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
+        <span className="hidden sm:inline">Back to Stores</span>
+        <span className="sm:hidden">Back</span>
+      </button>
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button
+          onClick={shareViaWebShare}
+          className="flex items-center gap-1 sm:gap-2 bg-teal-50 text-teal-600 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-teal-100 transition-colors duration-200 font-medium text-sm sm:text-base"
+        >
+          <Share2 size={16} className="sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Share</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
 
       {/* Share Modal */}
       {showShareModal && (
@@ -640,96 +641,104 @@ if (error) {
       )}
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-teal-600 via-teal-700 to-black overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="text-white">
-              <div className="flex items-center gap-3 mb-6">
-              <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
-  {enhancedStore?.storeName || storeName}
-</h1>
-                {enhancedStore?.verified && (
-                  <div className="bg-white/20 backdrop-blur-sm p-2 rounded-full">
-                    <CheckCircle size={32} className="text-teal-300" />
-                  </div>
-                )}
-              </div>
-              
-              <p className="text-xl lg:text-2xl text-teal-100 mb-4 font-medium">
-                {enhancedStore?.category}
-              </p>
-              
-              <div className="flex items-center gap-2 text-white/90 mb-8">
-                <MapPin size={20} />
-                <span className="text-lg">{enhancedStore?.place}</span>
-              </div>
-
-              <div className="flex flex-wrap gap-4 mb-8">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <Star size={18} className="text-yellow-400 fill-current" />
-                  <span className="font-semibold">{enhancedStore?.averageRating}</span>
-                  <span className="text-white/80">({enhancedStore?.numberOfRatings} reviews)</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <Clock size={18} className="text-teal-300" />
-                  <span className="text-white/90">{enhancedStore?.responseTime}</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <TrendingUp size={18} className="text-green-400" />
-                  <span className="text-white/90">{enhancedStore?.completedOrders}+ orders</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <button
-                  onClick={onChatNow}
-                  className="bg-white text-teal-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Start Conversation
-                </button>
-                <button
-                  onClick={() => openPhone(enhancedStore?.phone)}
-                  className="bg-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Call Now
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {enhancedStore?.specialties.map((specialty, index) => (
-                  <span
-                    key={index}
-                    className="bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium border border-white/20"
-                  >
-                    {specialty}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Right Content - Profile Image */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="relative">
-                <div className="w-80 h-80 lg:w-96 lg:h-96 rounded-3xl overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                  <img
-                    src={enhancedStore?.profileImage || 'https://picsum.photos/500/500?random=store'}
-                    alt={enhancedStore?.storeName}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute -bottom-4 -right-4 bg-white rounded-2xl p-4 shadow-xl">
-                  <div className="flex items-center gap-2">
-                    <Shield size={20} className="text-teal-600" />
-                    <span className="text-sm font-semibold text-gray-800">Verified Business</span>
-                  </div>
-                </div>
-              </div>
+     
+{/* Hero Section */}
+<section className="relative bg-gradient-to-br from-teal-600 via-teal-700 to-black overflow-hidden">
+  <div className="absolute inset-0 bg-black/20"></div>
+  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-16">
+    
+    {/* Mobile-First Layout: Image First, Then Content */}
+    <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+      
+      {/* Mobile: Image First - Desktop: Right Side */}
+      <div className="order-1 lg:order-2 flex justify-center lg:justify-end w-full">
+        <div className="relative w-full max-w-sm lg:max-w-none">
+          <div className="w-full aspect-square lg:w-80 lg:h-80 xl:w-96 xl:h-96 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl transform hover:rotate-0 lg:rotate-3 transition-transform duration-300">
+            <img
+              src={enhancedStore?.profileImage || 'https://picsum.photos/500/500?random=store'}
+              alt={enhancedStore?.storeName}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="absolute -bottom-2 -right-2 lg:-bottom-4 lg:-right-4 bg-white rounded-xl lg:rounded-2xl p-2 lg:p-4 shadow-xl">
+            <div className="flex items-center gap-2">
+              <Shield size={16} className="lg:w-5 lg:h-5 text-teal-600" />
+              <span className="text-xs lg:text-sm font-semibold text-gray-800">Verified</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Mobile: Content Second - Desktop: Left Side */}
+      <div className="order-2 lg:order-1 text-white text-center lg:text-left">
+        <div className="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:mb-6">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold leading-tight">
+            {enhancedStore?.storeName || storeName}
+          </h1>
+          {enhancedStore?.verified && (
+            <div className="bg-white/20 backdrop-blur-sm p-1.5 lg:p-2 rounded-full">
+              <CheckCircle size={20} className="lg:w-8 lg:h-8 text-teal-300" />
+            </div>
+          )}
+        </div>
+        
+        <p className="text-lg sm:text-xl lg:text-2xl text-teal-100 mb-3 lg:mb-4 font-medium">
+          {enhancedStore?.category}
+        </p>
+        
+        <div className="flex items-center justify-center lg:justify-start gap-2 text-white/90 mb-6 lg:mb-8">
+          <MapPin size={18} className="lg:w-5 lg:h-5" />
+          <span className="text-base lg:text-lg">{enhancedStore?.place}</span>
+        </div>
+
+        {/* Stats - Stack on mobile, inline on desktop */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 lg:gap-4 mb-6 lg:mb-8 justify-center lg:justify-start">
+          <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
+            <Star size={16} className="lg:w-4 lg:h-4 text-yellow-400 fill-current" />
+            <span className="font-semibold text-sm lg:text-base">{enhancedStore?.averageRating}</span>
+            <span className="text-white/80 text-sm lg:text-base">({enhancedStore?.numberOfRatings} reviews)</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
+            <Clock size={16} className="lg:w-4 lg:h-4 text-teal-300" />
+            <span className="text-white/90 text-sm lg:text-base">{enhancedStore?.responseTime}</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
+            <TrendingUp size={16} className="lg:w-4 lg:h-4 text-green-400" />
+            <span className="text-white/90 text-sm lg:text-base">{enhancedStore?.completedOrders}+ orders</span>
+          </div>
+        </div>
+
+        {/* Action Buttons - Stack on mobile */}
+        <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
+          <button
+            onClick={onChatNow}
+            className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+          >
+            Start Conversation
+          </button>
+          <button
+            onClick={() => openPhone(enhancedStore?.phone)}
+            className="bg-teal-500 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+          >
+            Call Now
+          </button>
+        </div>
+
+        {/* Specialties - Centered on mobile */}
+        <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+          {enhancedStore?.specialties.map((specialty, index) => (
+            <span
+              key={index}
+              className="bg-white/10 backdrop-blur-sm text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-medium border border-white/20"
+            >
+              {specialty}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Quick Contact Bar */}
       <section className="bg-white border-b border-gray-100 py-6">

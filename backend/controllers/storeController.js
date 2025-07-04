@@ -812,6 +812,7 @@ const findStoreByName = async (req, res) => {
 
     const regex = new RegExp(name, 'i'); // case-insensitive match
     const store = await Store.findOne({ storeName: regex });
+console.log("ffns",store);
 
     if (!store) {
       return res.status(404).json({ message: 'Store not found' });

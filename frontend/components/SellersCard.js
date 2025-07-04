@@ -24,7 +24,7 @@ const SellerCard = ({
   const navigation = useNavigation();
 
   const handlePress = () => {
-    navigation.navigate('SellerProfile', { id });
+    navigation.navigate('SellerProfile', { name });
   };
 
   return (

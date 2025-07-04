@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Toast from 'react-native-toast-message';
 import { useRoute } from '@react-navigation/native';
 import {
   View,
@@ -30,7 +31,7 @@ const SellerProfile = () => {
   const [store, setStore] = useState(null);
   const [error, setError] = useState('');
   const [gallery, setGallery] = useState([]);
-  const { id } = route.params;
+  const { name } = route.params;
   useEffect(() => {
     const loadToken = async () => {
       try {
@@ -100,6 +101,7 @@ const SellerProfile = () => {
       }
     };
    // Updated handleShare function in your component
+// Updated handleShare function
 const handleShare = async () => {
   console.log("sharing store", store);
   
@@ -117,6 +119,13 @@ const handleShare = async () => {
       });
     } else if (result.dismissed) {
       console.log('User dismissed share dialog');
+    } else if (result.error) {
+      console.error('Share error:', result.error);
+      Toast.show({
+        type: 'error',
+        text1: 'Share Failed',
+        text2: result.error || 'Could not share store profile',
+      });
     }
   } catch (error) {
     console.error('Share error:', error);
@@ -128,29 +137,7 @@ const handleShare = async () => {
   }
 };
 
-// Alternative: If you prefer the original approach
-const handleShareOriginal = async () => {
-  console.log("sharing store", store);
-  
-  const profileData = {
-    name: store.storeName || 'Store',
-    bio: store.description || `${store.category} store in ${store.place}`,
-    profileUrl: ProfileShareHandler.generateProfileDeepLink(store._id, 'beeu'), // Fixed scheme
-    imageUrl: store.profileImage || ''
-  };
-  
-  const options = {
-    customMessage: `Hey! Check out ${store.storeName}'s store on Beeu!`,
-    includeImage: !!store.profileImage
-  };
-  
-  const result = await ProfileShareHandler.shareProfile(profileData, options);
-  
-  if (result.success) {
-    console.log('Store profile shared successfully!');
-    // Optional: Show success toast/alert to user
-  }
-};
+
     const handleTabChange = async (tab) => {
       setActiveTab(tab);
   
@@ -191,9 +178,12 @@ const handleShareOriginal = async () => {
     const fetchStore = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${SERVER_URL}/stores/${id}`);
+        console.log("soo",name);
+        const response = await axios.get(`${SERVER_URL}/stores/storeprofile/${name}`);
+       console.log("sroo",response.data.data);
+       
         setStore({
-          ...response.data.store,
+          ...response.data.data,
         });
         
         
@@ -205,8 +195,8 @@ const handleShareOriginal = async () => {
       }
     };
 
-    if (id) fetchStore();
-  }, [id]);
+    if (name) fetchStore();
+  }, [name]);
   useEffect(() => {
 
     const fetchProducts = async () => {
@@ -445,6 +435,8 @@ const handleShareOriginal = async () => {
     )}
   </View>
 )}
+<Toast />
+
     </ScrollView>
   );
 };
