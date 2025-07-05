@@ -14,6 +14,7 @@ const sendMessage = async (req, res) => {
     console.log("dtasdad",req.body,"recieverId",receiverId);
     
     const senderId = req.user.id;
+console.log("sender",senderId);
 
     if (!receiverId) {
       return res.status(400).json({

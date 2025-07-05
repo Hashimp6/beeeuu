@@ -56,38 +56,12 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
       };
   
       fetchSeller();
-    // if (user) {
-    //   // In a real app, you would make an API call to get store data
-    //   // For now, we'll use dummy data
-    //   const dummyStore =  {
-    //     storeName: "Your Store",
-    //     description: "Professional services with a personal touch",
-    //     place: "123 Main St, City, State",
-    //     category: "Professional Services",
-    //     phone: "+1 (555) 123-4567",
-    //     profileImage: null,
-    //     openingHours: "9:00 AM - 6:00 PM",
-    //     rating: 4.8,
-    //     reviews: 24,
-    //   };
-    //   setStore(dummyStore);
-    //   setEditData({
-    //     storeName: dummyStore.storeName,
-    //     description: dummyStore.description,
-    //     place: dummyStore.place,
-    //     category: dummyStore.category,
-    //     phone: dummyStore.phone,
-    //   });
-    // }
-
-    // Fetch appointment stats
-    // In a real app, you would make an API call
+  
     setStats({
       pendingAppointments: 12,
       completedAppointments: 38,
       totalRevenue: 2450,
     });
-    setUpiInput(user?.upi || "");
   }, [user]);
 
   const handleEditStore = () => {

@@ -158,6 +158,7 @@ const AppointmentScheduler = () => {
       };
   
       try {
+        console.log("app drs",appointmentData);
         // Send appointment data to create appointment message
         const response = await axios.post(`${SERVER_URL}/messages/send`, {
           receiverId: otherUser._id,
@@ -334,13 +335,13 @@ const AppointmentScheduler = () => {
 </View>
           
           <View style={styles.locationDetailsContainer}>
-            <Text style={styles.sectionTitle}>Location Details</Text>
+            <Text style={styles.sectionTitle}>Details</Text>
             
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Location Name</Text>
+              <Text style={styles.inputLabel}>Name</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter location name"
+                placeholder="Enter name"
                 value={locationName}
                 onChangeText={setLocationName}
                 placeholderTextColor="#999999"
