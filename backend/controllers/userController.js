@@ -525,8 +525,8 @@ const updateLocation = async (req, res) => {
   try {
     
     const { userId } = req.params;
-    const { coordinates } = req.body;
-    console.log("strytf",coordinates);
+    const { coordinates,locationName } = req.body;
+    console.log("strytf",coordinates,locationName);
 
     if (!coordinates || coordinates.length !== 2) {
       return res.status(400).json({ message: "Invalid coordinates. Format: [longitude, latitude]" });
@@ -537,8 +537,9 @@ const updateLocation = async (req, res) => {
       {
         location: {
           type: "Point",
-          coordinates: coordinates,
+          coordinates: coordinates
         },
+        place:locationName
       },
       { new: true }
     );

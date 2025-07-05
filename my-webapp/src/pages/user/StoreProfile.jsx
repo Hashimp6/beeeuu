@@ -129,11 +129,8 @@ const handleTouchEnd = () => {
   const enhancedStore = store ? {
     ...store,
     verified: store.verified || true,
-    responseTime: store.responseTime || '~2 hrs',
-    completedOrders: store.completedOrders || 89,
-    yearEstablished: store.yearEstablished || '2020',
+    completedOrders: store.completedOrders ,
     specialties: store.specialties || ['Premium Quality', 'Fast Service', 'Expert Team'],
-    workingHours: store.workingHours || 'Mon-Sat: 9AM-8PM',
     averageRating: store.averageRating || store.rating || 4.5,
     numberOfRatings: store.numberOfRatings || store.reviewCount || 150
   } : null;
@@ -573,10 +570,7 @@ const handleTouchEnd = () => {
                   <span className="font-semibold text-sm lg:text-base">{enhancedStore?.averageRating}</span>
                   <span className="text-white/80 text-sm lg:text-base">({enhancedStore?.numberOfRatings} reviews)</span>
                 </div>
-                <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
-                  <Clock size={16} className="lg:w-4 lg:h-4 text-teal-300" />
-                  <span className="text-white/90 text-sm lg:text-base">{enhancedStore?.responseTime}</span>
-                </div>
+                
                 <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
                   <TrendingUp size={16} className="lg:w-4 lg:h-4 text-green-400" />
                   <span className="text-white/90 text-sm lg:text-base">{enhancedStore?.completedOrders}+ orders</span>
@@ -615,51 +609,7 @@ const handleTouchEnd = () => {
         </div>
       </section>
 
-      {/* Quick Contact Bar */}
-      <section className="bg-white border-b border-gray-100 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore?.yearEstablished}</div>
-                <div className="text-sm text-gray-500">Established</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore?.completedOrders}+</div>
-                <div className="text-sm text-gray-500">Happy Customers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-black">{enhancedStore?.rating}</div>
-                <div className="text-sm text-gray-500">Star Rating</div>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <button
-                onClick={() => openPhone(enhancedStore?.phone)}
-                className="flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-xl hover:bg-teal-700 transition-colors duration-200 font-medium"
-              >
-                <Phone size={20} />
-                Call
-              </button>
-              <button
-                onClick={() => openWhatsapp(enhancedStore?.socialMedia?.whatsapp || enhancedStore?.phone)}
-                className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors duration-200 font-medium"
-              >
-                <MessageCircle size={20} />
-                WhatsApp
-              </button>
-              <button
-                onClick={() => openInstagram(enhancedStore?.socialMedia?.instagram)}
-                className="flex items-center gap-2 bg-pink-600 text-white px-6 py-3 rounded-xl hover:bg-pink-700 transition-colors duration-200 font-medium"
-              >
-                <Instagram size={20} />
-                Instagram
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Navigation Tabs */}
       <section className="bg-white border-b border-gray-100 sticky top-16 z-40">

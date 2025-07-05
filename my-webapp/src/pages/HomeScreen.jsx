@@ -8,7 +8,7 @@ import ChatApp from '../components/ChatSection';
 const HomeLayout = () => {
     const { user } = useAuth(); // assuming this gives you the logged-in user
 
-    const [userLocation, setUserLocation] = useState('Set location');
+    const [userLocation, setUserLocation] = useState(user?.place || '');
     const [chat, setChat] = useState(false);
     const [dropdowns, setDropdowns] = useState({
         distance: false,

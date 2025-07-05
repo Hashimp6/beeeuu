@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import { SERVER_URL } from '../../Config';
+import { useNavigate } from 'react-router-dom';
 const EditModal = ({
     editForm,
     errors,
@@ -147,7 +148,7 @@ const EditModal = ({
   );
   
 const UserProfileComponent = () => {
-  const { user, setUser } = useAuth();
+  const { user, setUser,logout } = useAuth();
 
   const [localUser, setLocalUser] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -156,6 +157,12 @@ const UserProfileComponent = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();            // Clear user/token
+    navigate('/home');   // Navigate after logout
+  };
   useEffect(() => {
     if (user) {
       setLocalUser(user);
@@ -401,7 +408,7 @@ const UserProfileComponent = () => {
 <ActionButton
   icon={LogOut}
   text="Logout"
-  onClick={() => console.log('Logout')}
+  onClick={handleLogout}
   variant="danger"
 />
 </div>

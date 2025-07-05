@@ -65,18 +65,12 @@ const LocationSelectionModal = ({ visible, onClose }) => {
   // Replace your fetchLocationSuggestions function with this debug version
 
   const fetchLocationSuggestions = useCallback(async (query) => {
-    console.log('🔍 Starting location search for:', query);
-    
+
     if (!query.trim()) {
       setSuggestions([]);
       return;
     }
   
-    console.log('🔑 API Key check:', {
-      exists: !!GOOGLE_MAPS_API_KEY,
-      firstChars: GOOGLE_MAPS_API_KEY?.substring(0, 10),
-      length: GOOGLE_MAPS_API_KEY?.length
-    });
     
     if (!GOOGLE_MAPS_API_KEY) {
       setError('Google Maps API key is missing');
@@ -101,39 +95,22 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         cache: 'no-cache',
       });
       
-      console.log('📡 Response details:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        url: response.url,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      console.log('📦 API Response:', data);
       
       if (data.status === 'OK') {
-        console.log('✅ Success! Found', data.predictions?.length, 'suggestions');
-        setSuggestions(data.predictions);
+         setSuggestions(data.predictions);
       } else if (data.status === 'ZERO_RESULTS') {
         console.log('📭 Zero results');
         setSuggestions([]);
       } else {
-        console.error('❌ API Error:', data.status, data.error_message);
-        setError(`Location search failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
+       setError(`Location search failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
         setSuggestions([]);
       }
     } catch (err) {
-      console.error('🚨 Full Error Details:', {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-        cause: err.cause
-      });
       
       // More specific error messages
       if (err.message.includes('Network request failed')) {
@@ -184,7 +161,6 @@ const LocationSelectionModal = ({ visible, onClose }) => {
       }
       throw new Error(`Could not get coordinates: ${data.status || 'Unknown error'}`);
     } catch (err) {
-      console.error('Get coordinates error:', err);
       setError('Failed to get location coordinates. Please try again.');
       return null;
     }
@@ -215,16 +191,13 @@ const LocationSelectionModal = ({ visible, onClose }) => {
               Authorization: `Bearer ${userData.token}`,
             },
           });
-        } catch (serverErr) {
-          console.error('Server update failed, but continuing with local update:', serverErr);
-          // We'll continue even if server update fails
+        } catch (serverErr) {  // We'll continue even if server update fails
         }
       }
       
       return updatedUser;
     } catch (err) {
-      console.error('Update user location error:', err);
-      throw new Error('Failed to update location');
+    throw new Error('Failed to update location');
     }
   };
 
@@ -266,7 +239,6 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Select location error:', err);
       setError('Failed to save location. Please try again.');
       setLoading(false);
     }
@@ -336,9 +308,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         setError(updateError.message);
         setLoading(false);
       }
-    } catch (err) {
-      console.error('Get current location error:', err);
-      setError('Failed to get current location. Please try again.');
+    } catch (err) {  setError('Failed to get current location. Please try again.');
       setLoading(false);
     }
   };

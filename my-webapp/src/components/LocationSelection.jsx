@@ -49,8 +49,8 @@ const LocationSelectionModal = ({ visible, onClose }) => {
   useEffect(() => {
     if (visible && user) {
       // Set current location name in search if user has one
-      if (user.locationName && user.locationName !== 'Current Location') {
-        setSearchQuery(user.locationName);
+      if (user.place) {
+        setSearchQuery(user.place);
       }
     } else {
       // Clear search query when modal is closed
@@ -94,13 +94,12 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         setLoading(false);
         
         if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          console.log('✅ Success! Found', predictions.length, 'suggestions');
+         
           setSuggestions(predictions);
         } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-          console.log('📭 Zero results');
+        
           setSuggestions([]);
         } else {
-          console.error('❌ API Error:', status);
           setError('Location search failed. Please try again.');
           setSuggestions([]);
         }
@@ -159,7 +158,6 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         });
       });
     } catch (err) {
-      console.error('Get coordinates error:', err);
       setError('Failed to get location coordinates. Please try again.');
       return null;
     }
@@ -171,13 +169,12 @@ const LocationSelectionModal = ({ visible, onClose }) => {
       if (!user?._id || !token) {
         throw new Error('User not authenticated');
       }
-console.log("uff",user,token);
 
       // Update on the server
       const response = await axios.put(
         `${SERVER_URL}/users/location/${user._id}`,
         {
-          coordinates: [coordinates.longitude, coordinates.latitude], // GeoJSON format
+          coordinates: [coordinates.longitude, coordinates.latitude], 
           locationName: locationName,
         },
         {
@@ -187,8 +184,6 @@ console.log("uff",user,token);
           },
         }
       );
-
-      console.log('✅ Server updated successfully',response.data);
 
       // Update user in auth context
       const updatedUser = {
