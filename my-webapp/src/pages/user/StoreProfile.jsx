@@ -397,7 +397,7 @@ const handleTouchEnd = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <button
-              onClick={onBack}
+               onClick={() => navigate('/home')}
               className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors duration-200 font-medium text-sm sm:text-base"
             >
               <ArrowLeft size={18} className="sm:w-5 sm:h-5" />

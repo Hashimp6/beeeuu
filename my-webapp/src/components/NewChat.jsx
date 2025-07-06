@@ -4,7 +4,7 @@ import axios from 'axios';
 import { SERVER_URL } from '../Config';
 import { useAuth } from '../context/UserContext';
 import ChatAppointmentCard from './user/ChatAppointmentCard';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 
 
@@ -24,7 +24,7 @@ const ChatListScreen = ({ onChatSelect, onNewChat }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const {token, isAuthenticated, user } = useAuth();
-
+  const navigate = useNavigate();
   useEffect(() => {
     if (isAuthenticated) {
       fetchConversations();
@@ -180,9 +180,16 @@ const ChatListScreen = ({ onChatSelect, onNewChat }) => {
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-      <div className="border-b border-gray-200 p-4">
-        <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
-      </div>
+    <div className="border-b border-gray-200 p-4 flex items-center gap-4 bg-white shadow-sm">
+  <button
+    onClick={() => navigate('/home')}
+    className="p-2 rounded-full hover:bg-gray-100 transition duration-200 text-gray-600"
+  >
+    <ArrowLeft className="w-5 h-5" />
+  </button>
+  <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
+</div>
+
 
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
