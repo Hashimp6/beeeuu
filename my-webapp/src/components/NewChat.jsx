@@ -202,12 +202,6 @@ const ChatListScreen = ({ onChatSelect, onNewChat }) => {
         )}
       </div>
 
-      <button
-        onClick={onNewChat}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-black text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 transition-colors"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
     </div>
   );
 };
@@ -511,43 +505,51 @@ const ChatDetailScreen = ({ conversationData, onBack }) => {
     }
   
     return (
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex flex-col h-screen md:h-full bg-white"> {/* Use h-screen on mobile, h-full on desktop */}
         {/* Header */}
-        <div className="bg-slate-700 text-white p-4 flex items-center">
+        <div className="bg-black text-white px-5 py-4 flex items-center shadow-md border-b border-white/10 flex-shrink-0">
+          {/* Back Button */}
           <button
             onClick={onBack}
-            className="p-2 hover:bg-slate-600 rounded-full mr-3"
+            className="p-2 rounded-full hover:bg-white/10 transition duration-200 mr-4"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           
-          <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center mr-3">
+          {/* Profile Image or Initial */}
+          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-gray-800 to-gray-600 border-2 border-cyan-500 shadow-lg flex items-center justify-center mr-4">
             {otherUser?.profileImage ? (
               <img 
-                src={otherUser.profileImage} 
+                src={otherUser.profileImage}
                 alt={otherUser.storeName || otherUser.username}
-                className="w-full h-full rounded-full object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-white font-bold">
-                {otherUser?.storeName ? otherUser.storeName.charAt(0).toUpperCase() : otherUser?.username.charAt(0).toUpperCase()}
+              <span className="text-cyan-400 text-lg font-semibold">
+                {otherUser?.storeName
+                  ? otherUser.storeName.charAt(0).toUpperCase()
+                  : otherUser?.username.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
           
+          {/* User Info */}
           <div>
-            <h3 className="font-semibold">{otherUser?.storeName || otherUser?.username}</h3>
+            <h3 className="text-lg font-bold tracking-wide text-white">
+              {otherUser?.storeName || otherUser?.username}
+            </h3>
+            <p className="text-sm text-gray-400">Online</p>
           </div>
         </div>
-  
+        
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-50 min-h-0"> {/* Add min-h-0 */}
           {messages.map(renderMessage)}
           <div ref={messagesEndRef} />
         </div>
-  
+        
         {/* Input */}
-        <div className="border-t border-gray-200 p-4 bg-white">
+        <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0"> {/* Add flex-shrink-0 */}
           <div className="flex items-end gap-2">
             <button className="p-2 text-gray-500 hover:text-gray-700">
               <Smile className="w-5 h-5" />
@@ -681,16 +683,57 @@ const ChatApp = () => {
     };
   
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 p-8">
-        <div className="w-full max-w-6xl h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 flex">
-          {currentView === 'list' ? (
+      <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden rounded-lg">
+        
+        {/* Desktop layout */}
+        <div className="hidden md:flex w-full">
+          
+          {/* Chat List Sidebar */}
+          <div className="w-1/3 border-r border-gray-300 bg-white shadow-inner">
             <ChatListScreen onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
+          </div>
+    
+          {/* Chat Detail Section */}
+          <div className="flex-1 bg-white">
+            {selectedConversation ? (
+              <ChatDetailScreen
+                conversationData={selectedConversation}
+                onBack={handleBackToList}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-50">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.477 8-10 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.477-8 10-8s10 3.582 10 8z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Select a chat</h2>
+                  <p className="text-gray-500">Choose a conversation from the list to start messaging</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+    
+        {/* Mobile layout */}
+        <div className="flex md:hidden w-full">
+          {currentView === 'list' ? (
+            <div className="w-full">
+              <ChatListScreen onChatSelect={handleChatSelect} onNewChat={handleNewChat} />
+            </div>
           ) : (
-            <ChatDetailScreen conversationData={selectedConversation} onBack={handleBackToList} />
+            <div className="w-full">
+              <ChatDetailScreen
+                conversationData={selectedConversation}
+                onBack={handleBackToList}
+              />
+            </div>
           )}
         </div>
       </div>
     );
+    
   };
   
 

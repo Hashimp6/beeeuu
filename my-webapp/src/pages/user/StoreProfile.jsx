@@ -1001,31 +1001,7 @@ const handleTouchEnd = () => {
       </footer>
     </div>
  
-    {showChatApp && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
-          <div className="absolute inset-4 bg-white rounded-lg">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold">
-                Chat with {selectedUser?.username || selectedUser?.storeName || 'Store'}
-              </h2>
-              <button
-                onClick={handleCloseChatApp}
-                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="h-[calc(100%-4rem)]">
-              {selectedUser && (
-                <ChatAppScreen 
-                  targetUser={selectedUser} 
-                  key={selectedUser._id} // Force re-render when user changes
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+   
   </div>
   );
 };
