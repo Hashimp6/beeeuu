@@ -3,8 +3,6 @@ import { MapPin, MessageCircle, ChevronDown, Search, Filter, X, Grid, Home, Phon
 import MainAreaComponent from '../components/user/UserMainContent';
 import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
-import ChatAppScreen from '../components/ChatApp';
-import ChatApp from '../components/NewChat';
 import { useNavigate } from 'react-router-dom';
 
 const HomeLayout = () => {
@@ -169,9 +167,6 @@ const HomeLayout = () => {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col ">
-   
-  
-                    /* Main Content - Mobile Optimized */
                     <div className="flex-1 overflow-auto">
                         <MainAreaComponent />
                     </div>

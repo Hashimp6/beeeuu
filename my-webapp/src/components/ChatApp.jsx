@@ -141,17 +141,7 @@ const ChatAppScreen = ({ targetUser }) => {
 
   return (
     <div className="flex flex-col md:flex-row h-full bg-gray-100 overflow-hidden rounded-lg shadow-md">
-      {/* Toast notifications */}
-      {toasts.map(toast => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
-
-      {/* Desktop Layout */}
+    
       <div className="hidden md:flex w-full h-full">
         <div className="w-1/3 border-r border-gray-200">
           <ChatList 
