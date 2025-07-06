@@ -77,7 +77,6 @@ const ChatAppScreen = ({ targetUser }) => {
       lastProcessedUserRef.current = user._id;
 
       const newChat = {
-        id: user._id || user.id || Date.now(),
         name: user.username || user.storeName || user.name || 'New Chat',
         avatar: user.profileImage || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user._id || user.id}`,
         lastMessage: 'No messages yet',

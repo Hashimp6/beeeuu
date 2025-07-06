@@ -14,6 +14,7 @@ import StoreDashboard from "./pages/seller/StoreDashboard";
 import NewStore from "./pages/NewStore";
 import { useAuth } from "./context/UserContext";
 import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
+import ChatApp from "./components/NewChat";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -97,6 +98,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <NewStore />
+              </ProtectedRoute>
+            } 
+          />
+           <Route 
+            path="/chat" 
+            element={
+              <ProtectedRoute>
+                <ChatApp />
               </ProtectedRoute>
             } 
           />

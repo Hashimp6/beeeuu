@@ -39,31 +39,18 @@ const handleTouchMove = (e) => {
 
   // Fixed handleChatClick function
   const handleChatClick = () => {
-    console.log('Chat button clicked'); // Debug log
-    console.log('enhancedStore:', enhancedStore); // Debug log
+      navigate('/chat', {
+        state: {
+          store: {
+            userId: store.userId,
+            username: store.username,
+            storeName: store.storeName,
+            profileImage: store.profileImage,
+          }
+        }
+      });
     
-    // Check if enhancedStore exists
-    if (!enhancedStore) {
-      console.error('No store data available');
-      return;
-    }
-
-    // Set the selected user/store with proper structure
-    const userToChat = {
-      _id: enhancedStore.userId || enhancedStore.id,
-      username: enhancedStore.storeName || enhancedStore.name,
-      profileImage: enhancedStore.profileImage || enhancedStore.avatar,
-      storeName: enhancedStore.storeName,
-      isOnline: enhancedStore.isOnline || false,
-      // Add additional fields that might be needed
-      userId: enhancedStore.userId|| enhancedStore.id,
-      name: enhancedStore.storeName || enhancedStore.name
-    };
-
-    console.log('Selected user for chat:', userToChat); // Debug log
-    
-    setSelectedUser(userToChat);
-    setShowChatApp(true);
+  
   };
 
   const handleCloseChatApp = () => {

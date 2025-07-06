@@ -3,10 +3,12 @@ import { MapPin, MessageCircle, ChevronDown, Search, Filter, X, Grid, Home, Phon
 import MainAreaComponent from '../components/user/UserMainContent';
 import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
-import ChatApp from '../components/ChatSection';
 import ChatAppScreen from '../components/ChatApp';
+import ChatApp from '../components/NewChat';
+import { useNavigate } from 'react-router-dom';
 
 const HomeLayout = () => {
+    const navigate = useNavigate();
     const { user } = useAuth(); // assuming this gives you the logged-in user
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
@@ -148,11 +150,11 @@ const HomeLayout = () => {
 
                         {/* Message Button */}
                         <button
-                            onClick={openChat}
-                            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
-                        >
-                            <MessageCircle size={20} className="text-gray-700 sm:w-[22px] sm:h-[22px]" />
-                        </button>
+      onClick={() => navigate('/chat')}
+      className="relative p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
+    >
+      <MessageCircle size={20} className="text-gray-700 sm:w-[22px] sm:h-[22px]" />
+    </button>
 
                         {/* Mobile Menu Button */}
                         <button
@@ -166,29 +168,13 @@ const HomeLayout = () => {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-                {chat ? (
-                    /* Chat Section - Mobile Optimized */
-                    <div className="flex-1 flex items-center justify-center bg-gray-50 p-2 sm:p-4">
-                        <div className="w-full max-w-4xl h-full sm:h-[80vh] bg-white rounded-none sm:rounded-lg shadow-none sm:shadow-lg overflow-hidden relative">
-                            {/* Close button - Mobile optimized */}
-                            <button
-                                onClick={() => setChat(false)}
-                                className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 touch-manipulation"
-                                aria-label="Close chat"
-                            >
-                                <X size={20} className="text-gray-600 hover:text-gray-800" />
-                            </button>
-                            
-                            <ChatAppScreen />
-                        </div>
-                    </div>
-                ) : (
+            <main className="flex-1 flex flex-col ">
+   
+  
                     /* Main Content - Mobile Optimized */
                     <div className="flex-1 overflow-auto">
                         <MainAreaComponent />
                     </div>
-                )}
             </main>
 
             {/* Location Selection Modal */}
