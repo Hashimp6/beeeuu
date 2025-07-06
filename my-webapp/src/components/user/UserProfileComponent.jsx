@@ -147,7 +147,7 @@ const EditModal = ({
     </div>
   );
   
-const UserProfileComponent = () => {
+const UserProfileComponent = ({  setHistory }) => {
   const { user, setUser,logout } = useAuth();
 
   const [localUser, setLocalUser] = useState({});
@@ -366,13 +366,13 @@ const UserProfileComponent = () => {
   <ActionButton
     icon={Calendar}
     text="My Appointments"
-    onClick={() => console.log('Appointments')}
+    onClick={() => setHistory('appointments')}
     variant="primary"
   />
   <ActionButton
     icon={FileText}
     text="My Orders"
-    onClick={() => console.log('Orders')}
+    onClick={() => setHistory('orders')}
     variant="secondary"
   />
 </GlassCard>

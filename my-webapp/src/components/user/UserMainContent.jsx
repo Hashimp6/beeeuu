@@ -6,15 +6,17 @@ import axios from 'axios';
 import { SERVER_URL } from '../../Config';
 import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './UserProfileComponent';
+import UserAppointmentsOrders from '../../pages/user/AppointmentsAndOrders';
 
 const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   const { user, token, setUser, setToken } = useAuth(); 
   const navigate = useNavigate();
-  console.log("user and token:", user, token);
-  
+  const [history, setHistory] = useState(null); // Initialize as null
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdowns, setDropdowns] = useState({
     distance: false,
@@ -27,6 +29,34 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
     nearby: 'Default',
     category: 'All Categories'
   });
+
+  // Debug function to check history state
+  useEffect(() => {
+    console.log('History state changed:', history);
+  }, [history]);
+
+  // Debounce search text
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchText(searchQuery);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  // Auto-search when debounced text changes
+  useEffect(() => {
+    if (debouncedSearchText.trim()) {
+      fetchStores(debouncedSearchText, {
+        ...filters,
+        distance: "500",
+      });
+    } else if (debouncedSearchText === '') {
+      fetchStores('', filters);
+    }
+  }, [debouncedSearchText, filters]);
 
   useEffect(() => {
     if (!user || !token) {
@@ -90,9 +120,6 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
         console.log("Adding search term:", searchTerm.trim());
       }
 
-      console.log("Final API request params:", params);
-      console.log("Making request to:", `${SERVER_URL}/stores/nearby`);
-
       const response = await axios.get(`${SERVER_URL}/stores/nearby`, {
         params,
         headers: {
@@ -103,21 +130,13 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
 
       if (response.data && response.data.data && response.data.data.stores) {
         const { stores: newStores } = response.data.data;
-        console.log("stores are",response.data.data);
-        
         setStores(newStores || []);
-        console.log("Stores set:", newStores.length);
       } else {
         const stores = response.data.stores || response.data || [];
         setStores(stores);
-        console.log("Stores set (alternative):", stores.length);
       }
 
     } catch (err) {
-      console.error('Full error object:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error status:', err.response?.status);
-
       const errorMessage = err.response?.data?.message ||
         err.response?.data?.error ||
         err.message ||
@@ -136,7 +155,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   }, [user, token]);
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter' || e.type === 'click') {
+    if (e.key === 'Enter') {
       fetchStores(searchQuery, filters);
     }
   };
@@ -178,28 +197,147 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
     fetchStores(searchQuery, defaultFilters);
   };
 
+  // Function to handle going back to main content
+  const handleBackToMain = () => {
+    setHistory(null);
+  };
+
+  // Determine what type to pass to UserAppointmentsOrders
+  const getAppointmentOrderType = () => {
+    if (history === 'appointment' || history === 'appointments') {
+      return 'appointments';
+    }
+    if (history === 'order' || history === 'orders') {
+      return 'orders';
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-      {/* Mobile Horizontal Filters */}
-      <div className="lg:hidden bg-white border-b  border-gray-200 py-2 px-6 ">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <Filter size={16} className="text-gray-600 flex-shrink-0" />
-          <span className="text-sm font-medium text-gray-800 flex-shrink-0">Filters:</span>
-          
-          {/* Distance Filter - Mobile */}
-          <div className="relative flex-shrink-0">
+      {/* Mobile Horizontal Filters - Only show when not in appointment/order view */}
+      {!history && (
+        <div className="lg:hidden bg-white border-b border-gray-200 py-2 px-6">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <Filter size={16} className="text-gray-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-800 flex-shrink-0">Filters:</span>
+            
+            {/* Distance Filter - Mobile */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => toggleDropdown('distance')}
+                className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              >
+                <span>{filters.distance}</span>
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform ${dropdowns.distance ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {dropdowns.distance && (
+                <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  {[5, 10, 20, 50, 100, 250, 500].map((dist) => (
+                    <button
+                      key={dist}
+                      onClick={() => selectFilter('distance', `${dist} km`)}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.distance === `${dist} km` ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
+                    >
+                      {dist} km
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Filter - Mobile */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => toggleDropdown('nearby')}
+                className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              >
+                <span>{filters.nearby}</span>
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform ${dropdowns.nearby ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {dropdowns.nearby && (
+                <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  {['Default', 'Rating', 'Distance', 'Newest', 'Most Popular'].map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => selectFilter('nearby', item)}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.nearby === item ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Category Filter - Mobile */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => toggleDropdown('category')}
+                className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              >
+                <span>{filters.category}</span>
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform ${dropdowns.category ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {dropdowns.category && (
+                <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                  {['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => selectFilter('category', cat)}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={clearFilters}
+              className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Filter Sidebar - Only show when not in appointment/order view */}
+      {!history && (
+        <div className="hidden lg:block w-64 xl:w-72 bg-gray-50 border-r border-gray-200 p-4 lg:p-5 flex flex-col gap-4 lg:gap-5">
+          {/* Desktop Filter Header */}
+          <div className="flex items-center gap-2 pb-3 lg:pb-4 border-b border-gray-200">
+            <Filter size={18} className="text-gray-600" />
+            <h2 className="text-base lg:text-lg font-semibold text-gray-800">Filters</h2>
+          </div>
+
+          {/* Desktop Distance Filter */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Distance</label>
             <button
               onClick={() => toggleDropdown('distance')}
-              className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
             >
-              <span>{filters.distance}</span>
+              <span className="text-gray-700">{filters.distance}</span>
               <ChevronDown
-                size={12}
-                className={`transition-transform ${dropdowns.distance ? 'rotate-180' : ''}`}
+                size={14}
+                className={`text-gray-500 transition-transform ${dropdowns.distance ? 'rotate-180' : ''}`}
               />
             </button>
+
             {dropdowns.distance && (
-              <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {[5, 10, 20, 50, 100, 250, 500].map((dist) => (
                   <button
                     key={dist}
@@ -213,20 +351,22 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
             )}
           </div>
 
-          {/* Sort Filter - Mobile */}
-          <div className="relative flex-shrink-0">
+          {/* Desktop Sort Filter */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
             <button
               onClick={() => toggleDropdown('nearby')}
-              className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
             >
-              <span>{filters.nearby}</span>
+              <span className="text-gray-700">{filters.nearby}</span>
               <ChevronDown
-                size={12}
-                className={`transition-transform ${dropdowns.nearby ? 'rotate-180' : ''}`}
+                size={14}
+                className={`text-gray-500 transition-transform ${dropdowns.nearby ? 'rotate-180' : ''}`}
               />
             </button>
+
             {dropdowns.nearby && (
-              <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
                 {['Default', 'Rating', 'Distance', 'Newest', 'Most Popular'].map((item) => (
                   <button
                     key={item}
@@ -240,20 +380,22 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
             )}
           </div>
 
-          {/* Category Filter - Mobile */}
-          <div className="relative flex-shrink-0">
+          {/* Desktop Category Filter */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
             <button
               onClick={() => toggleDropdown('category')}
-              className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-2 py-1.5 rounded-full text-xs font-medium text-gray-700 transition-colors whitespace-nowrap"
+              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
             >
-              <span>{filters.category}</span>
+              <span className="text-gray-700">{filters.category}</span>
               <ChevronDown
-                size={12}
-                className={`transition-transform ${dropdowns.category ? 'rotate-180' : ''}`}
+                size={14}
+                className={`text-gray-500 transition-transform ${dropdowns.category ? 'rotate-180' : ''}`}
               />
             </button>
+
             {dropdowns.category && (
-              <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
                 {['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'].map((cat) => (
                   <button
                     key={cat}
@@ -267,185 +409,99 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
             )}
           </div>
 
+          {/* Desktop Clear Filters */}
           <button
             onClick={clearFilters}
-            className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0"
+            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            Clear
+            Clear All Filters
           </button>
         </div>
-      </div>
-
-      {/* Desktop Filter Sidebar */}
-      <div className="hidden lg:block w-64 xl:w-72 bg-gray-50 border-r border-gray-200 p-4 lg:p-5 flex flex-col gap-4 lg:gap-5">
-        {/* Desktop Filter Header */}
-        <div className="flex items-center gap-2 pb-3 lg:pb-4 border-b border-gray-200">
-          <Filter size={18} className="text-gray-600" />
-          <h2 className="text-base lg:text-lg font-semibold text-gray-800">Filters</h2>
-        </div>
-
-        {/* Desktop Distance Filter */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Distance</label>
-          <button
-            onClick={() => toggleDropdown('distance')}
-            className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
-          >
-            <span className="text-gray-700">{filters.distance}</span>
-            <ChevronDown
-              size={14}
-              className={`text-gray-500 transition-transform ${dropdowns.distance ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {dropdowns.distance && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-              {[5, 10, 20, 50, 100, 250, 500].map((dist) => (
-                <button
-                  key={dist}
-                  onClick={() => selectFilter('distance', `${dist} km`)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.distance === `${dist} km` ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
-                >
-                  {dist} km
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Sort Filter */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
-          <button
-            onClick={() => toggleDropdown('nearby')}
-            className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
-          >
-            <span className="text-gray-700">{filters.nearby}</span>
-            <ChevronDown
-              size={14}
-              className={`text-gray-500 transition-transform ${dropdowns.nearby ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {dropdowns.nearby && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-              {['Default', 'Rating', 'Distance', 'Newest', 'Most Popular'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => selectFilter('nearby', item)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.nearby === item ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Category Filter */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-          <button
-            onClick={() => toggleDropdown('category')}
-            className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-left hover:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors text-sm"
-          >
-            <span className="text-gray-700">{filters.category}</span>
-            <ChevronDown
-              size={14}
-              className={`text-gray-500 transition-transform ${dropdowns.category ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {dropdowns.category && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-              {['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => selectFilter('category', cat)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Clear Filters */}
-        <button
-          onClick={clearFilters}
-          className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          Clear All Filters
-        </button>
-      </div>
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Center Content */}
-        <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-auto bg-gray-50">
-          {/* Search Bar */}
-          <div className="mb-2 lg:mb-6 flex justify-center">
-            <div className="relative max-w-2xl w-full">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search for services, restaurants, shops..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleSearch}
-                className="w-full pl-10 pr-12 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-sm lg:text-base"
-              />
-              <button
-                onClick={handleSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 touch-manipulation"
-              >
-                <Search size={16} />
-              </button>
-            </div>
+      {history && getAppointmentOrderType() ? (
+        // When showing appointments/orders, create proper flex container
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <UserAppointmentsOrders 
+              type={getAppointmentOrderType()} 
+              setHistory={setHistory} 
+            />
           </div>
-
-          {error && (
-            <div className="mb-4 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-6 w-6 lg:h-8 lg:w-8 border-b-2 border-teal-600"></div>
-              <span className="ml-2 text-gray-600 text-sm lg:text-base">Loading stores...</span>
-            </div>
-          )}
-
-          {!loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto px-4 lg:px-0">
-              {stores.map((store) => (
-                <StoreCard
-                  key={store._id || store.id || Math.random()}
-                  store={store}
-                  onCardClick={handleCardClick}
+          {/* Keep User Profile Component visible even in appointment/order view */}
+          <div className="hidden xl:block">
+            <UserProfileComponent setHistory={setHistory} />
+          </div>
+        </div>
+      ) : (
+        // Default view with stores
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          {/* Center Content */}
+          <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-auto bg-gray-50">
+            {/* Search Bar */}
+            <div className="mb-2 lg:mb-6 flex justify-center">
+              <div className="relative max-w-2xl w-full">
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search for services, restaurants, shops..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleSearch}
+                  className="w-full pl-10 pr-12 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-sm lg:text-base"
                 />
-              ))}
-            </div>
-          )}
-
-          {!loading && stores.length === 0 && !error && (
-            <div className="text-center py-12">
-              <div className="text-gray-500 mb-2">
-                <Search size={40} className="mx-auto mb-4 opacity-50 lg:w-12 lg:h-12" />
-                <h3 className="text-lg font-medium">No stores found</h3>
-                <p className="text-sm">Try adjusting your search criteria or filters</p>
+                <button
+                  onClick={handleSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 touch-manipulation"
+                >
+                  <Search size={16} />
+                </button>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* User Profile Component - Hidden on mobile, visible on desktop */}
-        <div className="hidden xl:block">
-          <UserProfileComponent />
+            {error && (
+              <div className="mb-4 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-6 w-6 lg:h-8 lg:w-8 border-b-2 border-teal-600"></div>
+                <span className="ml-2 text-gray-600 text-sm lg:text-base">Loading stores...</span>
+              </div>
+            )}
+
+            {!loading && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto px-4 lg:px-0">
+                {stores.map((store) => (
+                  <StoreCard
+                    key={store._id || store.id || Math.random()}
+                    store={store}
+                    onCardClick={handleCardClick}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!loading && stores.length === 0 && !error && (
+              <div className="text-center py-12">
+                <div className="text-gray-500 mb-2">
+                  <Search size={40} className="mx-auto mb-4 opacity-50 lg:w-12 lg:h-12" />
+                  <h3 className="text-lg font-medium">No stores found</h3>
+                  <p className="text-sm">Try adjusting your search criteria or filters</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Profile Component - Hidden on mobile, visible on desktop */}
+          <div className="hidden xl:block">
+            <UserProfileComponent setHistory={setHistory} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

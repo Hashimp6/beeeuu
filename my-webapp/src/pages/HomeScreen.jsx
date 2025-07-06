@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
-import { MapPin, MessageCircle, ChevronDown, Search, Filter, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, MessageCircle, ChevronDown, Search, Filter, X, Grid, Home, Phone, Menu } from 'lucide-react';
 import MainAreaComponent from '../components/user/UserMainContent';
 import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
 import ChatApp from '../components/ChatSection';
+import ChatAppScreen from '../components/ChatApp';
 
 const HomeLayout = () => {
     const { user } = useAuth(); // assuming this gives you the logged-in user
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
+    console.log("lc", user?.place); // Added null check here
+    
+    // Update location when user data loads
+    useEffect(() => {
+        if (user?.place) {
+            setUserLocation(user.place);
+        }
+    }, [user]);
 
-    const [userLocation, setUserLocation] = useState(user?.place || '');
     const [chat, setChat] = useState(false);
     const [dropdowns, setDropdowns] = useState({
         distance: false,
@@ -41,6 +51,25 @@ const HomeLayout = () => {
         } else {
             setShowModal(false);
         }
+    };
+    const navigateToHome = () => {
+        // In a real app, you'd use router.push('/home') or navigate('/home')
+        console.log("Navigating to /home");
+        setIsDrawerOpen(false);
+    };
+
+    const navigateToCategory = () => {
+        console.log("Navigating to category");
+        setIsDrawerOpen(false);
+    };
+
+    const navigateToContact = () => {
+        console.log("Navigating to contact");
+        setIsDrawerOpen(false);
+    };
+
+    const toggleDrawer = () => {
+        setIsDrawerOpen(!isDrawerOpen);
     };
 
     const openChat = () => {
@@ -78,12 +107,37 @@ const HomeLayout = () => {
                         className="h-8 w-auto object-contain sm:h-10"
                     />
 
-                    {/* Right Corner: Location & Message */}
+                    {/* Center: Desktop Navigation */}
+                    <nav className="hidden md:flex items-center space-x-8">
+                        <button
+                            onClick={navigateToHome}
+                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                        >
+                            <Home size={18} />
+                            <span>Home</span>
+                        </button>
+                        <button
+                            onClick={navigateToCategory}
+                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                        >
+                            <Grid size={18} />
+                            <span>Category</span>
+                        </button>
+                        <button
+                            onClick={navigateToContact}
+                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                        >
+                            <Phone size={18} />
+                            <span>Contact Us</span>
+                        </button>
+                    </nav>
+
+                    {/* Right Corner: Location, Message & Mobile Menu */}
                     <div className="flex items-center gap-2 sm:gap-4">
-                        {/* Location Button */}
+                        {/* Location Button - Hidden on small screens */}
                         <button
                             onClick={openLocationModal}
-                            className="flex items-center bg-gray-100 hover:bg-gray-200 px-2 py-1.5 sm:px-4 sm:py-2 rounded-full transition-colors touch-manipulation"
+                            className="hidden sm:flex items-center bg-gray-100 hover:bg-gray-200 px-2 py-1.5 sm:px-4 sm:py-2 rounded-full transition-colors touch-manipulation"
                         >
                             <MapPin size={16} className="text-gray-600 sm:w-[18px] sm:h-[18px]" />
                             <span className="mx-1 sm:mx-2 text-sm sm:text-base text-gray-700 max-w-[80px] sm:max-w-[120px] truncate">
@@ -98,10 +152,14 @@ const HomeLayout = () => {
                             className="relative p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
                         >
                             <MessageCircle size={20} className="text-gray-700 sm:w-[22px] sm:h-[22px]" />
-                            {/* Optional: Add notification badge */}
-                            {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                                3
-                            </span> */}
+                        </button>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={toggleDrawer}
+                            className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
+                        >
+                            <Menu size={20} className="text-gray-700" />
                         </button>
                     </div>
                 </div>
@@ -122,7 +180,7 @@ const HomeLayout = () => {
                                 <X size={20} className="text-gray-600 hover:text-gray-800" />
                             </button>
                             
-                            <ChatApp />
+                            <ChatAppScreen />
                         </div>
                     </div>
                 ) : (
@@ -138,6 +196,70 @@ const HomeLayout = () => {
                 visible={showModal}
                 onClose={closeModal}
             />
+             {isDrawerOpen && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
+                    onClick={toggleDrawer}
+                />
+            )}
+
+            {/* Mobile Drawer */}
+            <div className={`fixed top-0 right-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 md:hidden ${
+                isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+                    <button
+                        onClick={toggleDrawer}
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        <X size={20} className="text-gray-700" />
+                    </button>
+                </div>
+
+                {/* Drawer Content */}
+                <div className="p-4 space-y-4">
+                    {/* Location in Mobile */}
+                    <button
+                        onClick={openLocationModal}
+                        className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <MapPin size={18} className="text-gray-600" />
+                            <span className="text-gray-700">{userLocation}</span>
+                        </div>
+                        <ChevronDown size={14} className="text-gray-500" />
+                    </button>
+
+                    {/* Navigation Items */}
+                    <div className="space-y-2">
+                        <button
+                            onClick={navigateToHome}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                        >
+                            <Home size={18} className="text-gray-600" />
+                            <span className="text-gray-700 font-medium">Home</span>
+                        </button>
+                        
+                        <button
+                            onClick={navigateToCategory}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                        >
+                            <Grid size={18} className="text-gray-600" />
+                            <span className="text-gray-700 font-medium">Category</span>
+                        </button>
+                        
+                        <button
+                            onClick={navigateToContact}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                        >
+                            <Phone size={18} className="text-gray-600" />
+                            <span className="text-gray-700 font-medium">Contact Us</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

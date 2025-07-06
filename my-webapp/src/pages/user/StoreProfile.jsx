@@ -3,13 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, Clock, Award, Users, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail, Loader2 ,ExternalLink, Sparkles,  ChevronLeft, ChevronRight, X} from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
+import ChatAppScreen from '../../components/ChatApp';
+import { useAuth } from '../../context/UserContext';
 
 const StoreProfile = () => {
   console.log("prms", useParams());
   
   const { storeName } = useParams();
   const navigate = useNavigate();
-  
+  const {user}=useAuth()
   const [store, setStore] = useState(null);
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
@@ -22,7 +24,10 @@ const StoreProfile = () => {
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
+  const [showChat, setShowChat] = useState(false);
 const [touchEnd, setTouchEnd] = useState(null);
+const [showChatApp, setShowChatApp] = useState(false);
+const [selectedUser, setSelectedUser] = useState(null);
 
 const handleTouchStart = (e) => {
   setTouchStart(e.targetTouches[0].clientX);
@@ -31,6 +36,41 @@ const handleTouchStart = (e) => {
 const handleTouchMove = (e) => {
   setTouchEnd(e.targetTouches[0].clientX);
 };
+
+  // Fixed handleChatClick function
+  const handleChatClick = () => {
+    console.log('Chat button clicked'); // Debug log
+    console.log('enhancedStore:', enhancedStore); // Debug log
+    
+    // Check if enhancedStore exists
+    if (!enhancedStore) {
+      console.error('No store data available');
+      return;
+    }
+
+    // Set the selected user/store with proper structure
+    const userToChat = {
+      _id: enhancedStore.userId || enhancedStore.id,
+      username: enhancedStore.storeName || enhancedStore.name,
+      profileImage: enhancedStore.profileImage || enhancedStore.avatar,
+      storeName: enhancedStore.storeName,
+      isOnline: enhancedStore.isOnline || false,
+      // Add additional fields that might be needed
+      userId: enhancedStore.userId|| enhancedStore.id,
+      name: enhancedStore.storeName || enhancedStore.name
+    };
+
+    console.log('Selected user for chat:', userToChat); // Debug log
+    
+    setSelectedUser(userToChat);
+    setShowChatApp(true);
+  };
+
+  const handleCloseChatApp = () => {
+    console.log('Closing chat app'); // Debug log
+    setShowChatApp(false);
+    setSelectedUser(null);
+  };
 
 const handleTouchEnd = () => {
   if (!touchStart || !touchEnd) return;
@@ -335,7 +375,7 @@ const handleTouchEnd = () => {
   };
 
   const onChatNow = () => {
-    // Implement chat functionality
+   setShowChat(true)
     console.log('Starting chat with store:', enhancedStore?.storeName);
   };
 
@@ -361,6 +401,9 @@ const handleTouchEnd = () => {
   }
 
   return (
+    <div>
+   
+
     <div className="min-h-screen bg-white">
       {/* Header Navigation */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -580,7 +623,7 @@ const handleTouchEnd = () => {
               {/* Action Buttons - Stack on mobile */}
               <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
                 <button
-                  onClick={onChatNow}
+                  onClick={handleChatClick}
                   className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
                 >
                   Start Conversation
@@ -955,7 +998,7 @@ const handleTouchEnd = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={onChatNow}
+              onClick={handleChatClick}
               className="bg-white text-teal-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Start Chat
@@ -970,6 +1013,33 @@ const handleTouchEnd = () => {
         </div>
       </footer>
     </div>
+ 
+    {showChatApp && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
+          <div className="absolute inset-4 bg-white rounded-lg">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-semibold">
+                Chat with {selectedUser?.username || selectedUser?.storeName || 'Store'}
+              </h2>
+              <button
+                onClick={handleCloseChatApp}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="h-[calc(100%-4rem)]">
+              {selectedUser && (
+                <ChatAppScreen 
+                  targetUser={selectedUser} 
+                  key={selectedUser._id} // Force re-render when user changes
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+  </div>
   );
 };
 

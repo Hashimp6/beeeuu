@@ -13,6 +13,7 @@ import AppointmentScheduler from "./pages/user/AppointmentShedule";
 import StoreDashboard from "./pages/seller/StoreDashboard";
 import NewStore from "./pages/NewStore";
 import { useAuth } from "./context/UserContext";
+import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -112,6 +113,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppointmentScheduler />
+              </ProtectedRoute>
+            } 
+          />
+                <Route 
+            path="/appointmentOrOrder" 
+            element={
+              <ProtectedRoute>
+                <UserAppointmentsOrders/>
               </ProtectedRoute>
             } 
           />
