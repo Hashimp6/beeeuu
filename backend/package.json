@@ -11,6 +11,17 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "dotenv": "^17.0.1"
+    "@googlemaps/google-maps-services-js": "^3.4.2",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
+    "expo-server-sdk": "^3.15.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.1",
+    "multer": "^2.0.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^7.0.4",
+    "socket.io": "^4.8.1"
   }
 }

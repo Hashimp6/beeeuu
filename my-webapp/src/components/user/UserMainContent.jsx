@@ -18,8 +18,8 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryNames, setCategoryNames] = useState(['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'])
-  const [dropdowns, setDropdowns] = useState({
+  const [categoryNames, setCategoryNames] = useState([]);
+   const [dropdowns, setDropdowns] = useState({
     distance: false,
     nearby: false,
     category: false
@@ -88,7 +88,7 @@ console.log("catef",data);
       });
       
       // Set the category names (including 'All Categories' at the beginning)
-      setCategoryNames([allSubcategories]);
+      setCategoryNames(['All Categories', ...allSubcategories]);
       console.log("catef",allSubcategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -319,7 +319,7 @@ console.log("catef",data);
               </button>
               {dropdowns.category && (
                 <div className="fixed z-[9999] top-20 left-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                  {['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'].map((cat) => (
+                  {categoryNames.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => selectFilter('category', cat)}
@@ -425,15 +425,16 @@ console.log("catef",data);
 
             {dropdowns.category && (
               <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                {['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => selectFilter('category', cat)}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+               {categoryNames.map((cat) => (
+  <button
+    key={cat}
+    onClick={() => selectFilter('category', cat)}
+    className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
+  >
+    {cat}
+  </button>
+))}
+
               </div>
             )}
           </div>
