@@ -18,6 +18,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryNames, setCategoryNames] = useState(['All Categories', 'Beauty', 'Food', 'Gift', 'Shopping', 'Health', 'Services'])
   const [dropdowns, setDropdowns] = useState({
     distance: false,
     nearby: false,
@@ -72,7 +73,27 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
       }
     }
   }, [user, token, setUser, setToken, navigate]);
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${SERVER_URL}/category/group`);
+const data = response.data;
+console.log("catef",data);
 
+      // Extract all subcategory names from all main categories
+      const allSubcategories = [];
+      data.forEach(mainCategory => {
+        mainCategory.categories.forEach(subCategory => {
+          allSubcategories.push(subCategory.name);
+        });
+      });
+      
+      // Set the category names (including 'All Categories' at the beginning)
+      setCategoryNames([allSubcategories]);
+      console.log("catef",allSubcategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
   const fetchStores = async (searchTerm = '', filterData = filters, customUser = user) => {
     console.log("fetchStores called with:", { searchTerm, filterData });
 
@@ -148,11 +169,19 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
   };
 
   useEffect(() => {
-    if (user && token) {
-      console.log("useEffect triggered - initial load");
-      fetchStores('', filters, user);
-    }
+    const loadInitialData = async () => {
+      if (user && token) {
+        console.log("⏳ Fetching stores...");
+        await fetchStores('', filters, user);   // ✅ High priority
+  
+        console.log("📦 Now fetching categories...");
+        fetchCategories();                      // ✅ Lower priority
+      }
+    };
+  
+    loadInitialData();
   }, [user, token]);
+  
 
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
