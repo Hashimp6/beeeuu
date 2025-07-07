@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, Clock, CheckCircle, XCircle, AlertCircle, User, Phone, MapPin, 
-  Check, X, RefreshCw, Package, Filter, Truck, DollarSign, RotateCcw, Eye
+  Check, X, RefreshCw, Package, Filter, Truck, DollarSign, RotateCcw, Eye,
+  IndianRupee
 } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
@@ -102,7 +103,7 @@ const OrderCard = ({ order, onStatusChange }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'RS'
     }).format(amount || 0);
   };
 
@@ -197,73 +198,96 @@ const OrderCard = ({ order, onStatusChange }) => {
   const statusConfig = getStatusConfig(order.status);
 
   return (
-    <div className={`${statusConfig.bg} rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50 overflow-hidden backdrop-blur-sm transform hover:scale-105`}>
+    <div className={`${statusConfig.bg} rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/50 overflow-hidden backdrop-blur-sm transform hover:scale-102`}>
       {/* Status Indicator */}
-      <div className={`h-2 ${statusConfig.dot} shadow-inner`}></div>
+      <div className={`h-1.5 ${statusConfig.dot} shadow-inner`}></div>
       
-      <div className="p-6">
+      <div className="p-4">
         {/* Header with Order ID and Status */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-              <ShoppingCart className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md">
+              <ShoppingCart className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-black text-lg">{order.orderId}</h3>
-              <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-bold ${statusConfig.badge}`}>
+              <h3 className="font-bold text-black text-base">{order.orderId}</h3>
+              <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.badge}`}>
                 {statusConfig.icon}
                 <span className="capitalize">{order.status}</span>
               </span>
             </div>
           </div>
         </div>
-
+  
         {/* Product Info */}
-        <div className="mb-4 p-3 bg-white/70 rounded-xl border border-white/50">
-          <h4 className="font-semibold text-black text-sm mb-1">{order.productName}</h4>
-          <p className="text-gray-600 text-xs">Quantity: {order.quantity}</p>
+        <div className="mb-3 p-2.5 bg-white/70 rounded-lg border border-white/50">
+          <h4 className="font-semibold text-black text-sm mb-0.5">{order.productName}</h4>
+          <p className="text-gray-600 text-xs">Qty: {order.quantity}</p>
         </div>
-
+  
         {/* Customer Info */}
-        <div className="mb-4">
-          <div className="flex items-center space-x-2 text-sm mb-2">
-            <User className="w-4 h-4 text-teal-600" />
+        <div className="mb-3">
+          <div className="flex items-center space-x-2 text-sm">
+            <User className="w-3.5 h-3.5 text-teal-600" />
             <span className="text-black font-medium">{order.customerName}</span>
           </div>
         </div>
-
+  
         {/* Order Details */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-2 mb-4">
           <div className="flex items-center space-x-2 text-sm">
-            <Clock className="w-4 h-4 text-teal-600" />
-            <span className="text-gray-700">{formatDate(order.orderDate)}</span>
+            <Clock className="w-3.5 h-3.5 text-teal-600" />
+            <span className="text-gray-700 text-xs">{formatDate(order.orderDate)}</span>
           </div>
           
           <div className="flex items-center space-x-2 text-sm">
-            <Phone className="w-4 h-4 text-teal-600" />
-            <span className="text-gray-700">{order.phoneNumber}</span>
+            <Phone className="w-3.5 h-3.5 text-teal-600" />
+            <span className="text-gray-700 text-xs">{order.phoneNumber}</span>
           </div>
           
           <div className="flex items-center space-x-2 text-sm">
-            <MapPin className="w-4 h-4 text-teal-600" />
-            <span className="text-gray-700 truncate">{order.deliveryAddress}</span>
+            <MapPin className="w-3.5 h-3.5 text-teal-600" />
+            <span className="text-gray-700 text-xs truncate">{order.deliveryAddress}</span>
           </div>
-
-          <div className="flex items-center justify-between p-3 bg-white/70 rounded-xl border border-white/50">
+          
+          {/* Payment Details */}
+          <div className="flex items-center justify-between p-2.5 bg-white/70 rounded-lg border border-white/50">
             <div className="flex items-center space-x-2">
-              <DollarSign className="w-4 h-4 text-teal-600" />
-              <span className="text-black font-bold text-lg">{formatCurrency(order.totalAmount)}</span>
+              <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-black font-bold text-base">{(order.totalAmount)}</span>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-600">Payment</p>
               <p className="text-sm font-medium text-black capitalize">{order.paymentMethod}</p>
             </div>
           </div>
+  
+          {/* Transaction ID for GPay/PhonePe */}
+          {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && order.transactionId && (
+            <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-3.5 h-3.5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">T</span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600">Transaction ID</p>
+                  <p className="text-sm font-mono text-black">{order.transactionId}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
+  
         {/* Action Buttons */}
         <div className="flex gap-2">
           {getActionButtons()}
+          {/* Verify Button for GPay/PhonePe with Pending Status */}
+          {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && 
+           order.paymentStatus === 'pending' && (
+            <button className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+              Verify Payment
+            </button>
+          )}
         </div>
       </div>
     </div>

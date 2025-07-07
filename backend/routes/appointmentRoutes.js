@@ -24,6 +24,7 @@ router.post('/', createAppointment);
 // /user/123?startDate=2024-01-15&endDate=2024-01-20 - Date range
 // /user/123?status=confirmed&date=2024-01-15 - Multiple filters
 // /user/123?limit=10&page=2 - Pagination
+router.put('/:appointmentId',updateAppointmentStatus)
 router.get('/user/:id', getUserAppointments);
 router.put('/advance-payment/:appointmentId', updateAdvancePayment);
 router.put('/mark-advance/:appointmentId', updateAdvanceStatus);

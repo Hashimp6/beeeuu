@@ -6,11 +6,12 @@ import {
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 // Compact Appointment Card Component
-const AppointmentCard = ({ appointment, onStatusChange, onDelete }) => {
+const AppointmentCard = ({ appointment, refetchAppointments }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-
+  const {  token, } = useAuth() ;
   const getStatusConfig = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': 
@@ -56,16 +57,59 @@ const AppointmentCard = ({ appointment, onStatusChange, onDelete }) => {
     }
   };
 
-  const handleStatusUpdate = async (newStatus) => {
-    setIsUpdating(true);
-    try {
-      await onStatusChange(appointment._id, newStatus);
-    } catch (error) {
-      console.error('Error updating status:', error);
-    } finally {
-      setIsUpdating(false);
-    }
+  const handleStatusUpdate = ({ status, id: appointmentId }) => {
+    const confirmToast = toast.custom((t) => (
+      <div className="bg-white p-4 rounded-xl shadow-xl border border-gray-200 w-80">
+        <h3 className="text-gray-800 font-semibold text-sm mb-2">
+          Are you sure you want to mark this appointment as <span className="capitalize text-teal-600">{status}</span>?
+        </h3>
+        <div className="flex justify-end space-x-3 mt-4">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="text-sm px-3 py-1 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                setIsUpdating(true);
+  
+                const response = await axios.put(
+                  `${SERVER_URL}/appointments/${appointmentId}`,
+                  { status },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`,
+                    },
+                    timeout: 10000,
+                  }
+                );
+  
+                if (response.status === 200) {
+                  toast.success(`Appointment marked as ${status}`);
+                  refetchAppointments(); // 👈 refresh data
+                } else {
+                  toast.error('Failed to update appointment status');
+                }
+              } catch (error) {
+                console.error(error);
+                toast.error('Failed to update appointment status');
+              } finally {
+                setIsUpdating(false);
+              }
+            }}
+            className="text-sm px-4 py-1 rounded-md bg-teal-600 text-white hover:bg-teal-700"
+          >
+            Yes, Confirm
+          </button>
+        </div>
+      </div>
+    ));
   };
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -134,7 +178,7 @@ const AppointmentCard = ({ appointment, onStatusChange, onDelete }) => {
         <div className="flex space-x-2">
           {appointment.status !== 'confirmed' && appointment.status !== 'completed' && (
             <button
-              onClick={() => handleStatusUpdate('confirmed')}
+            onClick={() => handleStatusUpdate({ status: 'confirmed', id: appointment._id })}
               disabled={isUpdating}
               className="flex-1 bg-teal-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
             >
@@ -151,7 +195,7 @@ const AppointmentCard = ({ appointment, onStatusChange, onDelete }) => {
           
           {appointment.status !== 'cancelled' && appointment.status !== 'completed' && (
             <button
-              onClick={() => handleStatusUpdate('cancelled')}
+            onClick={() => handleStatusUpdate({ status: 'cancelled', id: appointment._id })}
               disabled={isUpdating}
               className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
             >
@@ -168,7 +212,7 @@ const AppointmentCard = ({ appointment, onStatusChange, onDelete }) => {
           
           {appointment.status === 'confirmed' && (
             <button
-              onClick={() => handleStatusUpdate('completed')}
+            onClick={() => handleStatusUpdate({ status: 'completed', id: appointment._id })}
               disabled={isUpdating}
               className="flex-1 bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
             >
@@ -230,45 +274,33 @@ const AppointmentManagement = ({ storeId }) => {
         },
         timeout: 10000
       });
-      console.log("app",response.data.appointments);
+      console.log("Raw appointment response:", response.data);
+      const raw = response.data.appointments ?? response.data ?? [];
+
+      if (Array.isArray(raw)) {
+        setAppointments(
+          raw.map((apt) => ({
+            ...apt,
+            userName: apt.locationName,
+            phone: apt.contactNo,
+            service: apt.productName,
+          }))
+        );
+        setError(null); // ✅ Clear any previous error
+      } else {
+        setAppointments([]); // No appointments
+        setError(null); // ✅ Still no error
+      }
       
-      setAppointments(
-        (response.data.appointments || response.data || []).map((apt) => ({
-          ...apt,
-          userName: apt.locationName,    // Assuming locationName is customer name
-          phone: apt.contactNo,          // Map correct phone field
-          service: apt.productName       // Show service from product name
-        }))
-      );
+      setError(null); // ✅ Clear any previous error
+      
     } catch (error) {
-      setError('Failed to fetch appointments. Please try again.');
+      setError(error?.response ? 'Server error while fetching appointments.' : 'Network error. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (appointmentId, newStatus) => {
-    try {
-      await axios.put(
-        `${SERVER_URL}/appointments/${appointmentId}/status`,
-        { status: newStatus },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-      
-      setAppointments(prev => 
-        prev.map(apt => 
-          apt._id === appointmentId ? { ...apt, status: newStatus } : apt
-        )
-      );
-    } catch (error) {
-      throw error;
-    }
-  };
 
   const filteredAppointments = appointments.filter(appointment => {
     const matchesSearch = appointment.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -375,10 +407,10 @@ const AppointmentManagement = ({ storeId }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredAppointments.map((appointment) => (
               <AppointmentCard
-                key={appointment._id}
-                appointment={appointment}
-                onStatusChange={handleStatusChange}
-              />
+              key={appointment._id}
+              appointment={appointment}
+              refetchAppointments={() => fetchAppointments(selectedStatus)}
+            />            
             ))}
           </div>
         )}

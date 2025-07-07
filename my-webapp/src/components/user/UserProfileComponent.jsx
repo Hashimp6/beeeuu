@@ -300,133 +300,111 @@ const UserProfileComponent = ({  setHistory }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-teal-50">
+    <div className="h-[90vh] bg-gradient-to-br from-gray-50 via-white to-teal-50 overflow-hidden">
       <SuccessNotification />
       
-      {/* Main Container */}
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+      {/* Fixed Height Container */}
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-md mx-auto px-4 py-3 min-h-full flex flex-col justify-between space-y-3">
 
-{/* Profile Header */}
-<div className="relative rounded-3xl bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 text-white p-6 shadow-xl">
-  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-3xl"></div>
-  
-  <div className="relative z-10 flex items-center justify-between">
-    <div className="flex items-center gap-4">
-      {/* Avatar */}
-      <div className="relative">
-        <div className="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center text-2xl font-bold backdrop-blur border border-white/20">
-          {localUser.name?.charAt(0)?.toUpperCase() || localUser.username?.charAt(0)?.toUpperCase() || 'U'}
+          {/* Top Section */}
+          <div className="space-y-3">
+            {/* Profile Header */}
+            <div className="relative rounded-3xl bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 text-white p-5 shadow-xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-3xl"></div>
+              
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Avatar */}
+                  <div className="relative">
+                    <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center text-xl font-bold backdrop-blur border border-white/20">
+                      {localUser.name?.charAt(0)?.toUpperCase() || localUser.username?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
+                  </div>
+                  {/* Name & Username */}
+                  <div>
+                    <h1 className="text-lg font-bold leading-tight">{localUser.name || localUser.username}</h1>
+                    <p className="text-teal-100 text-xs">@{localUser.username}</p>
+                  </div>
+                </div>
+
+                {/* Edit Button */}
+                <button
+                  onClick={handleEdit}
+                  className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20 transition hover:scale-105"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* User Info Card */}
+            <GlassCard className="p-3 space-y-2">
+              {[{
+                icon: <Mail className="w-4 h-4 text-teal-600" />,
+                label: "Email",
+                value: localUser.email
+              }, {
+                icon: <Phone className="w-4 h-4 text-teal-600" />,
+                label: "Phone",
+                value: localUser.phone || 'Not provided'
+              }, {
+                icon: <MapPin className="w-4 h-4 text-teal-600" />,
+                label: "Address",
+                value: localUser.address || 'Not provided'
+              }].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-2.5 border border-gray-200/50">
+                  <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-teal-100">{item.icon}</div>
+                  <div>
+                    <div className="text-xs text-gray-500 uppercase">{item.label}</div>
+                    <div className="text-gray-800 font-medium text-sm">{item.value}</div>
+                  </div>
+                </div>
+              ))}
+            </GlassCard>
+
+            {/* Quick Actions */}
+            <GlassCard className="p-3 space-y-2">
+              <ActionButton
+                icon={Calendar}
+                text="My Appointments"
+                onClick={() => setHistory('appointments')}
+                variant="primary"
+              />
+              <ActionButton
+                icon={FileText}
+                text="My Orders"
+                onClick={() => setHistory('orders')}
+                variant="secondary"
+              />
+            </GlassCard>
+          </div>
+
+          {/* Bottom Section - Only Logout */}
+          <div className="pb-4">
+            <ActionButton
+              icon={LogOut}
+              text="Logout"
+              onClick={handleLogout}
+              variant="danger"
+            />
+          </div>
         </div>
-        <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-md"></div>
       </div>
-      {/* Name & Username */}
-      <div>
-        <h1 className="text-lg font-bold leading-tight">{localUser.name || localUser.username}</h1>
-        <p className="text-teal-100 text-xs">@{localUser.username}</p>
-      </div>
-    </div>
-
-    {/* Edit Button */}
-    <button
-      onClick={handleEdit}
-      className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20 transition hover:scale-105"
-    >
-      <Edit2 className="w-5 h-5" />
-    </button>
-  </div>
-</div>
-
-{/* User Info Card */}
-<GlassCard className="p-4 space-y-3">
-  {[{
-    icon: <Mail className="w-5 h-5 text-teal-600" />,
-    label: "Email",
-    value: localUser.email
-  }, {
-    icon: <Phone className="w-5 h-5 text-teal-600" />,
-    label: "Phone",
-    value: localUser.phone || 'Not provided'
-  }, {
-    icon: <MapPin className="w-5 h-5 text-teal-600" />,
-    label: "Address",
-    value: localUser.address || 'Not provided'
-  }].map((item, idx) => (
-    <div key={idx} className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200/50">
-      <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-teal-100">{item.icon}</div>
-      <div>
-        <div className="text-xs text-gray-500 uppercase">{item.label}</div>
-        <div className="text-gray-800 font-medium text-sm">{item.value}</div>
-      </div>
-    </div>
-  ))}
-</GlassCard>
-
-{/* Quick Actions */}
-<GlassCard className="p-4 space-y-2">
-  <ActionButton
-    icon={Calendar}
-    text="My Appointments"
-    onClick={() => setHistory('appointments')}
-    variant="primary"
-  />
-  <ActionButton
-    icon={FileText}
-    text="My Orders"
-    onClick={() => setHistory('orders')}
-    variant="secondary"
-  />
-</GlassCard>
-
-{/* Settings */}
-<GlassCard className="p-4">
-  <div className="flex items-center gap-3 mb-4">
-    <div className="w-9 h-9 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center">
-      <Settings className="w-4 h-4 text-white" />
-    </div>
-    <h3 className="text-base font-semibold text-gray-800">Settings</h3>
-  </div>
-  <div className="space-y-2">
-    {[
-      { icon: Bell, text: "Notifications" },
-      { icon: Shield, text: "Privacy & Security" }
-    ].map((item, idx) => (
-      <button
-        key={idx}
-        className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition group"
-      >
-        <div className="flex items-center gap-2">
-          <item.icon className="w-5 h-5 text-gray-600 group-hover:text-teal-600" />
-          <span className="text-sm text-gray-700">{item.text}</span>
-        </div>
-        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600" />
-      </button>
-    ))}
-  </div>
-</GlassCard>
-
-{/* Logout */}
-<ActionButton
-  icon={LogOut}
-  text="Logout"
-  onClick={handleLogout}
-  variant="danger"
-/>
-</div>
-
 
       {/* Edit Modal */}
       {isEditing && (
-  <EditModal
-    editForm={editForm}
-    errors={errors}
-    handleInputChange={handleInputChange}
-    handleCancel={handleCancel}
-    handleSave={handleSave}
-    isLoading={isLoading}
-  />
-)}
+        <EditModal
+          editForm={editForm}
+          errors={errors}
+          handleInputChange={handleInputChange}
+          handleCancel={handleCancel}
+          handleSave={handleSave}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
-};
-
+}
 export default UserProfileComponent;

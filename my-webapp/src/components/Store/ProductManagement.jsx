@@ -9,27 +9,35 @@ import {
   Tag, 
   ImageIcon,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Image
 } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
-// Add Product Form Component
+
 const AddProductForm = ({ 
   isVisible, 
   onClose, 
   onSubmit, 
+  storeId,
   editingProduct = null,
-  loading = false 
+  loading = false,
+  fetchProducts = () => {}
 }) => {
+  const { token } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [product, setProduct] = useState({
     name: '',
     description: '',
     category: '',
     type: '',
     price: '',
-    imageUri: ''
+    quantity: '',
+    imageUri: '',
+    imageFile: null
   });
 
   const [errors, setErrors] = useState({});
@@ -42,7 +50,9 @@ const AddProductForm = ({
         category: editingProduct.category || '',
         type: editingProduct.type || '',
         price: editingProduct.price?.toString() || '',
-        imageUri: editingProduct.image || ''
+        quantity: editingProduct.quantity?.toString() || '',
+        imageUri: editingProduct.image || '',
+        imageFile: null
       });
     } else {
       setProduct({
@@ -51,7 +61,9 @@ const AddProductForm = ({
         category: '',
         type: '',
         price: '',
-        imageUri: ''
+        quantity: '',
+        imageUri: '',
+        imageFile: null
       });
     }
     setErrors({});
@@ -67,21 +79,198 @@ const AddProductForm = ({
     else if (isNaN(parseFloat(product.price)) || parseFloat(product.price) <= 0) {
       newErrors.price = 'Please enter a valid price';
     }
+    
+    if (!product.quantity.trim()) newErrors.quantity = 'Quantity is required';
+    else if (isNaN(parseInt(product.quantity)) || parseInt(product.quantity) < 0) {
+      newErrors.quantity = 'Please enter a valid quantity';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      onSubmit(product);
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProduct(prev => ({ 
+          ...prev, 
+          imageUri: e.target.result,
+          imageFile: file
+        }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleImagePick = () => {
-    // Simulate image picker - in real app, you'd use expo-image-picker
-    const mockImageUri = `https://picsum.photos/400/300?random=${Date.now()}`;
-    setProduct(prev => ({ ...prev, imageUri: mockImageUri }));
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const files = Array.from(e.dataTransfer.files);
+    const imageFile = files.find(file => file.type.startsWith('image/'));
+    
+    if (imageFile) {
+      if (imageFile.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProduct(prev => ({ 
+          ...prev, 
+          imageUri: e.target.result,
+          imageFile: imageFile
+        }));
+      };
+      reader.readAsDataURL(imageFile);
+    }
+  };
+
+  const handleSubmitProduct = async (productData) => {
+    // Frontend validation
+    if (
+      !productData.name.trim() ||
+      !productData.price.trim() ||
+      !productData.type ||
+      !productData.category ||
+      !productData.quantity
+    ) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+  
+    // Validate price and quantity
+    if (isNaN(productData.price) || parseFloat(productData.price) <= 0) {
+      alert('Please enter a valid price');
+      return;
+    }
+    if (isNaN(productData.quantity) || parseInt(productData.quantity) <= 0) {
+      alert('Please enter a valid quantity');
+      return;
+    }
+  
+    setIsLoading(true);
+  
+    try {
+      const formData = new FormData();
+      formData.append('store', storeId);
+      formData.append('name', productData.name.trim());
+      formData.append('description', productData.description.trim());
+      formData.append('category', productData.category);
+      formData.append('type', productData.type);
+      formData.append('price', parseFloat(productData.price).toString());
+      formData.append('quantity', parseInt(productData.quantity).toString());
+  
+      // ✅ Handle image upload
+      if (productData.imageFile) {
+        // Direct file upload (new upload)
+        formData.append('image', productData.imageFile);
+      } else if (productData.imageUri && productData.imageUri.startsWith('data:image/')) {
+        // Base64 image (convert to Blob and then File)
+        const response = await fetch(productData.imageUri);
+        const blob = await response.blob();
+        const fileExtension = blob.type.split('/')[1] || 'jpg';
+        const file = new File([blob], `product_image_${Date.now()}.${fileExtension}`, {
+          type: blob.type,
+        });
+        formData.append('image', file);
+      } else if (productData.imageUri) {
+        // Existing image URI - only for edit case
+        formData.append('imageUrl', productData.imageUri);
+      }
+  
+      const productId = editingProduct?._id;
+      const url = editingProduct
+        ? `${SERVER_URL}/products/${productId}`
+        : `${SERVER_URL}/products/add`;
+  
+      const method = editingProduct ? 'put' : 'post';
+      console.log("Form Data Preview:");
+      for (let [key, value] of formData.entries()) {
+        if (key === "image" && value instanceof File) {
+          console.log(`${key}:`, value.name, value.type, value.size);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+      
+  
+      const response = await axios({
+        method,
+        url,
+        data: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      console.log('Product saved:', response.data);
+  
+      toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
+  
+
+// ✅ Refresh the product list
+if (fetchProducts) fetchProducts(); 
+
+// Reset & close form
+handleClose();
+
+if (onSubmit) onSubmit(response.data);
+    } catch (err) {
+      console.error('Error saving product:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to save product. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleSubmit = () => {
+    handleSubmitProduct(product);
+  };
+
+  const handleClose = () => {
+    setProduct({
+      name: '',
+      description: '',
+      category: '',
+      type: '',
+      price: '',
+      quantity: '',
+      imageUri: '',
+      imageFile: null
+    });
+    setErrors({});
+    onClose();
   };
 
   if (!isVisible) return null;
@@ -177,8 +366,12 @@ const AddProductForm = ({
               Product Image
             </label>
             <div 
-              onClick={handleImagePick}
-              className="w-full border-2 border-dashed border-teal-300 rounded-lg p-4 text-center cursor-pointer hover:border-teal-500 transition-colors"
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('imageInput').click()}
+              className="w-full border-2 border-dashed border-teal-300 rounded-lg p-4 text-center cursor-pointer hover:border-teal-500 transition-colors hover:bg-teal-50"
             >
               {product.imageUri ? (
                 <div className="relative">
@@ -190,7 +383,8 @@ const AddProductForm = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setProduct(prev => ({ ...prev, imageUri: '' }));
+                      setProduct(prev => ({ ...prev, imageUri: '', imageFile: null }));
+                      document.getElementById('imageInput').value = '';
                     }}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                   >
@@ -199,11 +393,21 @@ const AddProductForm = ({
                 </div>
               ) : (
                 <div className="text-teal-600">
-                  <ImageIcon size={32} className="mx-auto mb-2" />
-                  <p>Click to select image</p>
+                  <Image size={32} className="mx-auto mb-2" />
+                  <p className="font-medium">Click to select image</p>
+                  <p className="text-xs text-gray-500 mt-1">or drag and drop here</p>
+                  <p className="text-xs text-gray-400 mt-1">Supports: JPG, PNG, GIF (Max 5MB)</p>
                 </div>
               )}
             </div>
+            
+            <input
+              type="file"
+              id="imageInput"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
           </div>
 
           {/* Price */}
@@ -225,21 +429,44 @@ const AddProductForm = ({
             {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
           </div>
 
+          {/* Quantity */}
+         {/* Quantity (only show if type is product) */}
+{product.type === 'product' && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Quantity *
+    </label>
+    <input
+      type="number"
+      value={product.quantity}
+      onChange={(e) => setProduct(prev => ({ ...prev, quantity: e.target.value }))}
+      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+        errors.quantity ? 'border-red-500' : 'border-gray-300'
+      }`}
+      placeholder="Enter quantity"
+      min="0"
+      step="1"
+    />
+    {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
+  </div>
+)}
+
+
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              disabled={loading}
+              disabled={isLoading || loading}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={isLoading || loading}
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              {loading ? (
+              {(isLoading || loading) ? (
                 <RefreshCw size={16} className="animate-spin" />
               ) : (
                 editingProduct ? 'Update Product' : 'Add Product'
@@ -263,12 +490,7 @@ const ProductManagement = ({ storeId }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // Mock store data - replace with actual store data
-  const storeData = {
-    name: "My Store",
-    id: "store123"
-  };
-
+  
   // Mock API calls - replace with actual API calls
   const fetchProducts = async () => {
     try {
@@ -308,22 +530,8 @@ const ProductManagement = ({ storeId }) => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (editingProduct) {
-        // Update existing product
-        setProducts(prev => prev.map(p => 
-          p._id === editingProduct._id 
-            ? { ...p, ...productData, price: parseFloat(productData.price) }
-            : p
-        ));
-      } else {
-        // Add new product
-        const newProduct = {
-          _id: Date.now().toString(),
-          ...productData,
-          price: parseFloat(productData.price)
-        };
-        setProducts(prev => [...prev, newProduct]);
-      }
+      setShowAddForm(false);
+      setEditingProduct(null);
       
       setShowAddForm(false);
       setEditingProduct(null);
@@ -356,9 +564,9 @@ const ProductManagement = ({ storeId }) => {
     setShowAddForm(true);
   };
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = products.filter(({ name = '', category = '' }) =>
+    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -415,72 +623,81 @@ const ProductManagement = ({ storeId }) => {
             )}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProducts.map((product) => (
-              <div key={product._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-w-16 aspect-h-12">
-                  <img
-                    src={product.image || 'https://picsum.photos/400/300?random=default'}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {filteredProducts.map((product) => (
+            <div key={product._id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-w-16 aspect-h-10">
+                <img
+                  src={product.image || 'https://picsum.photos/400/300?random=default'}
+                  alt={product.name}
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+              
+              <div className="p-3">
+                <h3 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-1">{product.name}</h3>
+                
+                {product.description && (
+                  <p className="text-gray-600 text-xs mb-2 line-clamp-1">{product.description}</p>
+                )}
+                
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded text-xs font-medium">
+                    {product.category}
+                  </span>
+                  <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs font-medium">
+                    {product.type}
+                  </span>
                 </div>
                 
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
-                  
-                  {product.description && (
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                  )}
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-xs font-medium">
-                      {product.category}
-                    </span>
-                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-                      {product.type}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <DollarSign size={16} className="text-teal-600" />
-                      <span className="font-bold text-teal-600">₹{product.price}</span>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditProduct(product)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <div className="flex items-center justify-between">
+  <div className="flex items-center gap-1 flex-wrap">
+    <span className="font-bold text-teal-600 text-sm">₹{product.price}</span>
+
+    {/* ✅ Show quantity if it exists and is a product */}
+    {product.type === 'product' && product.quantity && (
+      <span className="text-xs text-gray-500 ml-2">
+        ({product.quantity} pcs)
+      </span>
+    )}
+  </div>
+
+  <div className="flex gap-1">
+    <button
+      onClick={() => handleEditProduct(product)}
+      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+    >
+      <Edit3 size={14} />
+    </button>
+    <button
+      onClick={() => handleDeleteProduct(product._id)}
+      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+    >
+      <Trash2 size={14} />
+    </button>
+  </div>
+</div>
+
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
         )}
       </div>
 
       {/* Add/Edit Product Form */}
       <AddProductForm
-        isVisible={showAddForm}
-        onClose={() => {
-          setShowAddForm(false);
-          setEditingProduct(null);
-        }}
-        onSubmit={handleSubmitProduct}
-        editingProduct={editingProduct}
-        loading={loading}
-      />
+  isVisible={showAddForm}
+  onClose={() => {
+    setShowAddForm(false);
+    setEditingProduct(null);
+  }}
+  onSubmit={handleSubmitProduct}
+  editingProduct={editingProduct}
+  loading={loading}
+  storeId={storeId} 
+  fetchProducts={fetchProducts} 
+/>
     </div>
   );
 };

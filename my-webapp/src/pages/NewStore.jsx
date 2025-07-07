@@ -2,24 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Camera, X, ChevronDown, MapPin, Check, AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { SERVER_URL } from '../Config';
+import { useAuth } from '../context/UserContext';
+import { toast } from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const NewStore = () => {
-  // Mock route params - in real app, you'd get these from router
-  const editMode = false;
-  const storeData = {};
+  const { user, token, setUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Form state - Initialize with existing data if in edit mode
-  const [storeName, setStoreName] = useState(storeData.storeName || storeData.name || '');
-  const [description, setDescription] = useState(storeData.description || '');
-  const [imageUri, setImageUri] = useState(storeData.profileImage || '');
+  const storeData = location.state?.storeData || {};
+  const editMode = location.state?.editMode || false;
+
+  const [categoryNames, setCategoryNames] = useState([]);
+  const [storeName, setStoreName] = useState(editMode ? storeData.storeName || storeData.name || '' : '');
+  const [description, setDescription] = useState(editMode ? storeData.description || '' : '');
+  const [imageUri, setImageUri] = useState(editMode ? storeData.profileImage || '' : '');
   const [imageFile, setImageFile] = useState(null);
-  const [place, setPlace] = useState(storeData.place || '');
-  const [phone, setPhone] = useState(storeData.phone || '');
-  const [whatsapp, setWhatsapp] = useState(storeData.socialMedia?.whatsapp || '');
-  const [instagram, setInstagram] = useState(storeData.socialMedia?.instagram || '');
-  const [facebook, setFacebook] = useState(storeData.socialMedia?.facebook || '');
-  const [website, setWebsite] = useState(storeData.socialMedia?.website || '');
-  const [category, setCategory] = useState(storeData.category || '');
+  const [place, setPlace] = useState(editMode ? storeData.place || '' : '');
+  const [phone, setPhone] = useState(editMode ? storeData.phone || '' : '');
+  const [whatsapp, setWhatsapp] = useState(editMode ? storeData.socialMedia?.whatsapp || '' : '');
+  const [instagram, setInstagram] = useState(editMode ? storeData.socialMedia?.instagram || '' : '');
+  const [facebook, setFacebook] = useState(editMode ? storeData.socialMedia?.facebook || '' : '');
+  const [website, setWebsite] = useState(editMode ? storeData.socialMedia?.website || '' : '');
+  const [category, setCategory] = useState(editMode ? storeData.category || '' : '');
   const [storeNameAvailable, setStoreNameAvailable] = useState(null);
   const [checkingName, setCheckingName] = useState(false);
 
@@ -32,22 +38,31 @@ const NewStore = () => {
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  useEffect(() => {
+    if (user && token) {
+      fetchCategories();
+    }
+  }, [user, token]);
+  
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${SERVER_URL}/category/group`);
+const data = response.data;
+console.log("catef",data);
+const allSubcategories = [];
+data.forEach(mainCategory => {
+  mainCategory.categories.forEach(subCategory => {
+    allSubcategories.push(subCategory.name);
+  });
+});
 
-  const categories = [
-    'Restaurant', 
-    'Retail', 
-    'Electronics', 
-    'Fashion', 
-    'Grocery', 
-    'Services', 
-    'Beauty', 
-    'Health', 
-    'Home & Decor',
-    'Books & Stationery',
-    'Sports & Fitness',
-    'Entertainment',
-    'Other'
-  ];
+// Set the category names (including 'All Categories' at the beginning)
+setCategoryNames(['All Categories', ...allSubcategories]);
+console.log("catef",allSubcategories);
+} catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   
   // Location API configuration
@@ -415,10 +430,19 @@ const NewStore = () => {
       });
 
       if (response.data) {
-        alert(editMode ? 'Store updated successfully!' : 'Store registered successfully!');
-        // In a real app, you'd navigate to a success page or profile
-        console.log('Success:', response.data);
+        toast.success(editMode ? 'Store updated successfully!' : 'Store registered successfully!');
+      
+        // 🔥 Update the user role to 'seller'
+        const updatedUser = { ...user, role: 'seller' };
+        setUser(updatedUser); // update global context
+        localStorage.setItem('user', JSON.stringify(updatedUser)); // optional: persist across reloads
+      
+        // ✅ Navigate to home
+        setTimeout(() => {
+          navigate('/home');
+        }, 1500);
       }
+      
 
     } catch (error) {
       console.error('Error:', error.response?.data || error.message);
@@ -741,7 +765,7 @@ const NewStore = () => {
               </button>
             </div>
             <div className="overflow-y-auto max-h-80">
-              {categories.map((item) => (
+              {categoryNames.map((item) => (
                 <button
                   key={item}
                   onClick={() => selectCategory(item)}

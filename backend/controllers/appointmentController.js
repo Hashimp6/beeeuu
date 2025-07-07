@@ -340,7 +340,7 @@ const getAppointmentsByStatus = async (req, res) => {
     }).sort({ date: 1 });
 
     if (!appointments.length) {
-      return res.status(404).json({ message: "No appointments found", appointments: [] });
+      return res.status(200).json({ message: "No appointments found", appointments: [] });
     }
 
     res.status(200).json({

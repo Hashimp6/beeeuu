@@ -18,7 +18,7 @@ import ChatApp from "./components/NewChat";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { user,isAuthenticated } = useAuth();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children }) => {
 // Auth Route Component (redirects authenticated users away from auth pages)
 const AuthRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  
+
   if (isAuthenticated) {
     return <Navigate to="/home" replace />;
   }
@@ -39,6 +39,7 @@ const AuthRoute = ({ children }) => {
 };
 
 function App() {
+  const { user } = useAuth();
   return (
     <>
       <CustomToaster />
@@ -47,8 +48,14 @@ function App() {
           {/* Public Routes - Anyone can access */}
           <Route path="/" element={<Welcome />} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
-          <Route path="/home"  element={ <HomeLayout />  } 
-          />
+          <Route
+  path="/home"
+  element={
+    <ProtectedRoute>
+      {user?.role === "seller" ? <StoreDashboard /> : <HomeLayout />}
+    </ProtectedRoute>
+  }
+/>
           {/* Auth Routes - Only unauthenticated users can access */}
           <Route 
             path="/register" 
@@ -96,9 +103,7 @@ function App() {
           <Route 
             path="/newStore" 
             element={
-              <ProtectedRoute>
                 <NewStore />
-              </ProtectedRoute>
             } 
           />
            <Route 

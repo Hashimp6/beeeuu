@@ -16,8 +16,10 @@ import AppointmentManagement from '../../components/Store/AppointmentManagement'
 import OrderManagement from '../../components/Store/OrderManagement';
 import ProductManagement from '../../components/Store/ProductManagement';
 import GalleryManagement from '../../components/Store/GalleryManagement';
+import { useNavigate } from 'react-router-dom';
 
 const StoreDashboard = () => {
+    const navigate = useNavigate();
      const { user, token,setUser } = useAuth() || {};
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -359,7 +361,17 @@ const StoreDashboard = () => {
                       <span className="text-xl font-bold text-gray-900">{store?.averageRating}</span>
                       <span className="text-gray-600 ml-2">({store?.numberOfRatings} reviews)</span>
                     </div>
-                    <button className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors flex items-center">
+                    <button
+  onClick={() =>
+    navigate('/newStore', {
+      state: {
+        editMode: true,
+        storeData: store
+      }
+    })
+  }
+  className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors flex items-center"
+>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Store
                     </button>

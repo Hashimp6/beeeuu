@@ -344,7 +344,7 @@ console.log("catef",data);
 
       {/* Desktop Filter Sidebar - Only show when not in appointment/order view */}
       {!history && (
-        <div className="hidden lg:block w-64 xl:w-72 bg-gray-50 border-r border-gray-200 p-4 lg:p-5 flex flex-col gap-4 lg:gap-5">
+        <div className="hidden lg:block w-64 xl:w-72 bg-gray-50 border-r border-gray-200 p-4 lg:p-5 flex flex-col gap-4 lg:gap-5 h-[calc(98vh-64px)] overflow-y-auto">
           {/* Desktop Filter Header */}
           <div className="flex items-center gap-2 pb-3 lg:pb-4 border-b border-gray-200">
             <Filter size={18} className="text-gray-600" />
@@ -468,7 +468,8 @@ console.log("catef",data);
         // Default view with stores
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Center Content */}
-          <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-auto bg-gray-50">
+         <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-y-auto bg-gray-50 h-[calc(98vh-64px)] scrollbar-hide">
+
             {/* Search Bar */}
             <div className="mb-2 lg:mb-6 flex justify-center">
               <div className="relative max-w-2xl w-full">

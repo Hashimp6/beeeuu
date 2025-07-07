@@ -111,21 +111,21 @@ const HomeLayout = () => {
                     <nav className="hidden md:flex items-center space-x-8">
                         <button
                             onClick={navigateToHome}
-                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                           className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Home size={18} />
                             <span>Home</span>
                         </button>
                         <button
                             onClick={navigateToCategory}
-                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Grid size={18} />
                             <span>Category</span>
                         </button>
                         <button
                             onClick={navigateToContact}
-                            className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                          className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Phone size={18} />
                             <span>Contact Us</span>
@@ -215,28 +215,32 @@ const HomeLayout = () => {
 
                     {/* Navigation Items */}
                     <div className="space-y-2">
-                        <button
-                            onClick={navigateToHome}
-                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                        >
-                            <Home size={18} className="text-gray-600" />
-                            <span className="text-gray-700 font-medium">Home</span>
-                        </button>
+                    <button
+  onClick={navigateToHome}
+  className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+>
+  <Home size={18} className="text-gray-600 group-hover:text-white" />
+  <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
+</button>
+
+
+
                         
                         <button
                             onClick={navigateToCategory}
-                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                        >
-                            <Grid size={18} className="text-gray-600" />
-                            <span className="text-gray-700 font-medium">Category</span>
+                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+                            >
+                              <Home size={18} className="text-gray-600 group-hover:text-white" />
+                              <span className="text-gray-700 font-medium group-hover:text-white">Category</span>
+                            
                         </button>
                         
                         <button
                             onClick={navigateToContact}
-                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                        >
-                            <Phone size={18} className="text-gray-600" />
-                            <span className="text-gray-700 font-medium">Contact Us</span>
+                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+                            >
+                              <Home size={18} className="text-gray-600 group-hover:text-white" />
+                              <span className="text-gray-700 font-medium group-hover:text-white">Contact Us</span>                            
                         </button>
                     </div>
                 </div>

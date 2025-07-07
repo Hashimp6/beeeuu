@@ -10,14 +10,14 @@ const addProduct = async (req, res) => {
         image = req.file.path;  
       }
   
-      const { store, name, description,category,type, price } = req.body;
+      const { store, name, description,category,type, price,quantity } = req.body;
   
       if (!store || !name || !price) {
         return res.status(400).json({ message: "Store, Name and Price are required" });
       }
   console.log("image ",image);
   
-      const newProduct = new Product({ store, name, description,category, image,type, price });
+      const newProduct = new Product({ store, name, description,category, image,type, price,quantity });
       const savedProduct = await newProduct.save();
 
   

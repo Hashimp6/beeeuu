@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   price: { type: Number, required: true },
+  quantity: { type: Number},
   createdAt: { type: Date, default: Date.now }
 });
 
