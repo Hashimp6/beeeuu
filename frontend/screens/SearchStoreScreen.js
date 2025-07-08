@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { SERVER_URL } from '../config';
 import SellerCard from '../components/SellersCard';
+import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -29,126 +30,41 @@ const StoreSearchPage = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [pagination, setPagination] = useState({});
   const [imageErrors, setImageErrors] = useState({});
-  
+  const[categoryGroups,setCategoryGroups]=useState([])
+  const{user,token}=useAuth()
   // Debounce state
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
-
-  const categoryGroups = [
-    {
-      id: 'beauty',
-      title: '💄 iBeauty',
-      icon: '💄',
-      categories: [
-        {
-          id: 1,
-          name: 'Face',
-          image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'face-services'
-        },
-        {
-          id: 2,
-          name: 'Hair',
-          image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'hair-services'
-        },
-        {
-          id: 3,
-          name: 'Nails',
-          image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'nail-services'
-        },
-        {
-          id: 4,
-          name: 'Mehandi',
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'henna-services'
-        },
-        {
-          id: 5,
-          name: 'Bridal Makeup',
-          image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'bridal-makeup-services'
-        },
-        {
-          id: 6,
-          name: 'Hair Styling',
-          image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'hair-styling-services'
-        },
-        {
-          id: 7,
-          name: 'Dressing',
-          image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'dressing-services'
-        },
-        {
-          id: 8,
-          name: 'Styling',
-          image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'styling-services'
-        }
-      ]
-    },
-    {
-      id: 'food',
-      title: '🍰 Food',
-      icon: '🍰',
-      categories: [
-        {
-          id: 9,
-          name: 'Desserts',
-          image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'dessert-services'
-        },
-        {
-          id: 10,
-          name: 'Cakes',
-          image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'cake-services'
-        },
-        {
-          id: 11,
-          name: 'Pickles',
-          image: 'https://images.unsplash.com/photo-1599909533124-5d3b26c2e3a0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'pickle-services'
-        },
-        {
-          id: 12,
-          name: 'Traditional Snacks',
-          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'traditional-snack-services'
-        }
-      ]
-    },
-    {
-      id: 'gifts',
-      title: '🎁 Gifts',
-      icon: '🎁',
-      categories: [
-        {
-          id: 13,
-          name: 'Gift Bouquets',
-          image: 'https://images.unsplash.com/photo-1563241527-3004b7be0ffd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'gift-bouquet-services'
-        },
-        {
-          id: 14,
-          name: 'Hampers',
-          image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'hamper-services'
-        },
-        {
-          id: 15,
-          name: 'Custom Gifts',
-          image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80',
-          apiEndpoint: 'custom-gift-services'
-        }
-      ]
-    }
-  ];
-
-  // Debounce effect for search text
   useEffect(() => {
+    if (user && token) {
+      fetchCategories();
+    }
+  }, [user, token]);
+  
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${SERVER_URL}/category/group`);
+      const data = response.data;
+  
+      // Transforming backend response
+      const formattedGroups = data.map((group, index) => ({
+        id: group._id || `group-${index}`, // use _id or fallback
+        title: group.title || `Group ${index + 1}`, // set custom title if needed
+        icon: group.icon || '🛒', // fallback icon
+        categories: group.categories.map((cat, catIndex) => ({
+          id: cat._id || catIndex,
+          name: cat.name || `Category ${catIndex + 1}`,
+          image: cat.image || 'https://via.placeholder.com/300',
+          apiEndpoint: cat.apiEndpoint || ''
+        }))
+      }));
+  
+      setCategoryGroups(formattedGroups);
+      console.log('Formatted Groups:', formattedGroups);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchText(searchText);
     }, 500); // 500ms delay
@@ -477,7 +393,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   searchButton: {
-    backgroundColor: '#155366',
+    backgroundColor: '#0D9488',
     width: 48,
     height: 48,
     borderRadius: 24,

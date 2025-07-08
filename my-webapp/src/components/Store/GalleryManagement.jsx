@@ -25,8 +25,10 @@ const AddImageForm = ({
 }) => {
   const [imageData, setImageData] = useState({
     caption: '',
-    imageUri: ''
+    imageUri: '',
+    imageFile: null, // <- Add this
   });
+  
 
   const [errors, setErrors] = useState({});
 
@@ -34,17 +36,19 @@ const AddImageForm = ({
     if (editingImage) {
       setImageData({
         caption: editingImage.caption || '',
-        imageUri: editingImage.image || ''
+        imageUri: editingImage.image || '',
+        imageFile: null, // <- User needs to re-upload if changing image
       });
     } else {
       setImageData({
         caption: '',
-        imageUri: ''
+        imageUri: '',
+        imageFile: null,
       });
     }
     setErrors({});
   }, [editingImage, isVisible]);
-
+  
   const validateForm = () => {
     const newErrors = {};
     
@@ -72,11 +76,17 @@ const AddImageForm = ({
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImageData(prev => ({ ...prev, imageUri: e.target.result }));
+        setImageData({
+          caption: imageData.caption,
+          imageUri: e.target.result, // base64 for preview
+          imageFile: file,           // actual file
+        });
       };
       reader.readAsDataURL(file);
     }
   };
+  
+  
 
   if (!isVisible) return null;
 
@@ -270,19 +280,20 @@ const GalleryManagement = ({ storeId }) => {
     
     try {
       const formData = new FormData();
-      formData.append('seller', storeId);
-      formData.append('caption', imageData.caption || 'New upload');
-      
-      if (imageData.imageUri) {
-        // For web implementation, you'd handle file upload differently
-        // This is a simplified version
-        const fileExtension = 'jpg'; // Default extension
-        formData.append('image', {
-          uri: imageData.imageUri,
-          type: `image/${fileExtension}`,
-          name: `gallery_image_${Date.now()}.${fileExtension}`,
+formData.append('seller', storeId);
+formData.append('caption', imageData.caption || 'New upload');
+if (imageData.imageFile) {
+  formData.append('image', imageData.imageFile);
+} else if (imageData.imageUri && imageData.imageUri.startsWith('data:image/')) {
+        const response = await fetch(imageData.imageUri);
+        const blob = await response.blob();
+        const fileExtension = blob.type.split('/')[1] || 'jpg';
+        const file = new File([blob], `gallery_image_${Date.now()}.${fileExtension}`, {
+          type: blob.type,
         });
+        formData.append('image', file);
       }
+      
 
       console.log("gallery data", formData);
 
@@ -431,10 +442,7 @@ const GalleryManagement = ({ storeId }) => {
                 
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{image.caption}</h3>
-                  
-                  <p className="text-xs text-gray-500 mb-3">
-                    {new Date(image.createdAt).toLocaleDateString()}
-                  </p>
+                
                   
                   <div className="flex items-center justify-between">
                     <button

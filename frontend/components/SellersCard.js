@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryTag: {
-    backgroundColor: '#146C94',
+    backgroundColor: '#0D9488',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 14,

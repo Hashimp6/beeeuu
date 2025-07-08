@@ -77,6 +77,63 @@ const createGalleryPost = async (req, res) => {
   }
 };
 
+const updateGalleryImage = async (req, res) => {
+  try {
+    const { seller } = req.params;
+    const { caption } = req.body;
+    const imageId = req.params.imageId;
+console.log("rec",seller,caption,imageId);
+
+    // Find gallery by seller
+    const gallery = await Gallery.findOne({ seller });
+    if (!gallery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Gallery not found for this seller',
+      });
+    }
+
+    // Find the image by _id in the gallery.images array
+    const imageItem = gallery.images.id(imageId);
+    if (!imageItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found in gallery',
+      });
+    }
+
+    // Optional: Delete old image from Cloudinary if you're replacing the image
+    if (req.file && imageItem.image.includes('cloudinary.com')) {
+      const publicId = imageItem.image.split('/').pop().split('.')[0]; // Adjust if needed
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.error("Error deleting old Cloudinary image:", err);
+      }
+    }
+
+    // Update fields
+    if (caption) imageItem.caption = caption;
+    if (req.file) imageItem.image = req.file.path;
+
+    await gallery.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Gallery image updated successfully',
+      data: gallery,
+    });
+
+  } catch (err) {
+    console.error('Error updating gallery image:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update gallery image',
+      error: err.message
+    });
+  }
+};
+
 // Get gallery by seller ID
 const getGalleryBySeller = async (req, res) => {
   try {
@@ -250,5 +307,6 @@ module.exports = {
   getGalleryBySeller,
   deleteGalleryImage,
   deleteEntireGallery,
-  getAllGalleries
+  getAllGalleries,
+  updateGalleryImage
 };

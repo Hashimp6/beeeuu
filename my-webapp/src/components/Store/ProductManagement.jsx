@@ -542,22 +542,55 @@ const ProductManagement = ({ storeId }) => {
     }
   };
 
-  const handleDeleteProduct = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      setLoading(true);
-      
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        setProducts(prev => prev.filter(p => p._id !== productId));
-      } catch (err) {
-        setError('Failed to delete product. Please try again.');
-      } finally {
-        setLoading(false);
+  const handleDeleteProduct = (productId) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col space-y-2">
+          <p className="text-sm font-medium">Are you sure you want to delete this product?</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id); // Close toast
+                try {
+                  setLoading(true);
+  
+                  await axios.delete(`${SERVER_URL}/products/${productId}`, {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+  
+                  toast.success('Product deleted successfully!');
+                  setProducts((prev) => prev.filter((p) => p._id !== productId));
+                } catch (err) {
+                  console.error('Error deleting product:', err);
+                  const errorMessage =
+                    err.response?.data?.message || 'Failed to delete product. Please try again.';
+                  toast.error(errorMessage);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 10000,
+        position: 'top-center',
       }
-    }
+    );
   };
+  
 
   const handleEditProduct = (product) => {
     setEditingProduct(product);
@@ -623,18 +656,18 @@ const ProductManagement = ({ storeId }) => {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {filteredProducts.map((product) => (
             <div key={product._id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
               <div className="aspect-w-16 aspect-h-10">
                 <img
                   src={product.image || 'https://picsum.photos/400/300?random=default'}
                   alt={product.name}
-                  className="w-full h-32 object-cover"
+                  className="w-full h-40 sm:h-40 md:h-48 object-cover"
                 />
               </div>
               
-              <div className="p-3">
+              <div className="p-3 sm:p-3">
                 <h3 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-1">{product.name}</h3>
                 
                 {product.description && (

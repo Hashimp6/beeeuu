@@ -7,7 +7,8 @@ const {
   getGalleryBySeller,
   deleteGalleryImage,
   deleteEntireGallery,
-  getAllGalleries
+  getAllGalleries,
+  updateGalleryImage
 } = require('../controllers/galleryController');
 
 // Middleware for authentication (add your auth middleware here)
@@ -15,6 +16,8 @@ const {
 
 router.post('/', uploadGalleryImage.single('image'), createGalleryPost);
 
+// PUT /gallery/:seller/image/:imageId
+router.put('/:seller/image/:imageId', uploadGalleryImage.single('image'), updateGalleryImage);
 
 router.get('/:sellerId', getGalleryBySeller);
 
