@@ -48,6 +48,7 @@ function App() {
           {/* Public Routes - Anyone can access */}
           <Route path="/" element={<Welcome />} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
+          <Route path="/store/:storeName" element={<StoreProfile />} />
           <Route
   path="/home"
   element={

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, User, Phone, MapPin, 
-  Check, X, RefreshCw, Users, Filter
+  Check, X, RefreshCw, Users, Filter,
+  CreditCard
 } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
@@ -151,28 +152,53 @@ const AppointmentCard = ({ appointment, refetchAppointments }) => {
         </div>
 
         {/* Appointment Details */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center space-x-2 text-sm">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span className="text-gray-700">{formatDate(appointment.date)}</span>
-            <Clock className="w-4 h-4 text-gray-500 ml-2" />
-            <span className="text-gray-700">{formatTime(appointment.time)}</span>
-          </div>
-          
-          {appointment.phone && (
-            <div className="flex items-center space-x-2 text-sm">
-              <Phone className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">{appointment.phone}</span>
-            </div>
-          )}
-          
-          {appointment.service && (
-            <div className="flex items-center space-x-2 text-sm">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">{appointment.service}</span>
-            </div>
-          )}
-        </div>
+        <div className="space-y-2 mb-4 text-sm">
+  <div className="flex items-center space-x-2">
+    <Calendar className="w-4 h-4 text-gray-500" />
+    <span className="text-gray-700">{formatDate(appointment.date)}</span>
+    <Clock className="w-4 h-4 text-gray-500 ml-2" />
+    <span className="text-gray-700">{appointment.time}</span>
+  </div>
+
+  {appointment.productName && (
+    <div className="flex items-center space-x-2">
+      <CheckCircle className="w-4 h-4 text-gray-500" />
+      <span className="text-gray-700 font-medium">Product:</span>
+      <span className="text-gray-700">{appointment.productName}</span>
+    </div>
+  )}
+
+  {appointment.amountPaid !== undefined && (
+    <div className="flex items-center space-x-2">
+      <CreditCard className="w-4 h-4 text-gray-500" />
+      <span className="text-gray-700 font-medium">Paid:</span>
+      <span className="text-gray-700">₹{appointment.amountPaid}</span>
+    </div>
+  )}
+
+  {appointment.payment && (
+    <div className="flex items-center space-x-2">
+      <CreditCard className="w-4 h-4 text-gray-500" />
+      <span className="text-gray-700 font-medium">Payment Mode:</span>
+      <span className="text-gray-700 capitalize">{appointment.payment}</span>
+    </div>
+  )}
+
+  {appointment.phone && (
+    <div className="flex items-center space-x-2">
+      <Phone className="w-4 h-4 text-gray-500" />
+      <span className="text-gray-700">{appointment.phone}</span>
+    </div>
+  )}
+
+  {appointment.address && (
+    <div className="flex items-center space-x-2">
+      <MapPin className="w-4 h-4 text-gray-500" />
+      <span className="text-gray-700">{appointment.address}</span>
+    </div>
+  )}
+</div>
+
 
         {/* Action Buttons */}
         <div className="flex space-x-2">

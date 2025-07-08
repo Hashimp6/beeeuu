@@ -6,7 +6,8 @@ import {
   PieChart, Activity, ShoppingBag, Home, Menu, X,
   Image,
   StoreIcon,
-  MessageCircle
+  MessageCircle,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
@@ -20,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
-     const { user, token,setUser } = useAuth() || {};
+     const { user, token,setUser,logout } = useAuth() || {};
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -484,9 +485,11 @@ const StoreDashboard = () => {
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
+                
                 <div className="bg-white rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">Store Settings</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 
                     {[
                       { title: 'Products', description: 'Manage your store products', icon: ShoppingBag, color: 'teal' },
                       { title: 'Gallery', description: 'Upload and manage store images', icon: Camera, color: 'purple' },
@@ -506,9 +509,19 @@ const StoreDashboard = () => {
                           </div>
                         </div>
                       </div>
+                      
                     ))}
                   </div>
                 </div>
+                <div className="pt-6 border-t mt-6 ml-6">
+  <button
+    onClick={logout}
+    className="flex items-center space-x-2 text-red-600 font-semibold hover:text-red-700 transition-colors"
+  >
+    <LogOut className="w-5 h-5" />
+    <span>Logout</span>
+  </button>
+</div>
               </div>
             )}
           </div>

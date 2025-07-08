@@ -46,6 +46,9 @@ const appointmentSchema = new mongoose.Schema({
     type: Date,
     // required: true
   },
+  time: {
+    type: String, 
+  },
   address: {
     type: String,
     // required: true
