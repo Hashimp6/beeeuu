@@ -201,7 +201,7 @@ const createAppointment = async (req, res) => {
     console.log('Creating appointment:', appointmentData);
     
     // Validate required fields
-    const requiredFields = ['user', 'store', 'product', 'date'];
+    const requiredFields = ['user', 'store', 'product', 'date','time'];
     for (let field of requiredFields) {
       if (!appointmentData[field]) {
         return res.status(400).json({ message: `${field} is required` });

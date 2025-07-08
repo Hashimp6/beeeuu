@@ -311,6 +311,8 @@ const StoreAppointments = ({ route, navigation }) => {
   }, [status, storeId]);
 
   const renderAppointmentCard = ({ item }) => {
+    console.log("itmm",item.time);
+    
     const dateTime = formatDate(item.date);
     const isUpdating = updatingAppointment === item._id;
     const formattedPrice = formatPrice( item.price );
@@ -328,7 +330,7 @@ const StoreAppointments = ({ route, navigation }) => {
             ]}>
               {dateTime.dateStr}
             </Text>
-            <Text style={styles.timeText}>{dateTime.timeStr}</Text>
+            <Text style={styles.timeText}>{item.time}</Text>
           </View>
           
           <View style={styles.headerActions}>
