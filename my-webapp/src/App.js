@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Welcome from "./pages/Home";
 import RegisterPage from "./pages/auth/Register";
 import LoginPage from "./pages/auth/Login";
@@ -15,18 +15,25 @@ import NewStore from "./pages/NewStore";
 import { useAuth } from "./context/UserContext";
 import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
 import ChatApp from "./components/NewChat";
+import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { user,isAuthenticated } = useAuth();
-  
-  if (!isAuthenticated&&!user) {
-    return <Navigate to="/login" replace />;
+  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const [hasShownToast, setHasShownToast] = useState(false);
+
+  if (!isAuthenticated && !user) {
+    if (!hasShownToast) {
+      toast.error("Please login first!");
+      setHasShownToast(true);
+    }
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
-  
+
   return children;
 };
-
 // Auth Route Component (redirects authenticated users away from auth pages)
 const AuthRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
