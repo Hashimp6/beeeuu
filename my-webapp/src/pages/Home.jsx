@@ -125,10 +125,10 @@ const Header = () => {
                 About
               </a>
               <div className="flex flex-col space-y-3 pt-4">
-                <button className="text-gray-800 hover:text-teal-600 px-6 py-3 rounded-xl text-base font-bold transition-all duration-300 hover:bg-teal-50 text-center">
+                <button   onClick={() => navigate("/login")} className="text-gray-800 hover:text-teal-600 px-6 py-3 rounded-xl text-base font-bold transition-all duration-300 hover:bg-teal-50 text-center">
                   Login
                 </button>
-                <button className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-3 rounded-xl text-base font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl">
+                <button   onClick={() => navigate("/login")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-3 rounded-xl text-base font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl">
                   Get Started
                 </button>
               </div>

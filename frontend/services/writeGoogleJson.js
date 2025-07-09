@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '.env.local' }); 
 const { writeFileSync, existsSync, mkdirSync } = require('fs');
 const { join, dirname } = require('path');
 

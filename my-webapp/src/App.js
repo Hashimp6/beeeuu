@@ -20,7 +20,7 @@ import ChatApp from "./components/NewChat";
 const ProtectedRoute = ({ children }) => {
   const { user,isAuthenticated } = useAuth();
   
-  if (!isAuthenticated) {
+  if (!isAuthenticated&&!user) {
     return <Navigate to="/login" replace />;
   }
   
@@ -103,8 +103,9 @@ function App() {
           
           <Route 
   path="/newStore" 
-  element={
+  element={ <ProtectedRoute>
     user?.role === "seller" ? <StoreDashboard /> : <NewStore />
+    </ProtectedRoute>
   } 
 />
            <Route 

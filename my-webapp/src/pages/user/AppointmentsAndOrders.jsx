@@ -446,6 +446,17 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </div>
           )}
         </div>
+        {item.status === 'pending' && (
+    <div className="pt-3">
+      <button
+        onClick={() => console.log('Cancel clicked')} // Replace with your cancel logic
+        className="px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition duration-200"
+      >
+        Cancel
+      </button>
+    </div>
+  )}
+
 
         {renderRatingFeedbackSection(item)}
       </div>
