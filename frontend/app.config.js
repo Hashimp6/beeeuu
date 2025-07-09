@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import './services/writeGoogleJson';
-console.log('GOOGLE_SERVICES_JSON_BASE64 length:', process.env.GOOGLE_SERVICES_JSON_BASE64?.length);
+
 export default {
   expo: {
     name: "SerchBy",
@@ -28,6 +28,8 @@ export default {
     
     android: {
       package: "com.hashim.serchby",
+      // Remove this line since you're using base64 approach
+      // googleServicesFile: "./android/app/google-services.json",
       icon: "./assets/icon.png",
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
@@ -51,16 +53,9 @@ export default {
             {
               scheme: "https",
               host: "www.serchby.com"
-            }
-          ],
-          category: ["BROWSABLE", "DEFAULT"]
-        },
-        // Separate intent filter for custom scheme
-        {
-          action: "VIEW",
-          data: [
+            },
             {
-              scheme: "serchby"
+              scheme: "beeu"
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]

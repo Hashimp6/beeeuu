@@ -557,97 +557,125 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
       }
     };
     return (
-      <div key={item._id} className="bg-white rounded-xl p-3 mb-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-        {/* Compact Header */}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <p className="text-sm font-bold text-teal-700 mb-1 truncate">
-              Order #{item.orderId || item._id?.slice(-6)}
-            </p>
-            <p className={`text-xs font-semibold ${
-              dateTime.isToday ? 'text-orange-600' : 
-              dateTime.isTomorrow ? 'text-green-600' : 'text-gray-600'
-            }`}>
-              {dateTime.dateStr} {dateTime.timeStr}
-            </p>
+      <div key={item._id} className="bg-white rounded-lg p-4 mb-6 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 hover:border-blue-300">
+        {/* Header Section */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-lg shadow-md">
+              <Package className="w-3 h-3 text-white" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">
+                Order #{item.orderId || item._id?.slice(-6)}
+              </h3>
+              <p className={`text-xs font-medium ${
+                dateTime.isToday ? 'text-orange-600' : 
+                dateTime.isTomorrow ? 'text-green-600' : 'text-gray-500'
+              }`}>
+                {dateTime.dateStr} • {dateTime.timeStr}
+              </p>
+            </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            {formattedPrice && (
-              <div className="bg-green-100 px-2 py-1 rounded-full">
-                <span className="text-xs font-semibold text-green-800">{formattedPrice}</span>
+          {formattedPrice && (
+            <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-3 py-1 rounded-lg shadow-md">
+              <span className="text-xs font-bold">{formattedPrice}</span>
+            </div>
+          )}
+        </div>
+    
+        {/* Status Badge */}
+        <div className="mb-3">
+          <div 
+            className="inline-flex items-center px-3 py-1 rounded-lg text-white text-xs font-bold shadow-md"
+            style={{ backgroundColor: getStatusColor(item.status) }}
+          >
+            <StatusIcon className="w-3 h-3 mr-1" />
+            {item.status.replace('_', ' ').toUpperCase()}
+          </div>
+        </div>
+    
+        {/* Product Section */}
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 mb-3 border border-gray-200">
+          <div className="flex items-center space-x-3">
+            {productImage && (
+              <div className="relative flex-shrink-0">
+                <img 
+                  src={productImage} 
+                  alt={productName}
+                  className="w-12 h-12 rounded-lg object-cover shadow-md border-2 border-white"
+                />
+                <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md">
+                  {quantity}
+                </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Status Badge */}
-        <div 
-          className="inline-flex items-center px-2 py-1 rounded-full text-white text-xs font-bold mb-2"
-          style={{ backgroundColor: getStatusColor(item.status) }}
-        >
-          <StatusIcon className="w-3 h-3 mr-1" />
-          {item.status.replace('_', ' ').toUpperCase()}
-        </div>
-
-        {/* Compact Product Section */}
-        <div className="flex bg-gray-50 rounded-lg p-2 mb-2">
-          {productImage && (
-            <img 
-              src={productImage} 
-              alt={productName}
-              className="w-12 h-12 rounded-lg mr-3 object-cover bg-gray-200 flex-shrink-0"
-            />
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-800 text-sm truncate">{productName}</h3>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-gray-600">Qty: {quantity}</span>
-              {unitPrice && (
-                <span className="text-xs text-gray-500">{unitPrice} each</span>
-              )}
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-gray-800 text-sm mb-1">{productName}</h4>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-600 font-medium">Qty: {quantity}</span>
+                {unitPrice && (
+                  <span className="text-xs text-gray-700 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">
+                    {unitPrice} each
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Compact Info Section */}
-        <div className="space-y-1">
-          <div className="flex items-center">
-            <Store className="w-3 h-3 text-gray-500 mr-2 flex-shrink-0" />
-            <span className="text-sm font-semibold text-teal-700 truncate">{storeName}</span>
+    
+        {/* Information Section */}
+        <div className="space-y-2 mb-3">
+          <div className="flex items-center bg-teal-50 p-2 rounded-lg border border-teal-200">
+            <div className="bg-teal-500 p-1.5 rounded-lg mr-2 shadow-sm">
+              <Store className="w-3 h-3 text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 font-medium">Store</p>
+              <p className="text-sm font-bold text-teal-700">{storeName}</p>
+            </div>
           </div>
-
+    
           {item.paymentMethod && (
-            <div className="flex items-center">
-              <CreditCard className="w-3 h-3 text-gray-500 mr-2 flex-shrink-0" />
-              <span className="text-xs text-gray-600 font-medium truncate">
-                Payment: {item.paymentMethod.toUpperCase()}
-                {item.paymentStatus && ` (${item.paymentStatus})`}
-              </span>
+            <div className="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-200">
+              <div className="bg-blue-500 p-1.5 rounded-lg mr-2 shadow-sm">
+                <CreditCard className="w-3 h-3 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Payment</p>
+                <p className="text-sm font-bold text-blue-700">
+                  {item.paymentMethod.toUpperCase()}
+                  {item.paymentStatus && ` (${item.paymentStatus})`}
+                </p>
+              </div>
             </div>
           )}
-
+    
           {item.trackingNumber && (
-            <div className="flex items-center">
-              <Truck className="w-3 h-3 text-gray-500 mr-2 flex-shrink-0" />
-              <span className="text-xs text-gray-600 truncate">
-                Tracking: {item.trackingNumber}
-              </span>
+            <div className="flex items-center bg-purple-50 p-2 rounded-lg border border-purple-200">
+              <div className="bg-purple-500 p-1.5 rounded-lg mr-2 shadow-sm">
+                <Truck className="w-3 h-3 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 font-medium">Tracking</p>
+                <p className="text-sm font-bold text-purple-700">{item.trackingNumber}</p>
+              </div>
             </div>
-            
           )}
-         {item.status === 'pending' && (
-  <div className="pt-3">
-    <button
-      onClick={() => handleCancelOrder(item._id)}
-      className="px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-md transition duration-200"
-    >
-      Cancel
-    </button>
-  </div>
-)}
         </div>
-
+    
+        {/* Cancel Button */}
+        {item.status === 'pending' && (
+          <div className="pt-3 border-t border-gray-200">
+            <button
+              onClick={() => handleCancelOrder(item._id)}
+              className="w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              Cancel Order
+            </button>
+          </div>
+        )}
+    
         {renderRatingFeedbackSection(item)}
       </div>
     );
