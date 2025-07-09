@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, Clock, Award, Users, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail, Loader2 ,ExternalLink, Sparkles,  ChevronLeft, ChevronRight, X} from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
-import ChatAppScreen from '../../components/ChatApp';
 import { useAuth } from '../../context/UserContext';
 
 const StoreProfile = () => {
