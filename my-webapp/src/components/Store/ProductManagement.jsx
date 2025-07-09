@@ -17,7 +17,6 @@ import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-
 const AddProductForm = ({ 
   isVisible, 
   onClose, 
@@ -80,9 +79,12 @@ const AddProductForm = ({
       newErrors.price = 'Please enter a valid price';
     }
     
-    if (!product.quantity.trim()) newErrors.quantity = 'Quantity is required';
-    else if (isNaN(parseInt(product.quantity)) || parseInt(product.quantity) < 0) {
-      newErrors.quantity = 'Please enter a valid quantity';
+    // Only validate quantity if type is 'product'
+    if (product.type === 'product') {
+      if (!product.quantity.trim()) newErrors.quantity = 'Quantity is required';
+      else if (isNaN(parseInt(product.quantity)) || parseInt(product.quantity) < 0) {
+        newErrors.quantity = 'Please enter a valid quantity';
+      }
     }
 
     setErrors(newErrors);
@@ -145,21 +147,24 @@ const AddProductForm = ({
       !productData.name.trim() ||
       !productData.price.trim() ||
       !productData.type ||
-      !productData.category ||
-      !productData.quantity
+      !productData.category
     ) {
       toast.error('Please fill in all required fields');
       return;
     }
-  
-    // Validate price and quantity
+
+    // Validate price
     if (isNaN(productData.price) || parseFloat(productData.price) <= 0) {
       alert('Please enter a valid price');
       return;
     }
-    if (isNaN(productData.quantity) || parseInt(productData.quantity) <= 0) {
-      alert('Please enter a valid quantity');
-      return;
+
+    // Only validate quantity if type is 'product'
+    if (productData.type === 'product') {
+      if (!productData.quantity || isNaN(productData.quantity) || parseInt(productData.quantity) < 0) {
+        alert('Please enter a valid quantity for products');
+        return;
+      }
     }
   
     setIsLoading(true);
@@ -172,7 +177,11 @@ const AddProductForm = ({
       formData.append('category', productData.category);
       formData.append('type', productData.type);
       formData.append('price', parseFloat(productData.price).toString());
-      formData.append('quantity', parseInt(productData.quantity).toString());
+      
+      // Only append quantity if type is 'product'
+      if (productData.type === 'product') {
+        formData.append('quantity', parseInt(productData.quantity).toString());
+      }
   
       // ✅ Handle image upload
       if (productData.imageFile) {
@@ -222,14 +231,13 @@ const AddProductForm = ({
   
       toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
   
+      // ✅ Refresh the product list
+      if (fetchProducts) fetchProducts(); 
 
-// ✅ Refresh the product list
-if (fetchProducts) fetchProducts(); 
+      // Reset & close form
+      handleClose();
 
-// Reset & close form
-handleClose();
-
-if (onSubmit) onSubmit(response.data);
+      if (onSubmit) onSubmit(response.data);
     } catch (err) {
       console.error('Error saving product:', err);
       const errorMessage = err.response?.data?.message || 'Failed to save product. Please try again.';
@@ -255,7 +263,9 @@ if (onSubmit) onSubmit(response.data);
   };
 
   const handleSubmit = () => {
-    handleSubmitProduct(product);
+    if (validateForm()) {
+      handleSubmitProduct(product);
+    }
   };
 
   const handleClose = () => {
@@ -271,6 +281,20 @@ if (onSubmit) onSubmit(response.data);
     });
     setErrors({});
     onClose();
+  };
+
+  // Clear quantity when type changes from product to service
+  const handleTypeChange = (e) => {
+    const newType = e.target.value;
+    setProduct(prev => ({ 
+      ...prev, 
+      type: newType,
+      quantity: newType === 'service' ? '' : prev.quantity
+    }));
+    // Clear quantity error when switching to service
+    if (newType === 'service') {
+      setErrors(prev => ({ ...prev, quantity: undefined }));
+    }
   };
 
   if (!isVisible) return null;
@@ -323,7 +347,7 @@ if (onSubmit) onSubmit(response.data);
             </label>
             <select
               value={product.type}
-              onChange={(e) => setProduct(prev => ({ ...prev, type: e.target.value }))}
+              onChange={handleTypeChange}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.type ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -416,7 +440,7 @@ if (onSubmit) onSubmit(response.data);
               Price (₹) *
             </label>
             <input
-              type="number"
+             type="text"
               value={product.price}
               onChange={(e) => setProduct(prev => ({ ...prev, price: e.target.value }))}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
@@ -429,28 +453,26 @@ if (onSubmit) onSubmit(response.data);
             {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
           </div>
 
-          {/* Quantity */}
-         {/* Quantity (only show if type is product) */}
-{product.type === 'product' && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Quantity *
-    </label>
-    <input
-      type="number"
-      value={product.quantity}
-      onChange={(e) => setProduct(prev => ({ ...prev, quantity: e.target.value }))}
-      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-        errors.quantity ? 'border-red-500' : 'border-gray-300'
-      }`}
-      placeholder="Enter quantity"
-      min="0"
-      step="1"
-    />
-    {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
-  </div>
-)}
-
+          {/* Quantity (only show if type is product) */}
+          {product.type === 'product' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quantity *
+              </label>
+              <input
+                type="text"
+                value={product.quantity}
+                onChange={(e) => setProduct(prev => ({ ...prev, quantity: e.target.value }))}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                  errors.quantity ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter quantity"
+                min="0"
+                step="1"
+              />
+              {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex gap-3 pt-4">

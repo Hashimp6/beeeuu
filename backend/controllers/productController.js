@@ -2,31 +2,47 @@ const Product = require('../models/ProductModel');
 
 // Add Product
 const addProduct = async (req, res) => {
-    try {
-      console.log("reqst comes from bc",req.body);
-      
-      let image = "";
-      if (req.file && req.file.path) {
-        image = req.file.path;  
-      }
-  
-      const { store, name, description,category,type, price } = req.body;
-  
-      if (!store || !name || !price) {
-        return res.status(400).json({ message: "Store, Name and Price are required" });
-      }
-  console.log("image ",image);
-  
-      const newProduct = new Product({ store, name, description,category, image,type, price,quantity });
-      const savedProduct = await newProduct.save();
-
-  
-      res.status(201).json({ message: "Product added successfully", product: savedProduct });
-    } catch (error) {
-      res.status(500).json({ message: "Error adding product", error: error.message });
+  try {
+    console.log("reqst comes from bc", req.body);
+    
+    let image = "";
+    if (req.file && req.file.path) {
+      image = req.file.path;
     }
-  };
-  
+    
+    const { store, name, description, category, type, price, quantity } = req.body;
+    
+    if (!store || !name || !price) {
+      return res.status(400).json({ message: "Store, Name and Price are required" });
+    }
+    
+    console.log("image ", image);
+    
+    // Create product object with conditional quantity
+    const productData = {
+      store,
+      name,
+      description,
+      category,
+      image,
+      type,
+      price
+    };
+    
+    // Only add quantity if it exists and type is 'product'
+    if (type === 'product' && quantity !== undefined && quantity !== null && quantity !== '') {
+      productData.quantity = quantity;
+    }
+    
+    const newProduct = new Product(productData);
+    const savedProduct = await newProduct.save();
+    
+    res.status(201).json({ message: "Product added successfully", product: savedProduct });
+  } catch (error) {
+    console.error("Error adding product:", error);
+    res.status(500).json({ message: "Error adding product", error: error.message });
+  }
+};
 
 // Update Product
 const updateProduct = async (req, res) => {
