@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, MessageCircle, ChevronDown, Search, Filter, X, Grid, Home, Phone, Menu } from 'lucide-react';
+import { MapPin, MessageCircle, ChevronDown, Search, Filter, X, Grid, Home, Phone, Menu, Layers, Info, BookOpen, User } from 'lucide-react';
 import MainAreaComponent from '../components/user/UserMainContent';
 import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
@@ -9,16 +9,8 @@ const HomeLayout = () => {
     const navigate = useNavigate();
     const { user } = useAuth(); // assuming this gives you the logged-in user
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+      const [showProfileMobile, setShowProfileMobile] = useState(false);
     const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
-    console.log("lc", user?.place); // Added null check here
-    
-    // Update location when user data loads
-    useEffect(() => {
-        if (user?.place) {
-            setUserLocation(user.place);
-        }
-    }, [user]);
-
     const [chat, setChat] = useState(false);
     const [dropdowns, setDropdowns] = useState({
         distance: false,
@@ -32,7 +24,15 @@ const HomeLayout = () => {
         category: 'All Categories'
     });
     const [selectedLocation, setSelectedLocation] = useState(null);
-
+    useEffect(() => {
+        if (user?.place) {
+            setUserLocation(user.place);
+        }
+    }, [user]);
+const handleSetSelect= () => {
+  setShowProfileMobile(true);
+  setIsDrawerOpen(false); 
+};
     const handleLocationUpdate = (locationData) => {
         setSelectedLocation(locationData);
         setUserLocation(locationData.locationName || 'Current Location');
@@ -168,7 +168,9 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col ">
                     <div className="flex-1 overflow-auto">
-                        <MainAreaComponent />
+                    <MainAreaComponent
+            select={showProfileMobile} 
+          />
                     </div>
             </main>
 
@@ -222,15 +224,11 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
   <Home size={18} className="text-gray-600 group-hover:text-white" />
   <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
 </button>
-
-
-
-                        
-                        <button
+     <button
                             onClick={navigateToCategory}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
                             >
-                              <Home size={18} className="text-gray-600 group-hover:text-white" />
+                              <Layers size={18} className="text-gray-600 group-hover:text-white" />
                               <span className="text-gray-700 font-medium group-hover:text-white">Category</span>
                             
                         </button>
@@ -239,8 +237,15 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
                             onClick={navigateToContact}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
                             >
-                              <Home size={18} className="text-gray-600 group-hover:text-white" />
+                              <BookOpen size={18} className="text-gray-600 group-hover:text-white" />
                               <span className="text-gray-700 font-medium group-hover:text-white">Contact Us</span>                            
+                        </button>
+                        <button
+                            onClick={handleSetSelect}
+                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+                            >
+                              <User size={18} className="text-gray-600 group-hover:text-white" />
+                              <span className="text-gray-700 font-medium group-hover:text-white">Profile</span>                            
                         </button>
                     </div>
                 </div>

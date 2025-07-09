@@ -8,13 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './UserProfileComponent';
 import UserAppointmentsOrders from '../../pages/user/AppointmentsAndOrders';
 
-const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
+const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
   const { user, token, setUser, setToken } = useAuth(); 
   const navigate = useNavigate();
   const [history, setHistory] = useState(null); // Initialize as null
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [show, setShow] = useState(false);
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +31,9 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange }) => {
     nearby: 'Default',
     category: 'All Categories'
   });
-
+  useEffect(() => {
+    setShow(select); // sync show state with passed prop
+  }, [select]);
   // Debug function to check history state
   useEffect(() => {
     console.log('History state changed:', history);
@@ -241,7 +244,22 @@ console.log("catef",data);
     }
     return null;
   };
-
+  if (show && !history) {
+    return (
+      <div className="lg:hidden bg-gray-50 p-4 h-[calc(98vh-64px)] overflow-y-auto">
+        {/* Optional: add back button */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setShow(false)} // collapse profile
+            className="p-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <UserProfileComponent setHistory={setHistory} />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
       {/* Mobile Horizontal Filters - Only show when not in appointment/order view */}

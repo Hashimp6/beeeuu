@@ -19,7 +19,8 @@ import {
   Loader,
   Camera,
   CheckCircle,
-  Eye
+  Eye,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
@@ -382,14 +383,22 @@ const UserProfileComponent = ({  setHistory }) => {
           </div>
 
           {/* Bottom Section - Only Logout */}
-          <div className="pb-4">
-            <ActionButton
-              icon={LogOut}
-              text="Logout"
-              onClick={handleLogout}
-              variant="danger"
-            />
-          </div>
+          <div className="pb-4 space-y-2">
+  <ActionButton
+    icon={Store}
+    text="Be a Seller"
+    onClick={() => navigate('/newStore')}
+    className="w-full bg-black text-white hover:bg-gray-900 transition-colors"
+  />
+  
+  <ActionButton
+    icon={LogOut}
+    text="Logout"
+    onClick={handleLogout}
+    variant="danger"
+  />
+</div>
+
         </div>
       </div>
 

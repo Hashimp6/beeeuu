@@ -84,7 +84,7 @@ const LoginScreen = () => {
               {/* Logo */}
               <View style={styles.logoContainer}>
                 <Image 
-                  source={require('../../assets/icon.png')}
+                  source={require('../../assets/logo.png')}
                   style={styles.logo}
                 />
               </View>

@@ -102,11 +102,11 @@ function App() {
           {/* Protected Routes - Only authenticated users can access */}
           
           <Route 
-            path="/newStore" 
-            element={
-                <NewStore />
-            } 
-          />
+  path="/newStore" 
+  element={
+    user?.role === "seller" ? <StoreDashboard /> : <NewStore />
+  } 
+/>
            <Route 
             path="/chat" 
             element={
