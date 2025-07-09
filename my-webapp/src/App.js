@@ -20,15 +20,17 @@ import { useEffect, useState } from "react";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user,isAuthenticated } = useAuth();
+  const [showToast, setShowToast] = useState(false);
   const location = useLocation();
-  const [hasShownToast, setHasShownToast] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated && !user && !showToast) {
+      toast.error("Please login first!");
+      setShowToast(true);
+    }
+  }, [isAuthenticated, user, showToast]);
 
   if (!isAuthenticated && !user) {
-    if (!hasShownToast) {
-      toast.error("Please login first!");
-      setHasShownToast(true);
-    }
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
@@ -47,10 +49,6 @@ const AuthRoute = ({ children }) => {
 
 function App() {
   const { user } = useAuth();
-  const NewStoreRoute = () => {
-    const { user } = useAuth();
-    return user?.role === "seller" ? <StoreDashboard /> : <NewStore />;
-  };
   return (
     <>
       <CustomToaster />
@@ -114,11 +112,10 @@ function App() {
           
           <Route 
   path="/newStore" 
-  element={
-    <ProtectedRoute>
-      <NewStoreRoute />
+  element={ <ProtectedRoute>
+    <NewStore />
     </ProtectedRoute>
-  }
+  } 
 />
            <Route 
             path="/chat" 
