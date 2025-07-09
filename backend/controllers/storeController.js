@@ -802,17 +802,22 @@ const getNearbyStoresSimple = async (req, res) => {
 };
 const findStoreByName = async (req, res) => {
   try {
-    console.log("ptm",req.params);
-    
-    const { name } = req.params;
+    console.log("ptm", req.params);
+
+    let { name } = req.params;
 
     if (!name) {
       return res.status(400).json({ message: 'Store name is required in URL parameter' });
     }
 
-    const regex = new RegExp(name, 'i'); // case-insensitive match
+    // Convert kebab-case to normal case
+    name = name.replace(/-/g, ' '); // dianaas-henna -> dianaas henna
+
+    const regex = new RegExp(`^${name}$`, 'i'); // exact, case-insensitive match
+
     const store = await Store.findOne({ storeName: regex });
-console.log("ffns",store);
+
+    console.log("ffns", store);
 
     if (!store) {
       return res.status(404).json({ message: 'Store not found' });
@@ -824,6 +829,7 @@ console.log("ffns",store);
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
   module.exports = {
     registerStore,
