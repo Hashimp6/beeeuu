@@ -47,6 +47,10 @@ const AuthRoute = ({ children }) => {
 
 function App() {
   const { user } = useAuth();
+  const NewStoreRoute = () => {
+    const { user } = useAuth();
+    return user?.role === "seller" ? <StoreDashboard /> : <NewStore />;
+  };
   return (
     <>
       <CustomToaster />
@@ -110,10 +114,11 @@ function App() {
           
           <Route 
   path="/newStore" 
-  element={ <ProtectedRoute>
-    user?.role === "seller" ? <StoreDashboard /> : <NewStore />
+  element={
+    <ProtectedRoute>
+      <NewStoreRoute />
     </ProtectedRoute>
-  } 
+  }
 />
            <Route 
             path="/chat" 
