@@ -69,7 +69,7 @@ const Header = () => {
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
+          {/* <div className="hidden lg:flex items-center space-x-8">
             <a href="#" className="text-gray-700 hover:text-teal-600 font-semibold transition-colors">
               Marketplace
             </a>
@@ -82,7 +82,7 @@ const Header = () => {
             <a href="#" className="text-gray-700 hover:text-teal-600 font-semibold transition-colors">
               About
             </a>
-          </div>
+          </div> */}
           
           {/* Desktop Buttons */}
           <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
@@ -360,7 +360,7 @@ const HeroSection = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start mb-8 sm:mb-12">
-              <button   onClick={() => navigate("/newStore")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl flex items-center justify-center group relative overflow-hidden">
+              <button   onClick={() => navigate("/home")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl flex items-center justify-center group relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative flex items-center">
                   Start Selling Today
