@@ -297,6 +297,7 @@ const createOrder = async (req, res) => {
 
     const order = new Order(orderData);
     await order.save();
+console.log("order svaed");
 
     const populatedOrder = await Order.findById(order._id)
       .populate('buyerId', 'name email')
@@ -340,6 +341,7 @@ const getUserOrders = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, role, startDate, endDate, limit = 50, page = 1 } = req.query;
+console.log("get here");
 
     if (!id) {
       return res.status(400).json({ message: "ID parameter is required" });

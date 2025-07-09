@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import './services/writeGoogleJson';
-
+console.log('GOOGLE_SERVICES_JSON_BASE64 length:', process.env.GOOGLE_SERVICES_JSON_BASE64?.length);
 export default {
   expo: {
     name: "SerchBy",

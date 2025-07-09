@@ -21,14 +21,8 @@ import { useEffect, useState } from "react";
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user,isAuthenticated } = useAuth();
-  const [showToast, setShowToast] = useState(false);
   const location = useLocation();
-  useEffect(() => {
-    if (!isAuthenticated && !user && !showToast) {
-      toast.error("Please login first!");
-      setShowToast(true);
-    }
-  }, [isAuthenticated, user, showToast]);
+
 
   if (!isAuthenticated && !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;

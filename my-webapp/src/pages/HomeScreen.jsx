@@ -109,27 +109,27 @@ const handleSetSelect= () => {
 
                     {/* Center: Desktop Navigation */}
                     <nav className="hidden md:flex items-center space-x-8">
-                        <button
+                        {/* <button
                             onClick={navigateToHome}
                            className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Home size={18} />
                             <span>Home</span>
-                        </button>
-                        <button
+                        </button> */}
+                        {/* <button
                             onClick={navigateToCategory}
 className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Grid size={18} />
                             <span>Category</span>
-                        </button>
-                        <button
+                        </button> */}
+                        {/* <button
                             onClick={navigateToContact}
                           className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
                         >
                             <Phone size={18} />
                             <span>Contact Us</span>
-                        </button>
+                        </button> */}
                     </nav>
 
                     {/* Right Corner: Location, Message & Mobile Menu */}

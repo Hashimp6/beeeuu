@@ -16,6 +16,8 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/UserContext';
 import toast, { Toaster } from 'react-hot-toast';
+import { SERVER_URL } from '../../Config';
+import axios from 'axios';
 
 const OrderDetails = () => {
   const { user, token } = useAuth();
@@ -212,36 +214,40 @@ const OrderDetails = () => {
   };
 
   // Handle order placement
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    // Step 1: Validate inputs
     const nameValidationError = validateName(customerName);
     const phoneValidationError = validatePhone(phoneNumber);
     const addressValidationError = validateAddress(address);
-
+  
     setNameError(nameValidationError);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
-
+  
     let transactionValidationError = '';
     if (selectedPayment !== 'cod') {
       transactionValidationError = validateTransactionId(transactionId);
       setTransactionError(transactionValidationError);
     }
-
+  
     if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
-        toast.error('Please fix the errors before placing the order');
-        return;
-      }
-    
-      if (selectedPayment !== 'cod' && !paymentCompleted) {
-        toast.error('Please complete the payment first');
-        return;
-      }
-
+      toast.error('❌ Please fix the errors before placing the order');
+      return;
+    }
+  
+    if (selectedPayment !== 'cod' && !paymentCompleted) {
+      toast.error('❌ Please complete the payment first');
+      return;
+    }
+  
+    // Step 2: Prepare order data
     const orderData = {
       productId: product._id,
       productName: productName,
       quantity: quantity,
+      sellerId: store?._id || store,
       unitPrice: productPrice,
+      buyerId: user?._id,
       totalAmount: calculateTotal(),
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
@@ -250,15 +256,33 @@ const OrderDetails = () => {
       transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
       status: 'pending'
     };
-
-    console.log('Order data:', orderData);
-  toast.success(`Order placed successfully! Total: ₹${calculateTotal()}`);
-
-  // Navigate to Store Profile page after delay
-  setTimeout(() => {
-    navigate(`/storeprofile/${store?.storeName}`);
-  }, 1500);
-};
+  
+    // Step 3: Send to backend
+    try {
+      console.log("📤 Sending orderData:", orderData);
+  
+      const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (response.data) {
+        toast.success(`✅ Order placed successfully!`);
+        
+        // Optional: reset form state here if needed
+  
+        setTimeout(() => {
+          navigate(`/storeprofile/${store?.storeName}`);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("❌ Failed to place order:", error?.response?.data || error.message);
+      toast.error("🚫 Failed to place order. Please try again.");
+    }
+  };
+  
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
