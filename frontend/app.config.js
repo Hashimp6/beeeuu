@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import './services/writeGoogleJson';
+// Don't import writeGoogleJson during prebuild
+// import './services/writeGoogleJson';
 
 export default {
   expo: {
@@ -9,7 +10,8 @@ export default {
     owner: "hashimp6",
     orientation: "portrait",
     userInterfaceStyle: "light",
-    newArchEnabled: true,
+    // Remove newArchEnabled temporarily
+    // newArchEnabled: true,
     scheme: "serchby",
     icon: "./assets/icon.png",
     
@@ -76,9 +78,6 @@ export default {
           icon: "./assets/icon.png",
           color: "#ffffff"
         }
-      ],
-      [
-        "@react-native-google-signin/google-signin"
       ]
     ],
     
