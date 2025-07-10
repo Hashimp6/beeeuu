@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Mail, Phone, Eye, Lock, Users, FileText, ExternalLink, User, Database, AlertCircle, CheckCircle } from 'lucide-react';
+import ReturnRefundPolicy from './ReturnPolicy';
+import ShippingPolicy from './ShippingPolicy';
 
 const PrivacyPolicy = () => {
   const [activeSection, setActiveSection] = useState('');
@@ -343,6 +345,8 @@ const PrivacyPolicy = () => {
           </p>
         </div>
       </footer>
+      <ReturnRefundPolicy/>
+      <ShippingPolicy/>
     </div>
   );
 };
