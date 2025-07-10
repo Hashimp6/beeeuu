@@ -2,7 +2,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const crypto = require('crypto');
-const { sendMail } = require('../config/nodeMailer');
+const {
+  sendMail,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmation
+} = require('../config/nodeMailer');
 
 
 /**
@@ -165,7 +169,7 @@ const resendOTP = async (req, res) => {
     };
 
     // Send new OTP
-    // await sendMail(email, otp);
+    await sendMail(email, otp);
     console.log("OTP resent:", otp); // For development only, remove in production
 
     res.status(200).json({
@@ -610,7 +614,7 @@ const forgotPassword = async (req, res) => {
     const resetLink = `https://serchby.com/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
     
     // Send password reset email
-    await sendMail.sendPasswordResetEmail(email, resetLink, user.username);
+    await sendPasswordResetEmail(email, resetLink, user.username);
     
     console.log("Password reset link:", resetLink); // For development only
     console.log("Reset token:", resetToken); // For development only
@@ -741,7 +745,7 @@ const resetPassword = async (req, res) => {
     delete passwordResetStorage[email];
 
     // Send confirmation email
-    await sendMail.sendPasswordResetConfirmation(email, user.username);
+    await sendPasswordResetConfirmation(email, user.username);
 
     res.status(200).json({
       success: true,

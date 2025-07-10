@@ -14,20 +14,20 @@ const transporter = nodemailer.createTransport({
 const emailTemplates = {
   // OTP Verification Template
   otpVerification: (otp) => ({
-    subject: "OTP Verification - BueBee",
+    subject: "OTP Verification - SerchBy",
     text: `Your one-time password (OTP) is: ${otp}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #4CAF50; margin: 0;">BueBee</h1>
+            <h1 style="color: #4CAF50; margin: 0;">SerchBy</h1>
             <p style="color: #666; margin: 5px 0;">Your trusted platform</p>
           </div>
           
           <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Email Verification</h2>
           
           <p style="color: #666; font-size: 16px; line-height: 1.5;">
-            Thank you for registering with BueBee! Please use the following OTP to verify your email address:
+            Thank you for registering with SerchBy! Please use the following OTP to verify your email address:
           </p>
           
           <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; text-align: center; margin: 25px 0;">
@@ -56,7 +56,7 @@ const emailTemplates = {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #4CAF50; margin: 0;">BueBee</h1>
+            <h1 style="color: #4CAF50; margin: 0;">SerchBy</h1>
             <p style="color: #666; margin: 5px 0;">Your trusted platform</p>
           </div>
           
@@ -67,7 +67,7 @@ const emailTemplates = {
           </p>
           
           <p style="color: #666; font-size: 16px; line-height: 1.5;">
-            You have requested to reset your password for your BueBee account. Click the button below to create a new password:
+            You have requested to reset your password for your SerchBy account. Click the button below to create a new password:
           </p>
           
           <div style="text-align: center; margin: 35px 0;">
@@ -102,13 +102,13 @@ const emailTemplates = {
 
   // Password Reset Confirmation Template
   passwordResetConfirmation: (username) => ({
-    subject: "Password Successfully Reset - BueBee",
+    subject: "Password Successfully Reset - SerchBy",
     text: `Hello ${username}, your password has been successfully reset.`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
         <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #4CAF50; margin: 0;">BueBee</h1>
+            <h1 style="color: #4CAF50; margin: 0;">SerchBy</h1>
             <p style="color: #666; margin: 5px 0;">Your trusted platform</p>
           </div>
           
@@ -126,7 +126,7 @@ const emailTemplates = {
           </p>
           
           <p style="color: #666; font-size: 16px; line-height: 1.5;">
-            Your password has been successfully reset. You can now log in to your BueBee account with your new password.
+            Your password has been successfully reset. You can now log in to your SerchBy account with your new password.
           </p>
           
           <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px; margin: 25px 0;">
@@ -137,7 +137,7 @@ const emailTemplates = {
           
           <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px;">
             <p style="color: #999; font-size: 12px; text-align: center;">
-              Need help? Contact us at support@buebee.com
+              Need help? Contact us at contactserchby@gmail.com
             </p>
           </div>
         </div>

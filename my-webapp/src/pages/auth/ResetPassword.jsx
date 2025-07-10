@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import { SERVER_URL } from '../../Config';
@@ -9,21 +9,39 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({ newPassword: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [token, setToken] = useState('');
+  const [email, setEmail] = useState('');
   const navigate = useNavigate();
-  const { token, email } = useParams();
+  const location = useLocation();
 
+  // Extract query params safely
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const t = queryParams.get('token');
+    const e = decodeURIComponent(queryParams.get('email'));
+  
+    console.log("🔍 ResetPasswordPage mounted");
+    console.log("👉 Token from URL:", t);
+    console.log("👉 Email from URL:", e);
+  
+    if (!t || !e) {
+      toast.error("Missing token or email. Please use the correct reset link.");
+      navigate('/forgot-password');
+    } else {
+      setToken(t);
+      setEmail(e);
+    }
+  }, [location.search, navigate]);
+  
   // Real-time validation logic
   useEffect(() => {
     const newErrors = {};
-
     if (newPassword && newPassword.length < 6) {
       newErrors.newPassword = 'Password must be at least 6 characters';
     }
-
     if (confirmPassword && confirmPassword !== newPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-
     setErrors(newErrors);
   }, [newPassword, confirmPassword]);
 
@@ -33,17 +51,18 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    if (Object.values(errors).some(Boolean)) {
-      toast.error('Please fix the validation errors first');
+    if (!email || !token) {
+      toast.error('Missing token or email. Please use the correct reset link.');
       return;
     }
 
-    setIsLoading(true);
     try {
-        console.log("krr", email,
-            token,
-            newPassword,);
-        
+      console.log("🚀 Submitting with:");
+console.log("📧 Email:", email);
+console.log("🔑 Token:", token);
+console.log("🔒 New Password:", newPassword);
+
+      setIsLoading(true);
       const res = await axios.post(`${SERVER_URL}/users/reset-password`, {
         email,
         token,
