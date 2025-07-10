@@ -32,6 +32,7 @@ import {
   PhoneCall
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/UserContext";
 
 // Header Component
 const Header = () => {
@@ -149,7 +150,7 @@ const HeroSection = () => {
   const [currentCard, setCurrentCard] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [particles, setParticles] = useState([]);
-
+const {user}=useAuth()
   // Auto-flip cards every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -158,6 +159,14 @@ const HeroSection = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleClick = () => {
+    if (user) {
+      navigate('/newStore');
+    } else {
+      navigate('/login');
+    }
+  };
 
   // Generate particles for animation
   const generateParticles = () => {
@@ -360,14 +369,17 @@ const HeroSection = () => {
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start mb-8 sm:mb-12">
-              <button   onClick={() => navigate("/home")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl flex items-center justify-center group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center">
-                  Start Selling Today
-                  <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform" />
-                </span>
-              </button>
-              <button className="border-2 sm:border-3 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+             <button
+      onClick={handleClick}
+      className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl flex items-center justify-center group relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <span className="relative flex items-center">
+        Start Selling Today
+        <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform" />
+      </span>
+    </button>
+              <button onClick={() => navigate("/home")}  className="border-2 sm:border-3 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
                 Explore Marketplace
               </button>
             </div>
@@ -1039,7 +1051,15 @@ const Testimonials = () => {
 
 // CTA Section Component
 const CTASection = () => {
+  const{user}=useAuth()
   const navigate = useNavigate();
+  const handleClick = () => {
+    if (user) {
+      navigate('/newStore');
+    } else {
+      navigate('/login');
+    }
+  };
   return (
     <section className="py-16 sm:py-20 lg:py-32 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 relative overflow-hidden">
       {/* Animated Background */}
@@ -1061,10 +1081,17 @@ const CTASection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-8 sm:mb-12 lg:mb-16">
-            <button   onClick={() => navigate("/home")} className="bg-white text-teal-700 px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl lg:text-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl w-full sm:w-auto">
-              Start Selling Today
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-teal-700 px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl lg:text-2xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
+          <button
+      onClick={handleClick}
+      className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-3xl flex items-center justify-center group relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-teal-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <span className="relative flex items-center">
+        Start Selling Today
+        <ArrowRight className="ml-2 sm:ml-3 w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform" />
+      </span>
+    </button>
+            <button onClick={() => navigate("/home")}  className="border-2 border-white text-white hover:bg-white hover:text-teal-700 px-8 sm:px-12 py-4 sm:py-6 rounded-xl sm:rounded-2xl font-bold text-lg sm:text-xl lg:text-2xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
               Explore Marketplace
             </button>
           </div>
