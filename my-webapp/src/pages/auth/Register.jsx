@@ -10,6 +10,7 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Real-time validation states
   const [showNameError, setShowNameError] = useState(false);
@@ -339,16 +340,37 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
                 </p>
               )}
             </div>
+{/* Terms & Conditions Checkbox */}
+<div className="flex items-start mt-4 space-x-2 text-sm">
+  <input
+    type="checkbox"
+    id="terms"
+    checked={acceptedTerms}
+    onChange={() => setAcceptedTerms(!acceptedTerms)}
+    className="mt-1"
+  />
+  <label htmlFor="terms" className="text-gray-600">
+    I agree to the{" "}
+    <a
+      href="https://www.serchby.com/privacy-policy"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline"
+    >
+      Terms & Conditions and Privacy Policy
+    </a>
+  </label>
+</div>
 
             {/* Register Button */}
-            <button
+            <button disabled={!isFormValid() || isLoading || !acceptedTerms}
               className={`w-full font-bold text-base h-14 rounded-2xl flex items-center justify-center mt-6 shadow-lg transition-colors ${
-                isFormValid() && !isLoading
+                isFormValid() && !isLoading && acceptedTerms
                   ? 'bg-black text-white hover:bg-gray-800'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
+              
               onClick={handleRegister}
-              disabled={!isFormValid() || isLoading}
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

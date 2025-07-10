@@ -17,6 +17,9 @@ import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
 import ChatApp from "./components/NewChat";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
+import PrivacyPolicy from "./pages/Policy";
+import ReturnRefundPolicy from "./pages/ReturnPolicy";
+import ShippingPolicy from "./pages/ShippingPolicy";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -50,6 +53,9 @@ function App() {
         <Routes>
           {/* Public Routes - Anyone can access */}
           <Route path="/" element={<Welcome />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy/>} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy/>} />
+          <Route path="/return-policy" element={<ReturnRefundPolicy/>} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
           <Route path="/store/:storeName" element={<StoreProfile />} />
           <Route
