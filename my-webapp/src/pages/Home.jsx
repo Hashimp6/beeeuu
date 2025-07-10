@@ -1138,16 +1138,45 @@ const Footer = () => {
           </div>
           
           {/* Quick Links */}
-          {/* <div>
-            <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Quick Links</h3>
-            <ul className="space-y-2 sm:space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Marketplace</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Start Selling</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Book Services</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">How It Works</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Support</a></li>
-            </ul>
-          </div> */}
+          <div>
+  <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Quick Links</h3>
+  <ul className="space-y-2 sm:space-y-3">
+    {/* <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Marketplace</a></li>
+    <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Start Selling</a></li>
+    <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Book Services</a></li>
+    <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">How It Works</a></li>
+    <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg">Support</a></li>
+     */}
+    {/* ✅ Add Your Policies Here */}
+    <li>
+      <a
+        href="https://www.serchby.com/privacy-policy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg"
+      >
+        Privacy Policy
+      </a>
+    </li>
+    <li>
+      <a
+        href="/return-policy"
+        className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg"
+      >
+        Return Policy
+      </a>
+    </li>
+    <li>
+      <a
+        href="/shipping-policy"
+        className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg"
+      >
+        Shipping Policy
+      </a>
+    </li>
+  </ul>
+</div>
+
           
           {/* Contact Info */}
           <div>

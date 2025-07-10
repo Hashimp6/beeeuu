@@ -155,10 +155,14 @@ const handleTouchEnd = () => {
   const enhancedStore = store ? {
     ...store,
     verified: store.verified || true,
-    completedOrders: store.completedOrders ,
+    completedOrders: store.completedOrders,
     specialties: store.specialties || ['Premium Quality', 'Fast Service', 'Expert Team'],
     averageRating: store.averageRating || store.rating || 4.5,
-    numberOfRatings: store.numberOfRatings || store.reviewCount || 150
+    numberOfRatings: store.numberOfRatings || store.reviewCount || 150,
+    whatsapp: store.socialMedia.whatsapp,
+    instagram: store.socialMedia.instagram,
+    facebook: store.socialMedia.facebook,
+    website: store.socialMedia.website
   } : null;
 
   // Handle tab change and fetch gallery when needed
@@ -621,9 +625,46 @@ const handleTouchEnd = () => {
                   Call Now
                 </button>
               </div>
+              {/* Social Media Links */}
+<div className="flex items-center justify-center lg:justify-start gap-4 mt-4">
+  {enhancedStore?.phone && (
+    <button
+      onClick={() => openPhone(enhancedStore.phone)}
+      className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+    >
+      <Phone size={20} />
+    </button>
+  )}
+  {enhancedStore?.whatsapp && (
+   <button
+   onClick={() => openWhatsapp(enhancedStore.whatsapp)}
+   className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+   aria-label="WhatsApp"
+ >
+   <svg
+     xmlns="http://www.w3.org/2000/svg"
+     fill="currentColor"
+     viewBox="0 0 24 24"
+     width="20"
+     height="20"
+     className="text-white"
+   >
+     <path d="M20.52 3.48A11.93 11.93 0 0 0 12 .01a12 12 0 0 0-10.6 17.69L.05 24l6.47-1.91A11.93 11.93 0 0 0 12 24a12 12 0 0 0 8.52-20.52zM12 22a9.91 9.91 0 0 1-5.07-1.4l-.36-.22-3.84 1.14 1.15-3.74-.23-.38A9.91 9.91 0 0 1 2 12a10 10 0 1 1 10 10zm5.3-7.58c-.29-.15-1.7-.84-1.97-.93s-.46-.14-.66.15-.76.93-.93 1.12-.34.22-.63.07a8.1 8.1 0 0 1-2.4-1.48 9 9 0 0 1-1.66-2.06c-.17-.29 0-.45.13-.6s.29-.34.44-.52a2 2 0 0 0 .3-.5.55.55 0 0 0 0-.52c-.08-.15-.66-1.6-.9-2.2s-.48-.5-.66-.51a1.24 1.24 0 0 0-1.05.06A2.5 2.5 0 0 0 6 8.64a4.59 4.59 0 0 0 .29 1.7A10.48 10.48 0 0 0 10.4 15a11.9 11.9 0 0 0 5.34 1.35 4.92 4.92 0 0 0 1.62-.26 2.72 2.72 0 0 0 1.23-1.9 2.13 2.13 0 0 0-.47-1.17 1.68 1.68 0 0 0-1.1-.58z" />
+   </svg>
+ </button>
+  )}
+  {enhancedStore?.instagram && (
+    <button
+      onClick={() => openInstagram(enhancedStore.instagram)}
+      className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+    >
+      <Instagram size={20} />
+    </button>
+  )}
+</div>
 
               {/* Specialties - Centered on mobile */}
-              <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+              {/* <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                 {enhancedStore?.specialties.map((specialty, index) => (
                   <span
                     key={index}
@@ -632,7 +673,7 @@ const handleTouchEnd = () => {
                     {specialty}
                   </span>
                 ))}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
