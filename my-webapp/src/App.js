@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import PrivacyPolicy from "./pages/Policy";
 import ReturnRefundPolicy from "./pages/ReturnPolicy";
 import ShippingPolicy from "./pages/ShippingPolicy";
+import TermsAndConditions from "./pages/Terms";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/shipping-policy" element={<ShippingPolicy/>} />
           <Route path="/privacy-policy" element={<PrivacyPolicy/>} />
+          <Route path="/terms" element={<TermsAndConditions/>} />
           <Route path="/return-policy" element={<ReturnRefundPolicy/>} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
           <Route path="/store/:storeName" element={<StoreProfile />} />

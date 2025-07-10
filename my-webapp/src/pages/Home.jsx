@@ -1174,6 +1174,15 @@ const Footer = () => {
         Shipping Policy
       </a>
     </li>
+     <li>
+      <a
+        href="/terms"
+        className="text-gray-400 hover:text-white transition-colors text-base sm:text-lg"
+      >
+        Terms and Conditions
+      </a>
+    </li>
+    
   </ul>
 </div>
 
@@ -1205,8 +1214,13 @@ const Footer = () => {
             © 2025 SerchBy. All rights reserved. Made with ❤️ in Kerala
           </p>
           <div className="flex space-x-4 sm:space-x-6">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Terms of Service</a>
+            <a  href="https://www.serchby.com/privacy-policy" className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base">Privacy Policy</a>
+            <a
+        href="/terms"
+        className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base"
+      >
+        Terms and Conditions
+      </a>
           </div>
         </div>
       </div>
