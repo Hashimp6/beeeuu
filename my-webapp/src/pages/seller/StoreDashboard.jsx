@@ -24,7 +24,7 @@ const StoreDashboard = () => {
      const { user, token,setUser,logout } = useAuth() || {};
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('product');
     const [upiDropdownVisible, setUpiDropdownVisible] = useState(false);
   const [upiModalVisible, setUpiModalVisible] = useState(false);
   const [upiInput, setUpiInput] = useState("");
