@@ -1,22 +1,23 @@
 const User = require("../models/userModel");
 
 const updatePushToken = async (req, res) => {
- 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { pushToken: pushToken },
-      { new: true }
-    );
+    const { userId, pushToken } = req.body;
 
-    if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    if (!userId || !pushToken) {
+      return res.status(400).json({ success: false, message: "Missing userId or pushToken" });
     }
 
-    res.status(200).json({ success: true, message: 'Push token updated successfully', user: updatedUser });
+    // Update the user's push token in DB
+    await User.findByIdAndUpdate(userId, { pushToken });
+
+    return res.status(200).json({
+      success: true,
+      message: "Push token updated successfully",
+    });
   } catch (error) {
-    console.error("Update push token error:", error);
-    res.status(500).json({
+    console.error("❌ [SERVER] Failed to update push token:", error);
+    return res.status(500).json({
       success: false,
       message: "Failed to update push token",
       error: error.message,

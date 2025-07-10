@@ -20,7 +20,7 @@ export default {
       supportsTablet: true,
       icon: "./assets/icon.png",
       config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+        googleMapsApiKey:"AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24"
       },
       associatedDomains: [
         "applinks:serchby.com",
@@ -37,7 +37,7 @@ export default {
       },
       config: {
         googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY
+          apiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24"
         }
       },
       permissions: [
@@ -85,7 +85,7 @@ export default {
       eas: {
         projectId: "6b962b7b-711f-49d3-9550-bfa7f33a296f"
       },
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+      googleMapsApiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24"
     }
   }
 };
