@@ -1,21 +1,27 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
+import toast from 'react-hot-toast';
 
-const OtpVerificationPage = ({ email, onNavigateBack, onVerificationSuccess }) => {
+// inside OtpVerificationPage.jsx
+const OtpVerificationPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const email = location.state?.email;
+
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-    const navigate = useNavigate();
 
   useEffect(() => {
     if (!email) {
-      alert("Email information is missing");
-      onNavigateBack();
+      alert("Email is missing. Redirecting to registration...");
+      navigate('/registration'); // fallback redirect
+    } else {
+      console.log("OTP Verification for:", email);
     }
-    console.log("OTP Verification for email:", email);
-  }, [email, onNavigateBack]);
+  }, [email, navigate]);
 
   // Toast notification function
   const showToast = (type, title, message) => {
@@ -46,16 +52,16 @@ const OtpVerificationPage = ({ email, onNavigateBack, onVerificationSuccess }) =
   
       const data = response.data;
   
-      showToast("success", "Success", "Account verified successfully!");
+      toast.success("Account verified successfully!");
       
       // Trigger success callback with user data
-      onVerificationSuccess(data);
-  
+      navigate("/login"); 
     } catch (error) {
       console.error("OTP verification error:", error);
       
       if (error.response && error.response.data?.message) {
-        showToast("error", "Error", error.response.data.message);
+        const errorMsg = error.response?.data?.message || "Verification failed. Please try again.";
+    toast.error(errorMsg);
       } else {
         showToast("error", "Error", "Verification failed. Please try again.");
       }

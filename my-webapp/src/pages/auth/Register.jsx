@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
+import toast from 'react-hot-toast';
 
 const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
   const [name, setName] = useState("");
@@ -159,76 +160,66 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
   };
 
   const handleRegister = async () => {
-    // Enhanced form validation with specific error messages
     if (!name || !email || !password || !confirmPassword) {
-      showToast('error', 'Missing Details', 'Please fill in all fields.');
+      toast.error('Please fill in all fields.');
       return;
     }
-
-    // Validate name
+  
     if (!validateName(name)) {
-      showToast('error', 'Invalid Name', getNameError(name));
+      toast.error(getNameError(name));
       return;
     }
-
-    // Validate email format
+  
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      showToast('error', 'Invalid Email', emailValidation.error);
+      toast.error(emailValidation.error);
       return;
     }
-
-    // Validate password strength
+  
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
-      showToast('error', 'Invalid Password', getPasswordError(password));
+      toast.error(getPasswordError(password));
       return;
     }
-
-    // Check if passwords match
+  
     if (password !== confirmPassword) {
-      showToast('error', 'Password Mismatch', 'Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
-    
+  
     try {
       setIsLoading(true);
-      console.log("fine");
-    
-      // Send registration request using axios
-      const response = await axios.post(`${SERVER_URL}users/register`, {
+      console.log("fine", name, email, password);
+  
+      const response = await axios.post(`${SERVER_URL}/users/register`, {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password
       });
-    
+  
       const data = response.data;
-    
-      // Check response data structure
+      console.log("hhh", data);
+  
       if (response.status === 200 && data.message) {
-        console.log("OTP request successful");
-        
-        showToast('success', 'Registration Successful!', 'Please check your email for OTP verification.');
-    
-        // Navigate to OTP verification with email
-        onNavigateToOTP(email.trim().toLowerCase());
+        toast.success('Registration successful! Check your email for OTP.');
+        navigate('/otp', {
+          state: { email: email.trim().toLowerCase() }
+        });
       } else {
-        showToast('error', 'Registration Failed', data.message || 'Unexpected response from server.');
+        toast.error(data.message || 'Unexpected server response.');
       }
     } catch (error) {
       console.error("Registration error:", error);
-    
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Registration failed. Please try again.";
-    
-      showToast('error', 'Registration Failed', errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
-    
   };
+  
 
   // Check if form is valid for button state
   const isFormValid = () => {
