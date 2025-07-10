@@ -47,22 +47,20 @@ const NewStore = () => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/category/group`);
-const data = response.data;
-console.log("catef",data);
-const allSubcategories = [];
-data.forEach(mainCategory => {
-  mainCategory.categories.forEach(subCategory => {
-    allSubcategories.push(subCategory.name);
-  });
-});
-
-// Set the category names (including 'All Categories' at the beginning)
-setCategoryNames(['All Categories', ...allSubcategories]);
-console.log("catef",allSubcategories);
-} catch (error) {
-      console.error('Error fetching categories:', error);
+      const data = response.data;
+  
+      console.log("Fetched Categories:", data);
+  
+      // Extract only the main category titles
+      const mainCategories = data.map(mainCategory => mainCategory.title);
+  
+      setCategoryNames(mainCategories); // You already have this useState
+    } catch (error) {
+      console.error("Failed to fetch categories", error);
+      toast.error("Failed to load categories");
     }
   };
+  
 
   
   // Location API configuration
