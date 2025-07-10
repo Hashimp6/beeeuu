@@ -3,13 +3,15 @@ const User = require("../models/userModel");
 const updatePushToken = async (req, res) => {
   try {
     const { userId, pushToken } = req.body;
+console.log("uff",userId, pushToken );
 
     if (!userId || !pushToken) {
       return res.status(400).json({ success: false, message: "Missing userId or pushToken" });
     }
 
     // Update the user's push token in DB
-    await User.findByIdAndUpdate(userId, { pushToken });
+   const updatedUser= await User.findByIdAndUpdate(userId, { pushToken } ,{ new: true });
+console.log("uppu",updatedUser);
 
     return res.status(200).json({
       success: true,
