@@ -28,8 +28,6 @@ export default {
     
     android: {
       package: "com.hashim.serchby",
-      // Remove this line since you're using base64 approach
-      // googleServicesFile: "./android/app/google-services.json",
       icon: "./assets/icon.png",
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
@@ -40,7 +38,11 @@ export default {
           apiKey: process.env.GOOGLE_MAPS_API_KEY
         }
       },
-      permissions: ["NOTIFICATIONS"],
+      permissions: [
+        "NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       intentFilters: [
         {
           action: "VIEW",
@@ -55,7 +57,7 @@ export default {
               host: "www.serchby.com"
             },
             {
-              scheme: "beeu"
+              scheme: "serchby"
             }
           ],
           category: ["BROWSABLE", "DEFAULT"]
@@ -74,6 +76,9 @@ export default {
           icon: "./assets/icon.png",
           color: "#ffffff"
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin"
       ]
     ],
     
