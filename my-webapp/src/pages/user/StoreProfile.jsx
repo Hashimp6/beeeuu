@@ -157,9 +157,10 @@ const handleTouchEnd = () => {
     verified: store.verified || true,
     completedOrders: store.completedOrders,
     specialties: store.specialties || ['Premium Quality', 'Fast Service', 'Expert Team'],
-    averageRating: store.averageRating || store.rating || 4.5,
-    numberOfRatings: store.numberOfRatings || store.reviewCount || 150,
+    averageRating: store.averageRating || store.rating || 0,
+    numberOfRatings: store.numberOfRatings || store.reviewCount || 0,
     whatsapp: store.socialMedia.whatsapp,
+    description: store.description || '', 
     instagram: store.socialMedia.instagram,
     facebook: store.socialMedia.facebook,
     website: store.socialMedia.website
@@ -576,105 +577,109 @@ const handleTouchEnd = () => {
 
             {/* Mobile: Content Second - Desktop: Left Side */}
             <div className="order-2 lg:order-1 text-white text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:mb-6">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold leading-tight">
-                  {enhancedStore?.storeName || storeName}
-                </h1>
-                {enhancedStore?.verified && (
-                  <div className="bg-white/20 backdrop-blur-sm p-1.5 lg:p-2 rounded-full">
-                    <CheckCircle size={20} className="lg:w-8 lg:h-8 text-teal-300" />
-                  </div>
-                )}
-              </div>
-              
-              <p className="text-lg sm:text-xl lg:text-2xl text-teal-100 mb-3 lg:mb-4 font-medium">
-                {enhancedStore?.category}
-              </p>
-              
-              <div className="flex items-center justify-center lg:justify-start gap-2 text-white/90 mb-6 lg:mb-8">
-                <MapPin size={18} className="lg:w-5 lg:h-5" />
-                <span className="text-base lg:text-lg">{enhancedStore?.place}</span>
-              </div>
+  <div className="flex items-center justify-center lg:justify-start gap-3 mb-4 lg:mb-6">
+    <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-bold leading-tight">
+      {enhancedStore?.storeName || storeName}
+    </h1>
+    {enhancedStore?.verified && (
+      <div className="bg-white/20 backdrop-blur-sm p-1.5 lg:p-2 rounded-full">
+        <CheckCircle size={20} className="lg:w-8 lg:h-8 text-teal-300" />
+      </div>
+    )}
+  </div>
+  
+  <p className="text-lg sm:text-xl lg:text-2xl text-teal-100 mb-3 lg:mb-4 font-medium">
+    {enhancedStore?.category}
+  </p>
+  
+  <div className="flex items-center justify-center lg:justify-start gap-2 text-white/90 mb-4 lg:mb-6">
+    <MapPin size={18} className="lg:w-5 lg:h-5" />
+    <span className="text-base lg:text-lg">{enhancedStore?.place}</span>
+  </div>
 
-              {/* Stats - Stack on mobile, inline on desktop */}
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 lg:gap-4 mb-6 lg:mb-8 justify-center lg:justify-start">
-                <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
-                  <Star size={16} className="lg:w-4 lg:h-4 text-yellow-400 fill-current" />
-                  <span className="font-semibold text-sm lg:text-base">{enhancedStore?.averageRating}</span>
-                  <span className="text-white/80 text-sm lg:text-base">({enhancedStore?.numberOfRatings} reviews)</span>
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 lg:px-4 lg:py-2 rounded-full">
-                  <TrendingUp size={16} className="lg:w-4 lg:h-4 text-green-400" />
-                  <span className="text-white/90 text-sm lg:text-base">{enhancedStore?.completedOrders}+ orders</span>
-                </div>
-              </div>
 
-              {/* Action Buttons - Stack on mobile */}
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
-                <button
-                  onClick={handleChatClick}
-                  className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
-                >
-                  Start Conversation
-                </button>
-                <button
-                  onClick={() => openPhone(enhancedStore?.phone)}
-                  className="bg-teal-500 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
-                >
-                  Call Now
-                </button>
-              </div>
-              {/* Social Media Links */}
-<div className="flex items-center justify-center lg:justify-start gap-4 mt-4">
-  {enhancedStore?.phone && (
-    <button
-      onClick={() => openPhone(enhancedStore.phone)}
-      className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
-    >
-      <Phone size={20} />
-    </button>
+  {/* Compact Rating Section - UPDATED */}
+  <div className="space-y-4 mb-6 lg:mb-8">
+  {/* Description */}
+  {enhancedStore?.description && (
+    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 lg:p-5 border border-white/20">
+      <p className="text-white/90 text-sm lg:text-base leading-relaxed whitespace-pre-line font-medium">
+        {enhancedStore.description}
+      </p>
+    </div>
   )}
-  {enhancedStore?.whatsapp && (
-   <button
-   onClick={() => openWhatsapp(enhancedStore.whatsapp)}
-   className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
-   aria-label="WhatsApp"
- >
-   <svg
-     xmlns="http://www.w3.org/2000/svg"
-     fill="currentColor"
-     viewBox="0 0 24 24"
-     width="20"
-     height="20"
-     className="text-white"
-   >
-     <path d="M20.52 3.48A11.93 11.93 0 0 0 12 .01a12 12 0 0 0-10.6 17.69L.05 24l6.47-1.91A11.93 11.93 0 0 0 12 24a12 12 0 0 0 8.52-20.52zM12 22a9.91 9.91 0 0 1-5.07-1.4l-.36-.22-3.84 1.14 1.15-3.74-.23-.38A9.91 9.91 0 0 1 2 12a10 10 0 1 1 10 10zm5.3-7.58c-.29-.15-1.7-.84-1.97-.93s-.46-.14-.66.15-.76.93-.93 1.12-.34.22-.63.07a8.1 8.1 0 0 1-2.4-1.48 9 9 0 0 1-1.66-2.06c-.17-.29 0-.45.13-.6s.29-.34.44-.52a2 2 0 0 0 .3-.5.55.55 0 0 0 0-.52c-.08-.15-.66-1.6-.9-2.2s-.48-.5-.66-.51a1.24 1.24 0 0 0-1.05.06A2.5 2.5 0 0 0 6 8.64a4.59 4.59 0 0 0 .29 1.7A10.48 10.48 0 0 0 10.4 15a11.9 11.9 0 0 0 5.34 1.35 4.92 4.92 0 0 0 1.62-.26 2.72 2.72 0 0 0 1.23-1.9 2.13 2.13 0 0 0-.47-1.17 1.68 1.68 0 0 0-1.1-.58z" />
-   </svg>
- </button>
-  )}
-  {enhancedStore?.instagram && (
-    <button
-      onClick={() => openInstagram(enhancedStore.instagram)}
-      className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
-    >
-      <Instagram size={20} />
-    </button>
-  )}
+  
+  {/* Compact Stats Row */}
+  <div className="flex items-center justify-center lg:justify-start gap-6">
+    <div className="flex items-center gap-2 text-white/90">
+      <Star size={16} className="text-yellow-400 fill-current" />
+      <span className="font-semibold text-sm lg:text-base">{enhancedStore?.averageRating}</span>
+      <span className="text-white/70 text-xs lg:text-sm">({enhancedStore?.numberOfRatings})</span>
+    </div>
+    
+    <div className="w-px h-4 bg-white/30"></div>
+    
+    <div className="flex items-center gap-2 text-white/90">
+      <CheckCircle size={16} className="text-green-400" />
+      <span className="text-xs lg:text-sm">Verified Store</span>
+    </div>
+  </div>
 </div>
 
-              {/* Specialties - Centered on mobile */}
-              {/* <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                {enhancedStore?.specialties.map((specialty, index) => (
-                  <span
-                    key={index}
-                    className="bg-white/10 backdrop-blur-sm text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm font-medium border border-white/20"
-                  >
-                    {specialty}
-                  </span>
-                ))}
-              </div> */}
-            </div>
+  {/* Action Buttons - Stack on mobile */}
+  <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
+    <button
+      onClick={handleChatClick}
+      className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+    >
+      Start Conversation
+    </button>
+    <button
+      onClick={() => openPhone(enhancedStore?.phone)}
+      className="bg-teal-500 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+    >
+      Call Now
+    </button>
+  </div>
+
+  {/* Social Media Links */}
+  <div className="flex items-center justify-center lg:justify-start gap-4 mt-4">
+    {enhancedStore?.phone && (
+      <button
+        onClick={() => openPhone(enhancedStore.phone)}
+        className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+      >
+        <Phone size={20} />
+      </button>
+    )}
+    {enhancedStore?.whatsapp && (
+      <button
+        onClick={() => openWhatsapp(enhancedStore.whatsapp)}
+        className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+        aria-label="WhatsApp"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          className="text-white"
+        >
+          <path d="M20.52 3.48A11.93 11.93 0 0 0 12 .01a12 12 0 0 0-10.6 17.69L.05 24l6.47-1.91A11.93 11.93 0 0 0 12 24a12 12 0 0 0 8.52-20.52zM12 22a9.91 9.91 0 0 1-5.07-1.4l-.36-.22-3.84 1.14 1.15-3.74-.23-.38A9.91 9.91 0 0 1 2 12a10 10 0 1 1 10 10zm5.3-7.58c-.29-.15-1.7-.84-1.97-.93s-.46-.14-.66.15-.76.93-.93 1.12-.34.22-.63.07a8.1 8.1 0 0 1-2.4-1.48 9 9 0 0 1-1.66-2.06c-.17-.29 0-.45.13-.6s.29-.34.44-.52a2 2 0 0 0 .3-.5.55.55 0 0 0 0-.52c-.08-.15-.66-1.6-.9-2.2s-.48-.5-.66-.51a1.24 1.24 0 0 0-1.05.06A2.5 2.5 0 0 0 6 8.64a4.59 4.59 0 0 0 .29 1.7A10.48 10.48 0 0 0 10.4 15a11.9 11.9 0 0 0 5.34 1.35 4.92 4.92 0 0 0 1.62-.26 2.72 2.72 0 0 0 1.23-1.9 2.13 2.13 0 0 0-.47-1.17 1.68 1.68 0 0 0-1.1-.58z" />
+        </svg>
+      </button>
+    )}
+    {enhancedStore?.instagram && (
+      <button
+        onClick={() => openInstagram(enhancedStore.instagram)}
+        className="bg-white/10 backdrop-blur-sm p-3 rounded-full text-white hover:bg-white/20 transition-all duration-200"
+      >
+        <Instagram size={20} />
+      </button>
+    )}
+  </div>
+</div>
           </div>
         </div>
       </section>
