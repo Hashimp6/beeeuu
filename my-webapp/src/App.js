@@ -17,10 +17,10 @@ import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
 import ChatApp from "./components/NewChat";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import PrivacyPolicy from "./pages/Policy";
-import ReturnRefundPolicy from "./pages/ReturnPolicy";
-import ShippingPolicy from "./pages/ShippingPolicy";
-import TermsAndConditions from "./pages/Terms";
+import PrivacyPolicy from "./pages/policies/Policy";
+import ReturnRefundPolicy from "./pages/policies/ReturnPolicy";
+import ShippingPolicy from "./pages/policies/ShippingPolicy";
+import TermsAndConditions from "./pages/policies/Terms";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
