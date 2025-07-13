@@ -371,8 +371,8 @@ const AddProductForm = ({
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-  <option value="games">Games</option>
   <option value="beauty-cosmetics">Beauty & Cosmetics</option>
+  <option value="games">Games</option>
   <option value="bakery">Bakery</option>
   <option value="food-products">Food Products</option>
   <option value="gifts-crafts">Gifts & Crafts</option>

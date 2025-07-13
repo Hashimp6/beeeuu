@@ -311,7 +311,7 @@ const StoreDashboard = () => {
               </div>
               <div className="flex items-center space-x-4">
                 
-                <button className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <button   onClick={() => navigate('/chat')} className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
                   <MessageCircle  className="w-8 h-8" />
                   
                 </button>

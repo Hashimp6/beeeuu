@@ -138,15 +138,13 @@ console.log("rec",seller,caption,imageId);
 const getGalleryBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
-    console.log("glry",sellerId);
-    const gallery = await Gallery.findOne({ seller: sellerId })
-      .sort({ 'images.date': -1 }); // Sort images by date if you add date to images
-console.log("glry",gallery);
+    console.log("glry", sellerId);
+    const gallery = await Gallery.findOne({ seller: sellerId });
 
     if (!gallery) {
-      return res.status(404).json({
-        success: false,
-        message: 'Gallery not found for this seller'
+      return res.status(200).json({
+        success: true,
+        data: { images: [] } // Return empty images array
       });
     }
 
@@ -164,6 +162,7 @@ console.log("glry",gallery);
     });
   }
 };
+
 
 // Delete a specific image from gallery
 const deleteGalleryImage = async (req, res) => {
