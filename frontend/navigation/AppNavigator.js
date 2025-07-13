@@ -28,6 +28,7 @@ import RegisterScreen from '../screens/login/RegisterScreen';
 import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
 import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
 import StoreAdminScreen from '../screens/store/StoreHome';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -146,6 +147,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="ChatDetail"
             component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+            <Stack.Screen
+            name="SettingsScreen"
+            component={SettingsScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen

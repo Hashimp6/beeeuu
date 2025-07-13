@@ -27,6 +27,7 @@ const StoreProfileComponent = () => {
     completedAppointments: 0,
     totalRevenue: 0,
   });
+  const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const [upiDropdownVisible, setUpiDropdownVisible] = useState(false);
 const [upiModalVisible, setUpiModalVisible] = useState(false);
 const [upiInput, setUpiInput] = useState("");
@@ -368,11 +369,11 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
 
           <TouchableOpacity
             style={styles.settingOption}
-            onPress={() => navigation.navigate("ServiceManagement")}
+            onPress={() => navigation.navigate("SettingsScreen")}
           >
             <View style={styles.settingOptionLeft}>
               <Icon name="list-alt" size={20} color="#2ecc71" />
-              <Text style={styles.settingOptionText}>Manage Services</Text>
+              <Text style={styles.settingOptionText}>Manage Notifications</Text>
             </View>
             <Icon name="chevron-right" size={20} color="#888" />
           </TouchableOpacity>

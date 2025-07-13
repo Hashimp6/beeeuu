@@ -11,9 +11,9 @@ const userSchema = new mongoose.Schema({
     default: "user",
   },
   storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },
-  pushToken: {
-    type: String,
-    default: null
+  pushTokens: {
+    type: [String],
+    default: [],
   },
 place:{ type: String },
   location: {
