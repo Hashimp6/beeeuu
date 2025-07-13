@@ -371,16 +371,54 @@ const AddProductForm = ({
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Category</option>
-              <option value="face">Face</option>
-              <option value="hand">Hand</option>
-              <option value="hair">Hair</option>
-              <option value="nail">Nail</option>
-              <option value="body">Body</option>
-              <option value="food">Food</option>
-              <option value="stationary">Stationary</option>
-              <option value="bakery">Bakery</option>
-            </select>
+  <option value="games">Games</option>
+  <option value="beauty-cosmetics">Beauty & Cosmetics</option>
+  <option value="bakery">Bakery</option>
+  <option value="food-products">Food Products</option>
+  <option value="gifts-crafts">Gifts & Crafts</option>
+  <option value="wedding-services">Wedding Services</option>
+  <option value="groceries">Groceries</option>
+  <option value="laundry">Laundry Services</option>
+  <option value="photography">Photography</option>
+  <option value="event-management">Event Management</option>
+  <option value="vegetables-fruits">Vegetables & Fruits</option>
+  <option value="snacks-beverages">Snacks & Beverages</option>
+  <option value="dairy-eggs">Dairy & Eggs</option>
+  <option value="beauty-services">Beauty Services</option>
+  <option value="plumbing">Plumbing</option>
+  <option value="electrical">Electrical</option>
+  <option value="home-repair">Home Repair</option>
+  <option value="ac-repair">AC Repair</option>
+  <option value="personal-care">Personal Care</option>
+  <option value="home-cleaning">Home Cleaning</option>
+  <option value="baby-products">Baby Products</option>
+  <option value="pet-supplies">Pet Supplies</option>
+  <option value="electronics">Electronics</option>
+  <option value="mobiles-accessories">Mobiles & Accessories</option>
+  <option value="fashion-men">Fashion - Men</option>
+  <option value="fashion-women">Fashion - Women</option>
+  <option value="fashion-kids">Fashion - Kids</option>
+  <option value="footwear">Footwear</option>
+  <option value="watches-jewelry">Watches & Jewelry</option>
+  <option value="home-appliances">Home Appliances</option>
+  <option value="furniture">Furniture</option>
+  <option value="kitchenware">Kitchenware</option>
+  <option value="stationary">Stationary</option>
+  <option value="books">Books</option>
+  <option value="sports-fitness">Sports & Fitness</option>
+  <option value="toys">Toys</option>
+  <option value="automotive">Automotive</option>
+  <option value="gardening">Gardening</option>
+  <option value="hardware-tools">Hardware & Tools</option>
+  <option value="seasonal-items">Seasonal Items</option>
+  <option value="carpenter">Carpenter</option>
+  <option value="delivery-service">Delivery Service</option>
+  <option value="tailoring">Tailoring</option>
+  <option value="tutor-coaching">Tutor / Coaching</option>
+  <option value="other">Other</option>
+</select>
+
+
             {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
           </div>
 
