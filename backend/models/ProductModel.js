@@ -4,8 +4,8 @@ const productSchema = new mongoose.Schema({
   store: { type: mongoose.Schema.Types.ObjectId, ref: "Store", required: true },
   name: { type: String, required: true },
   category: { type: String, required: true },
-  description: { type: String },
-  image: { type: String }, 
+  description: { type: String }, // Keep existing description field
+  images: [{ type: String }], // Array of image paths
   type: {
     type: String,
     enum: ['product', 'service'],

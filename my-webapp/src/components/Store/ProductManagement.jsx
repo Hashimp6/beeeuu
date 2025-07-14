@@ -10,12 +10,16 @@ import {
   ImageIcon,
   RefreshCw,
   AlertCircle,
-  Image
+  Image,
+  X
 } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import ProductCard from './ProductCard';
+import ProductDetailsModal from './ProductDetails';
+
 
 const AddProductForm = ({ 
   isVisible, 
@@ -35,11 +39,12 @@ const AddProductForm = ({
     type: '',
     price: '',
     quantity: '',
-    imageUri: '',
-    imageFile: null
+    imageUris: [], // Changed to array
+    imageFiles: [] // Changed to array
   });
 
   const [errors, setErrors] = useState({});
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     if (editingProduct) {
@@ -50,8 +55,8 @@ const AddProductForm = ({
         type: editingProduct.type || '',
         price: editingProduct.price?.toString() || '',
         quantity: editingProduct.quantity?.toString() || '',
-        imageUri: editingProduct.image || '',
-        imageFile: null
+        imageUris: editingProduct.images || [], // Changed to use images array
+        imageFiles: []
       });
     } else {
       setProduct({
@@ -61,8 +66,8 @@ const AddProductForm = ({
         type: '',
         price: '',
         quantity: '',
-        imageUri: '',
-        imageFile: null
+        imageUris: [],
+        imageFiles: []
       });
     }
     setErrors({});
@@ -91,54 +96,84 @@ const AddProductForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleImageSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
+  const handleMultipleImageSelect = (event) => {
+    const files = Array.from(event.target.files);
+    processFiles(files);
+  };
+
+  const processFiles = (files) => {
+    const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        alert('Please select a valid image file');
-        return;
+        toast.error(`${file.name} is not a valid image file`);
+        return false;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
+        toast.error(`${file.name} is too large. Max size is 5MB`);
+        return false;
       }
+      
+      return true;
+    });
 
+    if (validFiles.length === 0) return;
+
+    // Check if adding these files would exceed the limit
+    const currentTotal = product.imageUris.length + product.imageFiles.length;
+    const remainingSlots = 5 - currentTotal;
+    
+    if (validFiles.length > remainingSlots) {
+      toast.error(`You can only add ${remainingSlots} more images. Maximum 5 images allowed.`);
+      return;
+    }
+
+    // Process each file
+    validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setProduct(prev => ({ 
-          ...prev, 
-          imageUri: e.target.result,
-          imageFile: file
+        setProduct(prev => ({
+          ...prev,
+          imageUris: [...prev.imageUris, e.target.result],
+          imageFiles: [...prev.imageFiles, file]
         }));
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setDragActive(false);
     
     const files = Array.from(e.dataTransfer.files);
-    const imageFile = files.find(file => file.type.startsWith('image/'));
-    
-    if (imageFile) {
-      if (imageFile.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProduct(prev => ({ 
-          ...prev, 
-          imageUri: e.target.result,
-          imageFile: imageFile
-        }));
-      };
-      reader.readAsDataURL(imageFile);
-    }
+    processFiles(files);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const removeImage = (index) => {
+    setProduct(prev => ({
+      ...prev,
+      imageUris: prev.imageUris.filter((_, i) => i !== index),
+      imageFiles: prev.imageFiles.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmitProduct = async (productData) => {
@@ -155,14 +190,14 @@ const AddProductForm = ({
 
     // Validate price
     if (isNaN(productData.price) || parseFloat(productData.price) <= 0) {
-      alert('Please enter a valid price');
+      toast.error('Please enter a valid price');
       return;
     }
 
     // Only validate quantity if type is 'product'
     if (productData.type === 'product') {
       if (!productData.quantity || isNaN(productData.quantity) || parseInt(productData.quantity) < 0) {
-        alert('Please enter a valid quantity for products');
+        toast.error('Please enter a valid quantity for products');
         return;
       }
     }
@@ -183,22 +218,11 @@ const AddProductForm = ({
         formData.append('quantity', parseInt(productData.quantity).toString());
       }
   
-      // ✅ Handle image upload
-      if (productData.imageFile) {
-        // Direct file upload (new upload)
-        formData.append('image', productData.imageFile);
-      } else if (productData.imageUri && productData.imageUri.startsWith('data:image/')) {
-        // Base64 image (convert to Blob and then File)
-        const response = await fetch(productData.imageUri);
-        const blob = await response.blob();
-        const fileExtension = blob.type.split('/')[1] || 'jpg';
-        const file = new File([blob], `product_image_${Date.now()}.${fileExtension}`, {
-          type: blob.type,
+      // Handle multiple images
+      if (productData.imageFiles && productData.imageFiles.length > 0) {
+        productData.imageFiles.forEach((file, index) => {
+          formData.append('images', file); // Changed from 'image' to 'images'
         });
-        formData.append('image', file);
-      } else if (productData.imageUri) {
-        // Existing image URI - only for edit case
-        formData.append('imageUrl', productData.imageUri);
       }
   
       const productId = editingProduct?._id;
@@ -207,15 +231,15 @@ const AddProductForm = ({
         : `${SERVER_URL}/products/add`;
   
       const method = editingProduct ? 'put' : 'post';
+      
       console.log("Form Data Preview:");
       for (let [key, value] of formData.entries()) {
-        if (key === "image" && value instanceof File) {
+        if (key === "images" && value instanceof File) {
           console.log(`${key}:`, value.name, value.type, value.size);
         } else {
           console.log(`${key}:`, value);
         }
       }
-      
   
       const response = await axios({
         method,
@@ -231,7 +255,7 @@ const AddProductForm = ({
   
       toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
   
-      // ✅ Refresh the product list
+      // Refresh the product list
       if (fetchProducts) fetchProducts(); 
 
       // Reset & close form
@@ -245,21 +269,6 @@ const AddProductForm = ({
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
   };
 
   const handleSubmit = () => {
@@ -276,8 +285,8 @@ const AddProductForm = ({
       type: '',
       price: '',
       quantity: '',
-      imageUri: '',
-      imageFile: null
+      imageUris: [],
+      imageFiles: []
     });
     setErrors({});
     onClose();
@@ -298,6 +307,9 @@ const AddProductForm = ({
   };
 
   if (!isVisible) return null;
+
+  const totalImages = product.imageUris.length;
+  const canAddMore = totalImages < 5;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -335,10 +347,12 @@ const AddProductForm = ({
               value={product.description}
               onChange={(e) => setProduct(prev => ({ ...prev, description: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-              rows="3"
-              placeholder="Enter product description"
+              rows="2"
+              placeholder="Enter brief description"
             />
           </div>
+
+       
 
           {/* Type */}
           <div>
@@ -371,103 +385,112 @@ const AddProductForm = ({
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-  <option value="beauty-cosmetics">Beauty & Cosmetics</option>
-  <option value="games">Games</option>
-  <option value="bakery">Bakery</option>
-  <option value="food-products">Food Products</option>
-  <option value="gifts-crafts">Gifts & Crafts</option>
-  <option value="wedding-services">Wedding Services</option>
-  <option value="groceries">Groceries</option>
-  <option value="laundry">Laundry Services</option>
-  <option value="photography">Photography</option>
-  <option value="event-management">Event Management</option>
-  <option value="vegetables-fruits">Vegetables & Fruits</option>
-  <option value="snacks-beverages">Snacks & Beverages</option>
-  <option value="dairy-eggs">Dairy & Eggs</option>
-  <option value="beauty-services">Beauty Services</option>
-  <option value="plumbing">Plumbing</option>
-  <option value="electrical">Electrical</option>
-  <option value="home-repair">Home Repair</option>
-  <option value="ac-repair">AC Repair</option>
-  <option value="personal-care">Personal Care</option>
-  <option value="home-cleaning">Home Cleaning</option>
-  <option value="baby-products">Baby Products</option>
-  <option value="pet-supplies">Pet Supplies</option>
-  <option value="electronics">Electronics</option>
-  <option value="mobiles-accessories">Mobiles & Accessories</option>
-  <option value="fashion-men">Fashion - Men</option>
-  <option value="fashion-women">Fashion - Women</option>
-  <option value="fashion-kids">Fashion - Kids</option>
-  <option value="footwear">Footwear</option>
-  <option value="watches-jewelry">Watches & Jewelry</option>
-  <option value="home-appliances">Home Appliances</option>
-  <option value="furniture">Furniture</option>
-  <option value="kitchenware">Kitchenware</option>
-  <option value="stationary">Stationary</option>
-  <option value="books">Books</option>
-  <option value="sports-fitness">Sports & Fitness</option>
-  <option value="toys">Toys</option>
-  <option value="automotive">Automotive</option>
-  <option value="gardening">Gardening</option>
-  <option value="hardware-tools">Hardware & Tools</option>
-  <option value="seasonal-items">Seasonal Items</option>
-  <option value="carpenter">Carpenter</option>
-  <option value="delivery-service">Delivery Service</option>
-  <option value="tailoring">Tailoring</option>
-  <option value="tutor-coaching">Tutor / Coaching</option>
-  <option value="other">Other</option>
-</select>
-
-
+              <option value="">Select Category</option>
+              <option value="beauty-cosmetics">Beauty & Cosmetics</option>
+              <option value="games">Games</option>
+              <option value="bakery">Bakery</option>
+              <option value="food-products">Food Products</option>
+              <option value="gifts-crafts">Gifts & Crafts</option>
+              <option value="wedding-services">Wedding Services</option>
+              <option value="groceries">Groceries</option>
+              <option value="laundry">Laundry Services</option>
+              <option value="photography">Photography</option>
+              <option value="event-management">Event Management</option>
+              <option value="vegetables-fruits">Vegetables & Fruits</option>
+              <option value="snacks-beverages">Snacks & Beverages</option>
+              <option value="dairy-eggs">Dairy & Eggs</option>
+              <option value="beauty-services">Beauty Services</option>
+              <option value="plumbing">Plumbing</option>
+              <option value="electrical">Electrical</option>
+              <option value="home-repair">Home Repair</option>
+              <option value="ac-repair">AC Repair</option>
+              <option value="personal-care">Personal Care</option>
+              <option value="home-cleaning">Home Cleaning</option>
+              <option value="baby-products">Baby Products</option>
+              <option value="pet-supplies">Pet Supplies</option>
+              <option value="electronics">Electronics</option>
+              <option value="mobiles-accessories">Mobiles & Accessories</option>
+              <option value="fashion-men">Fashion - Men</option>
+              <option value="fashion-women">Fashion - Women</option>
+              <option value="fashion-kids">Fashion - Kids</option>
+              <option value="footwear">Footwear</option>
+              <option value="watches-jewelry">Watches & Jewelry</option>
+              <option value="home-appliances">Home Appliances</option>
+              <option value="furniture">Furniture</option>
+              <option value="kitchenware">Kitchenware</option>
+              <option value="stationary">Stationary</option>
+              <option value="books">Books</option>
+              <option value="sports-fitness">Sports & Fitness</option>
+              <option value="toys">Toys</option>
+              <option value="automotive">Automotive</option>
+              <option value="gardening">Gardening</option>
+              <option value="hardware-tools">Hardware & Tools</option>
+              <option value="seasonal-items">Seasonal Items</option>
+              <option value="carpenter">Carpenter</option>
+              <option value="delivery-service">Delivery Service</option>
+              <option value="tailoring">Tailoring</option>
+              <option value="tutor-coaching">Tutor / Coaching</option>
+              <option value="other">Other</option>
+            </select>
             {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
           </div>
 
-          {/* Image Upload */}
+          {/* Multiple Images Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Image
+              Product Images ({totalImages}/5)
             </label>
-            <div 
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('imageInput').click()}
-              className="w-full border-2 border-dashed border-teal-300 rounded-lg p-4 text-center cursor-pointer hover:border-teal-500 transition-colors hover:bg-teal-50"
-            >
-              {product.imageUri ? (
-                <div className="relative">
-                  <img 
-                    src={product.imageUri} 
-                    alt="Preview" 
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setProduct(prev => ({ ...prev, imageUri: '', imageFile: null }));
-                      document.getElementById('imageInput').value = '';
-                    }}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
+            
+            {/* Image Preview Grid */}
+            {totalImages > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {product.imageUris.map((uri, index) => (
+                  <div key={index} className="relative">
+                    <img 
+                      src={uri} 
+                      alt={`Preview ${index + 1}`} 
+                      className="w-full h-20 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Area */}
+            {canAddMore && (
+              <div 
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('imageInput').click()}
+                className={`w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${
+                  dragActive 
+                    ? 'border-teal-500 bg-teal-50' 
+                    : 'border-teal-300 hover:border-teal-500 hover:bg-teal-50'
+                }`}
+              >
                 <div className="text-teal-600">
                   <Image size={32} className="mx-auto mb-2" />
-                  <p className="font-medium">Click to select image</p>
+                  <p className="font-medium">Click to select images</p>
                   <p className="text-xs text-gray-500 mt-1">or drag and drop here</p>
-                  <p className="text-xs text-gray-400 mt-1">Supports: JPG, PNG, GIF (Max 5MB)</p>
+                  <p className="text-xs text-gray-400 mt-1">Max 5 images, 5MB each</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
             <input
               type="file"
               id="imageInput"
               accept="image/*"
-              onChange={handleImageSelect}
+              multiple
+              onChange={handleMultipleImageSelect}
               style={{ display: 'none' }}
             />
           </div>
@@ -478,15 +501,13 @@ const AddProductForm = ({
               Price (₹) *
             </label>
             <input
-             type="text"
+              type="text"
               value={product.price}
               onChange={(e) => setProduct(prev => ({ ...prev, price: e.target.value }))}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                 errors.price ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Enter price"
-              min="0"
-              step="0.01"
             />
             {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
           </div>
@@ -505,8 +526,6 @@ const AddProductForm = ({
                   errors.quantity ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter quantity"
-                min="0"
-                step="1"
               />
               {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
             </div>
@@ -538,7 +557,6 @@ const AddProductForm = ({
     </div>
   );
 };
-
 // Main Store Product Screen Component
 const ProductManagement = ({ storeId }) => {
 
@@ -549,7 +567,18 @@ const ProductManagement = ({ storeId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  
+  const handleViewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowDetails(true);
+  };
+  
+  const handleCloseModal = () => {
+    setShowDetails(false);
+    setSelectedProduct(null);
+  };
   
   // Mock API calls - replace with actual API calls
   const fetchProducts = async () => {
@@ -718,62 +747,14 @@ const ProductManagement = ({ storeId }) => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {filteredProducts.map((product) => (
-            <div key={product._id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-w-16 aspect-h-10">
-                <img
-                  src={product.image || 'https://picsum.photos/400/300?random=default'}
-                  alt={product.name}
-                  className="w-full h-40 sm:h-40 md:h-48 object-cover"
-                />
-              </div>
-              
-              <div className="p-3 sm:p-3">
-                <h3 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-1">{product.name}</h3>
-                
-                {product.description && (
-                  <p className="text-gray-600 text-xs mb-2 line-clamp-1">{product.description}</p>
-                )}
-                
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded text-xs font-medium">
-                    {product.category}
-                  </span>
-                  <span className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs font-medium">
-                    {product.type}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-  <div className="flex items-center gap-1 flex-wrap">
-    <span className="font-bold text-teal-600 text-sm">₹{product.price}</span>
-
-    {/* ✅ Show quantity if it exists and is a product */}
-    {product.type === 'product' && product.quantity && (
-      <span className="text-xs text-gray-500 ml-2">
-        ({product.quantity} pcs)
-      </span>
-    )}
-  </div>
-
-  <div className="flex gap-1">
-    <button
-      onClick={() => handleEditProduct(product)}
-      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-    >
-      <Edit3 size={14} />
-    </button>
-    <button
-      onClick={() => handleDeleteProduct(product._id)}
-      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-    >
-      <Trash2 size={14} />
-    </button>
-  </div>
-</div>
-
-              </div>
-            </div>
-          ))}
+  <ProductCard
+    key={product._id}
+    product={product}
+    onEdit={handleEditProduct}
+    onDelete={handleDeleteProduct}
+    onView={handleViewProduct}
+  />
+))}
         </div>
         )}
       </div>
@@ -791,6 +772,12 @@ const ProductManagement = ({ storeId }) => {
   storeId={storeId} 
   fetchProducts={fetchProducts} 
 />
+<ProductDetailsModal
+  product={selectedProduct}
+  isOpen={showDetails}
+  onClose={handleCloseModal}
+/>
+
     </div>
   );
 };

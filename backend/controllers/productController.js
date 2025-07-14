@@ -1,30 +1,50 @@
-const Product = require('../models/ProductModel');
+const fs = require('fs');
+const path = require('path');
+const Product= require('../models/ProductModel');
+// Helper function to delete image files
+const deleteImageFiles = (imagePaths) => {
+  if (imagePaths && imagePaths.length > 0) {
+    imagePaths.forEach(imagePath => {
+      if (imagePath && fs.existsSync(imagePath)) {
+        try {
+          fs.unlinkSync(imagePath);
+          console.log(`Deleted image: ${imagePath}`);
+        } catch (error) {
+          console.error(`Error deleting image ${imagePath}:`, error);
+        }
+      }
+    });
+  }
+};
 
 // Add Product
 const addProduct = async (req, res) => {
   try {
-    console.log("reqst comes from bc", req.body);
+    console.log("request comes from bc", req.body);
     
-    let image = "";
-    if (req.file && req.file.path) {
-      image = req.file.path;
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => file.path);
     }
     
-    const { store, name, description, category, type, price, quantity } = req.body;
+    const { store, name, description, details, category, type, price, quantity } = req.body;
     
     if (!store || !name || !price) {
+      // Clean up uploaded images if validation fails
+      deleteImageFiles(images);
       return res.status(400).json({ message: "Store, Name and Price are required" });
     }
     
-    console.log("image ", image);
+    console.log("images ", images);
     
     // Create product object with conditional quantity
     const productData = {
       store,
       name,
       description,
+      details,
       category,
-      image,
+      images,
       type,
       price
     };
@@ -40,6 +60,13 @@ const addProduct = async (req, res) => {
     res.status(201).json({ message: "Product added successfully", product: savedProduct });
   } catch (error) {
     console.error("Error adding product:", error);
+    
+    // Clean up uploaded images if save fails
+    if (req.files && req.files.length > 0) {
+      const images = req.files.map(file => file.path);
+      deleteImageFiles(images);
+    }
+    
     res.status(500).json({ message: "Error adding product", error: error.message });
   }
 };
@@ -47,31 +74,70 @@ const addProduct = async (req, res) => {
 // Update Product
 const updateProduct = async (req, res) => {
   try {
-    let image = "";
-    if (req.file && req.file.path) {
-      image = req.file.path;  
-    }
     const { productId } = req.params;
-console.log("dtsss",req.body);
-const updateData = {
-  ...req.body,
-};
-
-if (image) {
-  updateData.image = image;
-}
-
-    const updatedProduct = await Product.findByIdAndUpdate(productId, updateData, { new: true });
-
-    if (!updatedProduct) {
+    console.log("update data", req.body);
+    
+    // Find existing product to get current images
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      // Clean up uploaded images if product not found
+      if (req.files && req.files.length > 0) {
+        const images = req.files.map(file => file.path);
+        deleteImageFiles(images);
+      }
       return res.status(404).json({ message: 'Product not found' });
     }
-
+    
+    const updateData = {
+      ...req.body,
+    };
+    
+    // Handle image updates
+    if (req.files && req.files.length > 0) {
+      // Delete old images
+      deleteImageFiles(existingProduct.images);
+      
+      // Add new images
+      updateData.images = req.files.map(file => file.path);
+    }
+    
+    const updatedProduct = await Product.findByIdAndUpdate(productId, updateData, { new: true });
+    
     res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });
   } catch (error) {
+    // Clean up uploaded images if update fails
+    if (req.files && req.files.length > 0) {
+      const images = req.files.map(file => file.path);
+      deleteImageFiles(images);
+    }
+    
     res.status(500).json({ message: 'Error updating product', error: error.message });
   }
 };
+
+// Delete Product
+const deleteProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    const productToDelete = await Product.findById(productId);
+    
+    if (!productToDelete) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    // Delete all associated image files
+    deleteImageFiles(productToDelete.images);
+    
+    // Delete the product from database
+    await Product.findByIdAndDelete(productId);
+    
+    res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting product', error: error.message });
+  }
+};
+
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find().populate("store");
@@ -125,22 +191,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-// Delete Product
-const deleteProduct = async (req, res) => {
-  try {
-    const { productId } = req.params;
 
-    const deleted = await Product.findByIdAndDelete(productId);
-
-    if (!deleted) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    res.status(200).json({ message: 'Product deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting product', error: error.message });
-  }
-};
 
 module.exports = {
   addProduct,

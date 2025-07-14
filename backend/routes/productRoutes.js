@@ -11,12 +11,12 @@ const {
   getProductById,
 } = require('../controllers/productController');
 const { uploadProductImage } = require('../config/multer');
+// Add Product - Changed to handle multiple images
+router.post('/add', uploadProductImage.array('images', 5), addProduct); // Allow up to 5 images
 
-// Add Product
-router.post('/add',uploadProductImage.single("image"), addProduct);
+// Update Product - Changed to handle multiple images
+router.put('/:productId', uploadProductImage.array('images', 5), updateProduct);
 
-// Update Product
-router.put('/:productId',uploadProductImage.single("image"), updateProduct);
 router.get("/all", getAllProducts);
 router.get("/store/:storeId", getProductsByStore);
 router.get("/category/:category", getProductsByCategory);
