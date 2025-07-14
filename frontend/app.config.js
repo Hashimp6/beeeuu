@@ -31,6 +31,7 @@ export default {
     android: {
       package: "com.hashim.serchby",
       icon: "./assets/icon.png",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON_BASE64,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"

@@ -24,6 +24,8 @@ router.get("/nearby",getNearbyStores);
  router.get("/user/:userId", getStoreByUserId);
  router.get("/checkName", checkStoreNameAvailability);
  router.get('/:storeId/upi', getStoreUpi);
+ //for store analetics
+router.get("/store-analetics/:storeId", getStoreAnalytics);
 // Apply authentication middleware to all routes
 router.use(protect);
 
@@ -41,8 +43,7 @@ router.put("/:storeId", uploadStoreImage.single("profileImage"), updateStore);
 
 // Delete store
 router.delete("/:storeId", authorize("seller", "admin"), deleteStore);
-//for store analetics
-router.get("/store-analetics/:storeId", getStoreAnalytics);
+
 
 
 module.exports = router;

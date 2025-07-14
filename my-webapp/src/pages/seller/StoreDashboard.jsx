@@ -587,10 +587,12 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Charts Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
   <MonthlyAnalyticsChart data={analyticsData} title="Monthly Orders & Appointments" />
-  <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
+  <SimplePieChart data={businessOverviewData} title="Business Overview" />
+   <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
   <SimplePieChart data={orderStatusData} title="Order Status" />
+
 </div>
 
                 {/* Quick Actions */}
