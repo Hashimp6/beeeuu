@@ -1,38 +1,21 @@
-require('dotenv').config();
+// services/writeGoogleJson.js
+import fs from "fs";
+import path from "path";
 
-const { writeFileSync, existsSync, mkdirSync } = require('fs');
-const { join, dirname } = require('path');
+const base64 = process.env.GOOGLE_SERVICES_JSON_BASE64;
 
-// Only run during EAS builds, not during prebuild
-const isEASBuild = process.env.EAS_BUILD === 'true';
-const isPrebuild = process.env.EXPO_PREBUILD === 'true';
+if (!base64) {
+  console.error("❌ Missing GOOGLE_SERVICES_JSON_BASE64 in env");
+  process.exit(1);
+}
 
-if (isEASBuild && !isPrebuild && process.env.GOOGLE_SERVICES_JSON_BASE64) {
-  try {
-    const googleServicesJson = Buffer.from(
-      process.env.GOOGLE_SERVICES_JSON_BASE64,
-      'base64'
-    ).toString('utf8');
+const filePath = path.resolve(__dirname, "../android/app/google-services.json");
 
-    // Validate JSON before writing
-    const parsedJson = JSON.parse(googleServicesJson);
-
-    // Create in root directory first
-    const rootFilePath = join(process.cwd(), 'google-services.json');
-    writeFileSync(rootFilePath, googleServicesJson);
-    console.log('✅ google-services.json created in root directory');
-
-    // Also create in android/app directory if it exists
-    const androidFilePath = join(process.cwd(), 'android', 'app', 'google-services.json');
-    const androidDirPath = dirname(androidFilePath);
-
-    if (!existsSync(androidDirPath)) {
-      mkdirSync(androidDirPath, { recursive: true });
-    }
-    writeFileSync(androidFilePath, googleServicesJson);
-    console.log('✅ google-services.json created in android/app directory');
-
-  } catch (error) {
-    console.error('❌ Failed to write google-services.json:', error.message);
-  }
+try {
+  const json = Buffer.from(base64, "base64").toString("utf-8");
+  fs.writeFileSync(filePath, json);
+  console.log("✅ google-services.json written to android/app/");
+} catch (error) {
+  console.error("❌ Failed to write google-services.json", error);
+  process.exit(1);
 }
