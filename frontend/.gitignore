@@ -2,7 +2,6 @@
 
 # dependencies
 node_modules/
-google-services.json
 service-account.json
 .env
 # Expo
@@ -37,3 +36,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 google-services.json
+!android/app/google-services.json
