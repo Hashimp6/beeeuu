@@ -15,6 +15,7 @@ const {
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
+const { getStoreAnalytics } = require("../controllers/analysisController");
 
 
 router.get('/storeprofile/:name', findStoreByName);
@@ -40,5 +41,8 @@ router.put("/:storeId", uploadStoreImage.single("profileImage"), updateStore);
 
 // Delete store
 router.delete("/:storeId", authorize("seller", "admin"), deleteStore);
+//for store analetics
+router.get("/store-analetics/:storeId", getStoreAnalytics);
+
 
 module.exports = router;

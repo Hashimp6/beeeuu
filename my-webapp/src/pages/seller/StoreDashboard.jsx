@@ -30,17 +30,12 @@ const StoreDashboard = () => {
   const [upiInput, setUpiInput] = useState("");
   const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState([]);
   const [stats, setStats] = useState({
-    pendingAppointments: 0,
-    completedAppointments: 0,
     totalRevenue: 0,
     todayAppointments: 0,
-    cancelledAppointments: 0,
-    totalOrders: 0,
     pendingOrders: 0,
-    completedOrders: 0
   });
-
   useEffect(() => {
     const fetchSeller = async () => {
       try {
@@ -67,64 +62,121 @@ const StoreDashboard = () => {
       totalRevenue: 2450,
     });
   }, [user]);
-  const fetchStats = async () => {
-    try {
-      // Mock data - replace with real API calls
-      setStats({
-        pendingAppointments: 12,
-        completedAppointments: 145,
-        totalRevenue: 18500,
-        todayAppointments: 8,
-        cancelledAppointments: 3,
-        totalOrders: 89,
-        pendingOrders: 5,
-        completedOrders: 78
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-  const handleUpdateUpi = async () => {
-    if (!upiInput.trim()) {
-      toast.error("Please enter a valid UPI ID");
-      return;
-    }
+
+ 
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const { data } = await axios.get(`${SERVER_URL}/stores/store-analetics/${store._id}`);
+        console.log("Analytics data:", data.data);
+        setAnalyticsData(data.data);
   
-    setIsUpdatingUpi(true);
+        // Calculate totals for all months
+        const totals = data.data.reduce((acc, item) => ({
+          totalAppointments: acc.totalAppointments + item.totalAppointments,
+          completedAppointments: acc.completedAppointments + item.completedAppointments,
+          cancelledAppointments: acc.cancelledAppointments + item.cancelledAppointments,
+          totalOrders: acc.totalOrders + item.totalOrders,
+          confirmedOrders: acc.confirmedOrders + item.confirmedOrders,
+          cancelledOrders: acc.cancelledOrders + item.cancelledOrders,
+          deliveredOrders: acc.deliveredOrders + item.deliveredOrders,
+          totalRevenue: acc.totalRevenue + item.totalRevenue
+        }), {
+          totalAppointments: 0,
+          completedAppointments: 0,
+          cancelledAppointments: 0,
+          totalOrders: 0,
+          confirmedOrders: 0,
+          cancelledOrders: 0,
+          deliveredOrders: 0,
+          totalRevenue: 0
+        });
   
-    try {
-      const storeId = store._id;
-      const response = await axios.put(
-        `${SERVER_URL}/upi/${storeId}/upi`,
-        { upi: upiInput },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+        // Calculate pending appointments (total - completed - cancelled)
+        const pendingAppointments = totals.totalAppointments - totals.completedAppointments - totals.cancelledAppointments;
+        
+        // Calculate pending orders (total - confirmed - cancelled - delivered)
+        const pendingOrders = totals.totalOrders - totals.confirmedOrders - totals.cancelledOrders - totals.deliveredOrders;
   
-      if (response.data.success) {
-        setUser((prevUser) => ({
-          ...prevUser,
-          upi: upiInput
-        }));
+        setStats({
+          totalRevenue: totals.totalRevenue,
+          todayAppointments: totals.totalAppointments,
+          pendingOrders: pendingOrders,
+          // Add these for pie chart
+          completedAppointments: totals.completedAppointments,
+          cancelledAppointments: totals.cancelledAppointments,
+          pendingAppointments: pendingAppointments,
+          confirmedOrders: totals.confirmedOrders,
+          cancelledOrders: totals.cancelledOrders,
+          deliveredOrders: totals.deliveredOrders
+        });
   
-        toast.success("UPI ID updated successfully!");
-  
-        setUpiModalVisible(false);
-        setUpiDropdownVisible(false);
-      } else {
-        toast.error("Failed to update UPI ID");
+      } catch (err) {
+        console.error("Error fetching analytics", err);
+        setAnalyticsData([]);
       }
-    } catch (error) {
-      console.error("Error updating UPI:", error);
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setIsUpdatingUpi(false);
-    }
-  };
+    };
+  
+    if (store?._id) fetchAnalytics();
+  }, [store]);
+  // const fetchStats = async () => {
+  //   try {
+  //     // Mock data - replace with real API calls
+  //     setStats({
+  //       pendingAppointments: 12,
+  //       completedAppointments: 145,
+  //       totalRevenue: 18500,
+  //       todayAppointments: 8,
+  //       cancelledAppointments: 3,
+  //       totalOrders: 89,
+  //       pendingOrders: 5,
+  //       completedOrders: 78
+  //     });
+  //   } catch (error) {
+  //     console.error('Error fetching stats:', error);
+  //   }
+  // };
+  // const handleUpdateUpi = async () => {
+  //   if (!upiInput.trim()) {
+  //     toast.error("Please enter a valid UPI ID");
+  //     return;
+  //   }
+  
+  //   setIsUpdatingUpi(true);
+  
+  //   try {
+  //     const storeId = store._id;
+  //     const response = await axios.put(
+  //       `${SERVER_URL}/upi/${storeId}/upi`,
+  //       { upi: upiInput },
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'application/json',
+  //         },
+  //       }
+  //     );
+  
+  //     if (response.data.success) {
+  //       setUser((prevUser) => ({
+  //         ...prevUser,
+  //         upi: upiInput
+  //       }));
+  
+  //       toast.success("UPI ID updated successfully!");
+  
+  //       setUpiModalVisible(false);
+  //       setUpiDropdownVisible(false);
+  //     } else {
+  //       toast.error("Failed to update UPI ID");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating UPI:", error);
+  //     toast.error("Something went wrong. Please try again.");
+  //   } finally {
+  //     setIsUpdatingUpi(false);
+  //   }
+  // };
   
 //   const handleEditStore = () => {
 //     // Navigate to NewStore with existing store data
@@ -143,29 +195,24 @@ const StoreDashboard = () => {
 //     });
 //   };
 
-  // Simple chart components
-  const SimpleBarChart = ({ data, title }) => (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
-      <div className="flex items-end justify-between h-64 space-x-2">
-        {data.map((item, index) => (
-          <div key={index} className="flex flex-col items-center flex-1">
-            <div className="w-full bg-gray-200 rounded-t-lg relative overflow-hidden">
-              <div 
-                className="bg-gradient-to-t from-teal-500 to-teal-400 rounded-t-lg transition-all duration-1000 ease-out"
-                style={{ height: `${(item.value / Math.max(...data.map(d => d.value))) * 200}px` }}
-              ></div>
-            </div>
-            <div className="mt-3 text-center">
-              <div className="text-sm font-medium text-gray-900">{item.value}</div>
-              <div className="text-xs text-gray-500">{item.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
+  const appointmentStatusData = [
+    { name: 'Completed', value: stats.completedAppointments || 0, color: '#14b8a6' },
+    { name: 'Pending', value: stats.pendingAppointments || 0, color: '#f59e0b' },
+    { name: 'Cancelled', value: stats.cancelledAppointments || 0, color: '#ef4444' }
+  ];
+  
+  // Option 2: Order Status Pie Chart
+  const orderStatusData = [
+    { name: 'Delivered', value: stats.deliveredOrders || 0, color: '#14b8a6' },
+    { name: 'Confirmed', value: stats.confirmedOrders || 0, color: '#3b82f6' },
+    { name: 'Pending', value: stats.pendingOrders || 0, color: '#f59e0b' },
+    { name: 'Cancelled', value: stats.cancelledOrders || 0, color: '#ef4444' }
+  ];
+  const businessOverviewData = [
+    { name: 'Total Appointments', value: stats.todayAppointments || 0, color: '#14b8a6' },
+    { name: 'Total Orders', value: (stats.confirmedOrders + stats.deliveredOrders + stats.pendingOrders + stats.cancelledOrders) || 0, color: '#3b82f6' }
+  ];
   const SimplePieChart = ({ data, title }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     
@@ -211,7 +258,105 @@ const StoreDashboard = () => {
       </div>
     );
   };
+// Replace the MonthlyAnalyticsChart component with this:
 
+const MonthlyAnalyticsChart = ({ data, title }) => {
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  // Check if we have real data
+  const hasData = data && data.length > 0 && data.some(item => item.totalAppointments > 0 || item.totalOrders > 0);
+  
+  if (!hasData) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
+        
+        {/* Empty Chart */}
+        <div className="flex items-end justify-between h-64 space-x-1">
+          {monthNames.map((month, index) => (
+            <div key={index} className="flex flex-col items-center flex-1">
+              <div className="w-full flex space-x-1 items-end h-52">
+                <div className="w-1/2 bg-gray-200 rounded-t-lg"></div>
+                <div className="w-1/2 bg-gray-200 rounded-t-lg"></div>
+              </div>
+              <div className="mt-3 text-center">
+                <div className="text-xs text-gray-500">{month}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* No Data Message */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-500 text-sm">You don't have any data yet</p>
+        </div>
+        
+        {/* Legend */}
+        <div className="mt-6 flex justify-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-teal-500 rounded"></div>
+            <span className="text-sm text-gray-600">Appointments</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span className="text-sm text-gray-600">Orders</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If we have data, show real chart
+  const maxValue = Math.max(
+    ...data.map(item => Math.max(item.totalAppointments || 0, item.totalOrders || 0))
+  );
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
+      
+      <div className="flex items-end justify-between h-64 space-x-1">
+        {data.map((item, index) => (
+          <div key={index} className="flex flex-col items-center flex-1">
+            <div className="w-full flex space-x-1 items-end h-52">
+              {/* Appointments Bar */}
+              <div className="w-1/2 bg-gray-200 rounded-t-lg relative overflow-hidden">
+                <div 
+                  className="bg-gradient-to-t from-teal-500 to-teal-400 rounded-t-lg transition-all duration-1000 ease-out"
+                  style={{ height: `${maxValue > 0 ? ((item.totalAppointments || 0) / maxValue) * 200 : 0}px` }}
+                ></div>
+              </div>
+              {/* Orders Bar */}
+              <div className="w-1/2 bg-gray-200 rounded-t-lg relative overflow-hidden">
+                <div 
+                  className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-1000 ease-out"
+                  style={{ height: `${maxValue > 0 ? ((item.totalOrders || 0) / maxValue) * 200 : 0}px` }}
+                ></div>
+              </div>
+            </div>
+            <div className="mt-3 text-center">
+              <div className="text-xs text-gray-500">{monthNames[item.month - 1]}</div>
+              <div className="text-xs text-teal-600">A: {item.totalAppointments || 0}</div>
+              <div className="text-xs text-blue-600">O: {item.totalOrders || 0}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mt-6 flex justify-center space-x-6">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 bg-teal-500 rounded"></div>
+          <span className="text-sm text-gray-600">Appointments</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 bg-blue-500 rounded"></div>
+          <span className="text-sm text-gray-600">Orders</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+  
   const appointmentData = [
     { label: 'Mon', value: 12 },
     { label: 'Tue', value: 19 },
@@ -442,10 +587,11 @@ const StoreDashboard = () => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Charts Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                  <SimpleBarChart data={appointmentData} title="Weekly Appointments" />
-                  <SimplePieChart data={statusData} title="Appointment Status" />
-                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+  <MonthlyAnalyticsChart data={analyticsData} title="Monthly Orders & Appointments" />
+  <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
+  <SimplePieChart data={orderStatusData} title="Order Status" />
+</div>
 
                 {/* Quick Actions */}
                 <div className="bg-white rounded-xl shadow-lg p-6">

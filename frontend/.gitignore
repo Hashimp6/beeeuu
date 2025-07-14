@@ -3,6 +3,7 @@
 # dependencies
 node_modules/
 google-services.json
+service-account.json
 .env
 # Expo
 .expo/
