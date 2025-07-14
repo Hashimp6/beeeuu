@@ -43,10 +43,9 @@ const ProductDetailModal = ({
   };
 
   if (!product) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-auto overflow-hidden relative animate-fadeIn">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-auto overflow-hidden relative animate-fadeIn">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -54,9 +53,9 @@ const ProductDetailModal = ({
         >
           <X size={18} />
         </button>
-
+  
         {/* Image Section with Navigation */}
-        <div className="relative w-full aspect-[4/3] bg-gray-100">
+        <div className="relative w-full aspect-[3/2] bg-gray-100">
           {product.images?.length > 0 ? (
             <img
               src={product.images[currentImage]}
@@ -70,28 +69,26 @@ const ProductDetailModal = ({
               className="w-full h-full object-cover rounded-t-xl"
             />
           )}
-
-          {/* Left Arrow */}
+  
+          {/* Arrows remain same */}
           {product.images?.length > 1 && (
-            <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white text-black p-1 rounded-full shadow hover:scale-105"
-            >
-              <ChevronLeft />
-            </button>
-          )}
-
-          {/* Right Arrow */}
-          {product.images?.length > 1 && (
-            <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-black p-1 rounded-full shadow hover:scale-105"
-            >
-              <ChevronRight />
-            </button>
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white text-black p-1 rounded-full shadow hover:scale-105"
+              >
+                <ChevronLeft />
+              </button>
+  
+              <button
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-black p-1 rounded-full shadow hover:scale-105"
+              >
+                <ChevronRight />
+              </button>
+            </>
           )}
         </div>
-
         {/* Product Info */}
         <div className="p-4 sm:p-6 space-y-3">
           <div className="flex justify-between items-start">
