@@ -1127,7 +1127,7 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-4 sm:mb-6">
               <img src="/logo.png" alt="Your Logo" className="h-8 sm:h-12 object-contain" />
-              <span className="text-lg sm:text-xl font-bold">YourPlatform</span>
+          
             </div>
             <p className="text-gray-400 text-base sm:text-lg leading-relaxed mb-4 sm:mb-6 max-w-md">
               Your complete local marketplace for buying anything, selling everything, and booking any service - all in one place.
@@ -1218,6 +1218,8 @@ const Footer = () => {
           <div>
   <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Contact Us</h3>
   <ul className="space-y-2 sm:space-y-3 text-gray-400 text-base sm:text-lg">
+  <li>Hashim Husain</li>
+  <li>Aadhar no: 5188 0625 4008</li>
     <li className="flex items-center space-x-2">
       <PhoneCall className="w-4 h-4 text-green-500" />
       <a href="https://wa.me/917012455400" target="_blank" rel="noopener noreferrer">
