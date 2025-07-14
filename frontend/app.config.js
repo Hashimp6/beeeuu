@@ -7,7 +7,6 @@ export default {
     name: "SerchBy",
     slug: "SerchBy",
     version: "1.0.0",
-    owner: "hashimp6",
     orientation: "portrait",
     userInterfaceStyle: "light",
     // Remove newArchEnabled temporarily
@@ -31,7 +30,8 @@ export default {
     android: {
       package: "com.hashim.serchby",
       icon: "./assets/icon.png",
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON_BASE64,
+      googleServicesFile: "./android/app/google-services.json",
+
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff"
@@ -81,12 +81,11 @@ export default {
         }
       ]
     ],
-    
+
     extra: {
       eas: {
-        projectId: "6b962b7b-711f-49d3-9550-bfa7f33a296f"
-      },
-      googleMapsApiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24"
+        projectId: "d0bc2648-7a28-4941-8575-dcfa83f9fd52"
+      }
     }
   }
 };
