@@ -83,6 +83,7 @@
 //     ],
 
 //     extra: {
+//       googleMapsApiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24", 
 //       eas: {
 //         projectId: "d0bc2648-7a28-4941-8575-dcfa83f9fd52"
 //       }
@@ -166,6 +167,7 @@ export default {
     ],
 
     extra: {
+  googleMapsApiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24", 
       eas: {
         projectId: "d0bc2648-7a28-4941-8575-dcfa83f9fd52"
       }
