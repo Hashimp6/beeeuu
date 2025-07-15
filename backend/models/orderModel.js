@@ -1,16 +1,33 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-  // Product Information
-  productId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
-  },
-  productName: {
-    type: String,
-    required: true
-  },
+  // Products Information (Changed to array)
+  products: [{
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true
+    },
+    productName: {
+      type: String,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
   
   // Seller Information
   sellerId: {
@@ -42,28 +59,25 @@ const orderSchema = new mongoose.Schema({
   },
   
   // Order Details
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1
-  },
-  unitPrice: {
-    type: Number,
-    required: true,
-    min: 0
-  },
   totalAmount: {
     type: Number,
     required: true,
     min: 0
   },
- // In your Order schema
-transactionId: {
-  type: String,
-  required: function() {
-    return this.paymentMethod && this.paymentMethod !== 'cod';
-  }
-},
+  totalItems: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  
+  // Transaction ID
+  transactionId: {
+    type: String,
+    required: function() {
+      return this.paymentMethod && this.paymentMethod !== 'cod';
+    }
+  },
+  
   // Payment Information
   paymentMethod: {
     type: String,
@@ -133,6 +147,26 @@ orderSchema.pre('save', async function(next) {
   next();
 });
 
+// Pre-save middleware to calculate totals and validate products
+orderSchema.pre('save', function(next) {
+  if (this.isModified('products')) {
+    // Calculate total amount and total items
+    let totalAmount = 0;
+    let totalItems = 0;
+    
+    this.products.forEach(product => {
+      // Calculate total price for each product
+      product.totalPrice = product.quantity * product.unitPrice;
+      totalAmount += product.totalPrice;
+      totalItems += product.quantity;
+    });
+    
+    this.totalAmount = totalAmount;
+    this.totalItems = totalItems;
+  }
+  next();
+});
+
 // Update timestamps based on status changes
 orderSchema.pre('save', function(next) {
   if (this.isModified('status')) {
@@ -162,5 +196,6 @@ orderSchema.pre('save', function(next) {
 orderSchema.index({ buyerId: 1, orderDate: -1 });
 orderSchema.index({ sellerId: 1, orderDate: -1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ 'products.productId': 1 });
 
 module.exports = mongoose.model('Order', orderSchema);

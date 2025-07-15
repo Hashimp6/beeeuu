@@ -1,15 +1,19 @@
 // src/components/ProductsGrid.jsx
 import React from 'react';
 import { Heart, Star, ShoppingBag, Calendar } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
+import toast from 'react-hot-toast';
 
 const ProductsGrid = ({
   products = [],
+  store,
   likedProducts = new Set(),
   toggleLike = () => {},
   handleOrderProduct = () => {},
   handleAppointment = () => {},
   onProductClick 
 }) => {
+    const { addToCart } = useCart();
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Section Header */}
@@ -109,31 +113,41 @@ const ProductsGrid = ({
                 </p>
 
                 <button
-                  onClick={() =>
-                    product.type === 'service'
-                      ? handleAppointment(product)
-                      : handleOrderProduct(product)
-                  }
-                  className={`w-full py-1.5 sm:py-2 rounded-md sm:rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105 text-xs sm:text-sm ${
-                    product.type === 'service'
-                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
-                      : 'bg-gradient-to-r from-black to-gray-800 text-white hover:from-gray-800 hover:to-black'
-                  }`}
-                >
-                  {product.type === 'service' ? (
-                    <>
-                      <Calendar size={12} className="sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Book Now</span>
-                      <span className="sm:hidden">Book</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag size={12} className="sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Add to Cart</span>
-                      <span className="sm:hidden">Add</span>
-                    </>
-                  )}
-                </button>
+ onClick={(e) => {
+    e.stopPropagation();
+    if (product.type === 'service') {
+      handleAppointment(product);
+    } else {
+      addToCart(product, store); // ✅ Add to cart
+      toast.success(`${product.name} added to cart 🛒`);
+      
+      // Animation trigger
+      const btn = e.currentTarget;
+      btn.classList.add("animate-cart-jump");
+      setTimeout(() => btn.classList.remove("animate-cart-jump"), 400);
+    }
+  }}
+  className={`w-full py-1.5 sm:py-2 rounded-md sm:rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105 text-xs sm:text-sm ${
+    product.type === 'service'
+      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
+      : 'bg-gradient-to-r from-black to-gray-800 text-white hover:from-gray-800 hover:to-black'
+  }`}
+>
+  {product.type === 'service' ? (
+    <>
+      <Calendar size={12} className="sm:w-4 sm:h-4" />
+      <span className="hidden sm:inline">Book Now</span>
+      <span className="sm:hidden">Book</span>
+    </>
+  ) : (
+    <>
+      <ShoppingBag size={12} className="sm:w-4 sm:h-4" />
+      <span className="hidden sm:inline">Add to Cart</span>
+      <span className="sm:hidden">Add</span>
+    </>
+  )}
+</button>
+
               </div>
             </div>
           ))

@@ -257,24 +257,56 @@ const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
     console.log('Creating order:', orderData);
-        
+    
     // Validate required fields
-    const requiredFields = ['productId', 'productName', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber', 'quantity', 'unitPrice', 'totalAmount'];
+    const requiredFields = ['products', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber'];
     for (let field of requiredFields) {
       if (!orderData[field]) {
         return res.status(400).json({ message: `${field} is required` });
       }
     }
-
-    // Validate transactionId for non-COD payments
-    if (orderData.paymentMethod && orderData.paymentMethod !== 'cod') {
-      if (!orderData.transactionId) {
+    
+    // Validate products array
+    if (!Array.isArray(orderData.products) || orderData.products.length === 0) {
+      return res.status(400).json({ message: 'Products must be a non-empty array' });
+    }
+    
+    // Validate each product in the array
+    for (let i = 0; i < orderData.products.length; i++) {
+      const product = orderData.products[i];
+      const requiredProductFields = ['productId', 'productName', 'quantity', 'unitPrice'];
+      
+      for (let field of requiredProductFields) {
+        if (!product[field]) {
+          return res.status(400).json({ 
+            message: `${field} is required for product at index ${i}` 
+          });
+        }
+      }
+      
+      // Validate quantity and unitPrice
+      if (product.quantity <= 0) {
         return res.status(400).json({ 
-          message: 'Transaction ID is required for non-COD payments' 
+          message: `Quantity must be greater than 0 for product at index ${i}` 
+        });
+      }
+      
+      if (product.unitPrice < 0) {
+        return res.status(400).json({ 
+          message: `Unit price cannot be negative for product at index ${i}` 
         });
       }
     }
-
+    
+    // Validate transactionId for non-COD payments
+    if (orderData.paymentMethod && orderData.paymentMethod !== 'cod') {
+      if (!orderData.transactionId) {
+        return res.status(400).json({
+          message: 'Transaction ID is required for non-COD payments'
+        });
+      }
+    }
+    
     // Set default values
     if (!orderData.status) {
       orderData.status = 'pending';
@@ -282,7 +314,7 @@ const createOrder = async (req, res) => {
     if (!orderData.paymentStatus) {
       orderData.paymentStatus = orderData.paymentMethod === 'cod' ? 'pending' : 'pending';
     }
-
+    
     // Get seller name from store if not provided
     if (!orderData.sellerName && orderData.sellerId) {
       try {
@@ -294,16 +326,19 @@ const createOrder = async (req, res) => {
         console.log('Could not fetch seller name:', error);
       }
     }
-
+    orderData.products = orderData.products.map((product) => ({
+      ...product,
+      totalPrice: product.quantity * product.unitPrice,
+    }));
     const order = new Order(orderData);
     await order.save();
-console.log("order svaed");
-
+    console.log("order saved");
+    
     const populatedOrder = await Order.findById(order._id)
       .populate('buyerId', 'name email')
       .populate('sellerId', 'name address')
-      .populate('productId', 'name price image');
-
+      .populate('products.productId', 'name price image');
+    
     // 🔔 SEND NOTIFICATION TO SELLER ABOUT NEW ORDER
     try {
       await notifyNewOrder(populatedOrder);
@@ -312,7 +347,7 @@ console.log("order svaed");
       console.error('❌ Failed to send new order notification:', notificationError);
       // Don't fail the order creation if notification fails
     }
-
+    
     // 💰 SEND PAYMENT NOTIFICATION IF PAYMENT IS COMPLETED
     if (orderData.paymentStatus === 'completed' || orderData.paymentStatus === 'paid') {
       try {
@@ -322,7 +357,7 @@ console.log("order svaed");
         console.error('❌ Failed to send payment notification:', notificationError);
       }
     }
-
+    
     res.status(201).json({
       message: "Order created successfully",
       data: populatedOrder,

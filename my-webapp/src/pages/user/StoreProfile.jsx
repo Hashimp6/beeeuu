@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, Clock, Award, Users, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail, Loader2 ,ExternalLink, Sparkles,  ChevronLeft, ChevronRight, X} from 'lucide-react';
+import { Search, MapPin, Star, Phone, Instagram, MessageCircle, Share2, ArrowLeft, ShoppingBag, Calendar, Image, Heart, Clock, Award, Users, CheckCircle, TrendingUp, Shield, Copy, Facebook, Twitter, Linkedin, Mail, Loader2 ,ExternalLink, Sparkles,  ChevronLeft, ChevronRight, X, ShoppingCart} from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
 import { useAuth } from '../../context/UserContext';
 import ProductsGrid from '../../components/user/ProductGrid';
 import ProductDetailModal from '../../components/user/ProductDetails';
+import { useCart } from '../../context/CartContext';
+import toast from 'react-hot-toast';
 
 const StoreProfile = () => {
   console.log("prms", useParams());
+  const { addToCart,cart  } = useCart();
+  console.log("carts are",cart);
   
   const { storeName } = useParams();
   const navigate = useNavigate();
@@ -337,12 +341,7 @@ const handleTouchEnd = () => {
   };
 
   const handleOrderProduct = (product) => {
-    navigate('/order-details', {
-      state: {
-        product: product,
-        store: store
-      }
-    });
+    addToCart(product, product.store);
   };
 
   const openPhone = (phone) => {
@@ -412,14 +411,38 @@ const handleTouchEnd = () => {
               <span className="sm:hidden">Back</span>
             </button>
             <div className="flex items-center gap-2 sm:gap-4">
-              <button
-                onClick={shareViaWebShare}
-                className="flex items-center gap-1 sm:gap-2 bg-teal-50 text-teal-600 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-teal-100 transition-colors duration-200 font-medium text-sm sm:text-base"
-              >
-                <Share2 size={16} className="sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Share</span>
-              </button>
-            </div>
+  {/* Share Button */}
+  <button
+    onClick={shareViaWebShare}
+    className="flex items-center gap-1 sm:gap-2 bg-teal-50 text-teal-600 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-teal-100 transition-colors duration-200 font-medium text-sm sm:text-base"
+  >
+    <Share2 size={16} className="sm:w-4 sm:h-4" />
+    <span className="hidden sm:inline">Share</span>
+  </button>
+
+  {/* 🛒 Cart Button */}
+  <button
+  onClick={() => {
+    const storeCart = cart[store._id]; // get products for current store
+    if (storeCart && storeCart.products && storeCart.products.length > 0) {
+      navigate('/order-details', {
+        state: {
+          products: storeCart.products,
+          storeId: store._id,
+        }
+      });
+    } else {
+      toast.error("No product in cart for this store 🚫");
+    }
+  }}
+  className="flex items-center gap-1 sm:gap-2 bg-gray-100 text-gray-800 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium text-sm sm:text-base"
+>
+  <ShoppingCart size={16} className="sm:w-4 sm:h-4" />
+  <span className="hidden sm:inline">Cart</span>
+</button>
+
+</div>
+
           </div>
         </div>
       </nav>
@@ -725,6 +748,7 @@ const handleTouchEnd = () => {
       {activeTab === 'products' ? (
  <ProductsGrid
  products={products}
+ store={store}
  likedProducts={likedProducts}
  toggleLike={toggleLike}
  handleOrderProduct={handleOrderProduct}

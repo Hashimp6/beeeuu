@@ -11,24 +11,33 @@ import {
   X,
   Check,
   Store,
-  Package
+  Package,
+  ShoppingCart,
+  Trash2
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/UserContext';
 import toast, { Toaster } from 'react-hot-toast';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
+import { useCart} from '../../context/CartContext';
 
 const OrderDetails = () => {
   const { user, token } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { product, store } = location.state || {};
-  console.log("datttt", product, store);
+  // Get order data from context/state (products array and store info)
+  const { cart, removeFromCart, clearStoreCart, updateCartQuantity  } = useCart();
+  const locationState = location.state || {};
+  const storeId = locationState.storeId;
+  const storeProducts = cart[storeId]?.products || [];
+  
+  const [store, setStore] = useState(null);
+  console.log("Order data:", storeProducts, store);
 
   // Form states
-  const [quantity, setQuantity] = useState(1);
+  const [productQuantities, setProductQuantities] = useState({});
   const [customerName, setCustomerName] = useState(user?.username || '');
   const [address, setAddress] = useState(user?.address || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
@@ -42,11 +51,35 @@ const OrderDetails = () => {
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
   const [transactionError, setTransactionError] = useState('');
-
-  // Product details
-  const productPrice = parseFloat(product?.price) || 0;
-  const productName = product?.name || 'Product';
-  const productImage = product?.image || null;
+  useEffect(() => {
+    if (!storeId || !storeProducts || storeProducts.length === 0) {
+      alert("Missing products or store information. Redirecting...");
+      navigate(-1);
+    }
+    const fetchStoreDetails = async () => {
+      try {
+        const response = await axios.get(`${SERVER_URL}/stores/${storeId}`);
+        console.log("Fetched store:", response.data.store); 
+        setStore(response.data.store); // Adjust depending on your API response
+      } catch (error) {
+        console.error("Error fetching store data:", error);
+        toast.error("Failed to fetch store information.");
+      }
+    };
+  
+    fetchStoreDetails();
+  }, [storeId, storeProducts, navigate]);
+  
+  // Initialize quantities for each product
+  useEffect(() => {
+    if (storeProducts && storeProducts.length > 0) {
+      const initialQuantities = {};
+      storeProducts.forEach(product => {
+        initialQuantities[product._id] = product.quantity || 1;
+      });
+      setProductQuantities(initialQuantities);
+    }
+  }, [storeProducts]);
 
   // Payment options
   const paymentOptions = [
@@ -56,11 +89,11 @@ const OrderDetails = () => {
   ];
 
   useEffect(() => {
-    if (!product || !store) {
-      alert("Missing product or store information. Redirecting...");
-      navigate(-1); // go back
+    if (!storeProducts || !Array.isArray(storeProducts) || storeProducts.length === 0 || !storeId) {
+      alert("Missing products or store information. Redirecting...");
+      navigate(-1);
     }
-  }, [product, store, navigate]);
+  }, [storeProducts, store, navigate]);
 
   // Validation functions
   const validateName = (name) => {
@@ -114,7 +147,20 @@ const OrderDetails = () => {
     }
     return '';
   };
-
+  const decreaseQuantity = (productId) => {
+    setProductQuantities((prev) => {
+      const currentQty = prev[productId] || 1;
+      const newQty = Math.max(1, currentQty - 1);
+      return { ...prev, [productId]: newQty };
+    });
+  };
+  
+  const increaseQuantity = (productId) => {
+    setProductQuantities((prev) => {
+      const currentQty = prev[productId] || 1;
+      return { ...prev, [productId]: currentQty + 1 };
+    });
+  };
   // Handle input changes with validation
   const handleNameChange = (e) => {
     const text = e.target.value;
@@ -145,42 +191,55 @@ const OrderDetails = () => {
     setTransactionError(error);
   };
 
-  // Check if form is valid - FIXED LOGIC
+  // Check if form is valid
   const isFormValid = () => {
     const nameValid = validateName(customerName) === '';
     const phoneValid = validatePhone(phoneNumber) === '';
     const addressValid = validateAddress(address) === '';
     
-    // For COD, only basic fields need to be valid
     if (selectedPayment === 'cod') {
       return nameValid && phoneValid && addressValid;
     }
     
-    // For digital payments, transaction ID and payment completion required
     const transactionValid = validateTransactionId(transactionId) === '';
     return nameValid && phoneValid && addressValid && transactionValid && paymentCompleted;
   };
 
-  // Calculate total
+  // Calculate total for all products
   const calculateTotal = () => {
-    return (productPrice * quantity).toFixed(2);
+    if (!storeProducts || storeProducts.length === 0) return '0.00';
+  
+    const total = storeProducts.reduce((sum, product) => {
+      const price = parseFloat(product.price) || 0;
+      const quantity = productQuantities[product._id] || 1;
+      return sum + (price * quantity);
+    }, 0);
+  
+    return total.toFixed(2);
+  };
+  
+
+  // Calculate total items
+  const getTotalItems = () => {
+    return Object.values(productQuantities).reduce((sum, qty) => sum + qty, 0);
   };
 
-  // Handle quantity changes
-  const increaseQuantity = () => {
-    setQuantity(prev => prev + 1);
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
+  // Handle quantity changes for specific product
+  const updateQuantity = (productId, newQuantity) => {
+    if (newQuantity > 0) {
+      setProductQuantities(prev => ({
+        ...prev,
+        [productId]: newQuantity
+      }));
     }
   };
 
-  const handleQuantityChange = (e) => {
+ 
+
+  const handleQuantityChange = (productId, e) => {
     const num = parseInt(e.target.value);
     if (!isNaN(num) && num > 0) {
-      setQuantity(num);
+      updateQuantity(productId, num);
     }
   };
 
@@ -240,15 +299,20 @@ const OrderDetails = () => {
       return;
     }
   
-    // Step 2: Prepare order data
-    const orderData = {
+    // Step 2: Prepare order data with products array
+    const orderProducts = storeProducts.map(product => ({
       productId: product._id,
-      productName: productName,
-      quantity: quantity,
+      productName: product.name,
+      quantity: productQuantities[product._id] || 1,
+      unitPrice: parseFloat(product.price) || 0
+    }));
+
+    const orderData = {
+      products: orderProducts,
       sellerId: store?._id || store,
-      unitPrice: productPrice,
       buyerId: user?._id,
-      totalAmount: calculateTotal(),
+      totalAmount: parseFloat(calculateTotal()),
+      totalItems: getTotalItems(),
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
       phoneNumber: phoneNumber,
@@ -269,10 +333,8 @@ const OrderDetails = () => {
       });
   
       if (response.data) {
-        toast.success(`✅ Order placed successfully!`);
-        
-        // Optional: reset form state here if needed
-  
+        toast.success(`✅ Order placed successfully! Order ID: ${response.data.orderId}`);
+        clearStoreCart(store?._id); 
         setTimeout(() => {
           navigate(`/storeprofile/${store?.storeName}`);
         }, 1500);
@@ -282,7 +344,6 @@ const OrderDetails = () => {
       toast.error("🚫 Failed to place order. Please try again.");
     }
   };
-  
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
@@ -292,9 +353,23 @@ const OrderDetails = () => {
     }
   };
 
+  if (!storeProducts|| storeProducts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">No products found</h2>
+          <button onClick={handleGoBack} className="text-teal-700 hover:underline">
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-          <Toaster position="top-center" reverseOrder={false} />
+      <Toaster position="top-center" reverseOrder={false} />
+      
       {/* Header */}
       <div className="bg-teal-700 text-white p-4 shadow-lg sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -309,65 +384,77 @@ const OrderDetails = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Product & Customer Details */}
+          {/* Left Column - Products & Customer Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Product Details */}
+            {/* Products Details */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center mb-4">
-                <Package className="text-teal-700 mr-2" size={24} />
-                <h2 className="text-lg font-semibold text-teal-700">Product Details</h2>
+                <ShoppingCart className="text-teal-700 mr-2" size={24} />
+                <h2 className="text-lg font-semibold text-teal-700">Products ({storeProducts.length})</h2>
               </div>
-              <div className="flex items-center bg-gray-50 rounded-xl p-4">
-                {productImage && (
-                  <img 
-                    src={productImage} 
-                    alt={productName}
-                    className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg mr-4 object-cover bg-gray-200"
-                  />
-                )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-black mb-2 text-lg">{productName}</h3>
-                  <p className="text-xl font-bold text-teal-700 mb-2">₹{productPrice.toFixed(2)}</p>
-                  {store?.storeName && (
-                    <div className="flex items-center text-gray-600">
-                      <Store size={16} className="mr-1" />
-                      <span className="text-sm">{store.storeName}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              
+              <div className="space-y-4">
+                {storeProducts.map((product, index) => {
 
-            {/* Quantity Selection */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4 text-teal-700">Quantity</h2>
-              <div className="flex items-center justify-center mb-4">
-                <button
-                  onClick={decreaseQuantity}
-                  disabled={quantity <= 1}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center mx-4 ${
-                    quantity <= 1 ? 'bg-gray-200 text-gray-400' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'
-                  } transition-colors`}
-                >
-                  <Minus size={20} />
-                </button>
-                
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  className="w-20 h-12 text-center border border-gray-300 rounded-lg font-semibold text-lg"
-                  min="1"
-                />
-                
-                <button
-                  onClick={increaseQuantity}
-                  className="w-12 h-12 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 flex items-center justify-center mx-4 transition-colors"
-                >
-                  <Plus size={20} />
-                </button>
+
+                  const price = parseFloat(product.price) || 0;
+                  const quantity = productQuantities[product._id] || 1;
+                  const subtotal = (price * quantity).toFixed(2);
+                  
+                  
+                  return (
+                    <div key={product._id} className="flex items-center bg-gray-50 rounded-xl p-4">
+                    {product.images && (
+                      <img 
+                        src={product.images?.[0]} 
+                        alt={product.name} 
+                        className="w-20 h-20 rounded-lg mr-4 object-cover bg-gray-200"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-black mb-1">{product.name}</h3>
+                      <p className="text-lg font-bold text-teal-700 mb-2">₹{price.toFixed(2)}</p>
+                      <div className="flex items-center">
+                        {/* Quantity Controls */}
+                        ...
+                        <span className="ml-4 font-semibold text-teal-700">₹{subtotal}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+  <Minus
+    onClick={() => decreaseQuantity(product._id)}
+    className="text-gray-600 cursor-pointer"
+  />
+  <span className="px-3 py-1 bg-gray-200 rounded text-sm font-semibold text-gray-700">
+    {quantity}
+  </span>
+  <Plus
+    onClick={() => increaseQuantity(product._id)}
+    className="text-gray-600 cursor-pointer"
+  />
+</div>
+
+
+                    <button
+                      onClick={() => removeFromCart(store?._id, product._id)}
+                      className="ml-4 text-red-500 hover:text-red-700"
+                      title="Remove item"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                  
+                  );
+                })}
               </div>
-              <p className="text-xl font-bold text-teal-700 text-center">Total: ₹{calculateTotal()}</p>
+              
+              {/* Store Info */}
+              {store?.storeName && (
+                <div className="mt-4 flex items-center text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  <Store size={18} className="mr-2" />
+                  <span>Sold by: <span className="font-medium">{store.storeName}</span></span>
+                </div>
+              )}
             </div>
 
             {/* Customer Details */}
@@ -486,31 +573,49 @@ const OrderDetails = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-24">
               <h2 className="text-lg font-semibold mb-4 text-teal-700">Order Summary</h2>
+              
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Product:</span>
-                  <span className="font-medium text-gray-900">{productName}</span>
+                  <span className="text-gray-600">Total Items:</span>
+                  <span className="font-medium text-gray-900">{getTotalItems()}</span>
                 </div>
+                
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Quantity:</span>
-                  <span className="font-medium text-gray-900">{quantity}</span>
+                  <span className="text-gray-600">Products:</span>
+                  <span className="font-medium text-gray-900">{storeProducts.length}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Unit Price:</span>
-                  <span className="font-medium text-gray-900">₹{productPrice.toFixed(2)}</span>
-                </div>
+                
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Payment Method:</span>
                   <span className="font-medium text-gray-900">
                     {paymentOptions.find(p => p.id === selectedPayment)?.name}
                   </span>
                 </div>
+                
                 <div className="border-t pt-3">
                   <div className="flex justify-between text-lg font-bold text-teal-700">
                     <span>Total Amount:</span>
                     <span>₹{calculateTotal()}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Product Breakdown */}
+              <div className="mt-4 space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">Items:</h3>
+                {storeProducts.map((product) => {
+  const price = parseFloat(product.price) || 0;
+  const quantity = productQuantities[product._id] || 1;
+  const subtotal = (price * quantity).toFixed(2);
+
+  return (
+    <div key={product._id} className="flex justify-between text-xs text-gray-600">
+      <span>{product.name} x{quantity}</span>
+      <span>₹{subtotal}</span>
+    </div>
+  );
+})}
+
               </div>
 
               {/* Action Buttons */}
@@ -568,6 +673,7 @@ const OrderDetails = () => {
               <div className="bg-teal-50 p-4 rounded-xl mb-6">
                 <p className="text-2xl font-bold text-teal-700 mb-2">Amount: ₹{calculateTotal()}</p>
                 <p className="text-base text-teal-700 mb-1">Pay to: {store?.storeName || 'Merchant'}</p>
+                <p className="text-sm text-gray-600">Items: {getTotalItems()}</p>
                 {store?.upiId && (
                   <p className="text-sm text-gray-600">UPI ID: {store.upiId}</p>
                 )}
