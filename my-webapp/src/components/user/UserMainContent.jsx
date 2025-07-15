@@ -478,7 +478,7 @@ console.log("catef",data);
             />
           </div>
           {/* Keep User Profile Component visible even in appointment/order view */}
-          <div className="hidden xl:block">
+          <div className="hidden xl:block max-w-sm w-full px-2">
             <UserProfileComponent setHistory={setHistory} />
           </div>
         </div>

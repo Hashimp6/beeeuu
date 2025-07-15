@@ -219,11 +219,22 @@ const OrderCard = ({ order, onStatusChange }) => {
           </div>
         </div>
   
-        {/* Product Info */}
-        <div className="mb-3 p-2.5 bg-white/70 rounded-lg border border-white/50">
-          <h4 className="font-semibold text-black text-sm mb-0.5">{order.productName}</h4>
-          <p className="text-gray-600 text-xs">Qty: {order.quantity}</p>
-        </div>
+      {/* Products List */}
+<div className="mb-3 space-y-2">
+  {order.products?.map((product, index) => (
+    <div
+      key={product.productId || index}
+      className="p-2.5 bg-white/70 rounded-lg border border-white/50 shadow-sm"
+    >
+      <h4 className="font-semibold text-black text-sm mb-0.5">{product.productName}</h4>
+      <p className="text-gray-600 text-xs">Qty: {product.quantity}</p>
+      <p className="text-gray-600 text-xs">
+        Unit Price: ₹{product.unitPrice} &nbsp;|&nbsp; Total: ₹{product.totalPrice}
+      </p>
+    </div>
+  ))}
+</div>
+
   
         {/* Customer Info */}
         <div className="mb-3">
