@@ -52,6 +52,11 @@ const ReturnRefundPolicy = () => {
             Each seller on Serchby may have individual return and refund rules.<br />
             Buyers are encouraged to read the seller’s return terms on the product page before placing an order.
           </Section>
+          <Section number="5" title="Cancellation and Refund Policy"> 
+            If you cancel the appointment within 24 hours of the booking date, 80% of the amount paid will be refunded.
+
+          </Section>
+         
         </div>
 
         <div className="mt-10 border-t pt-6 text-sm text-gray-600">
