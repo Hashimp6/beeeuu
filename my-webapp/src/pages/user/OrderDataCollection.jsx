@@ -34,6 +34,7 @@ const OrderDetails = () => {
   const storeProducts = cart[storeId]?.products || [];
   
   const [store, setStore] = useState(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // Add loading state
   console.log("Order data:", storeProducts, store);
 
   // Form states
@@ -51,16 +52,22 @@ const OrderDetails = () => {
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
   const [transactionError, setTransactionError] = useState('');
+  
   useEffect(() => {
+    // Don't redirect if we're in the process of placing an order
+    if (isPlacingOrder) return;
+    
     if (!storeId || !storeProducts || storeProducts.length === 0) {
       alert("Missing products or store information. Redirecting...");
       navigate(-1);
+      return;
     }
+    
     const fetchStoreDetails = async () => {
       try {
         const response = await axios.get(`${SERVER_URL}/stores/${storeId}`);
         console.log("Fetched store:", response.data.store); 
-        setStore(response.data.store); // Adjust depending on your API response
+        setStore(response.data.store);
       } catch (error) {
         console.error("Error fetching store data:", error);
         toast.error("Failed to fetch store information.");
@@ -68,7 +75,7 @@ const OrderDetails = () => {
     };
   
     fetchStoreDetails();
-  }, [storeId, storeProducts, navigate]);
+  }, [storeId, storeProducts, navigate, isPlacingOrder]); // Add isPlacingOrder to dependencies
   
   // Initialize quantities for each product
   useEffect(() => {
@@ -88,13 +95,7 @@ const OrderDetails = () => {
     { id: 'phonepe', name: 'PhonePe', icon: CreditCard },
   ];
 
-  useEffect(() => {
-    if (!storeProducts || !Array.isArray(storeProducts) || storeProducts.length === 0 || !storeId) {
-      alert("Missing products or store information. Redirecting...");
-      navigate(-1);
-    }
-  }, [storeProducts, store, navigate]);
-
+  
   // Validation functions
   const validateName = (name) => {
     const trimmedName = name.trim();
@@ -147,6 +148,7 @@ const OrderDetails = () => {
     }
     return '';
   };
+  
   const decreaseQuantity = (productId) => {
     setProductQuantities((prev) => {
       const currentQty = prev[productId] || 1;
@@ -161,6 +163,7 @@ const OrderDetails = () => {
       return { ...prev, [productId]: currentQty + 1 };
     });
   };
+  
   // Handle input changes with validation
   const handleNameChange = (e) => {
     const text = e.target.value;
@@ -234,8 +237,6 @@ const OrderDetails = () => {
     }
   };
 
- 
-
   const handleQuantityChange = (productId, e) => {
     const num = parseInt(e.target.value);
     if (!isNaN(num) && num > 0) {
@@ -274,32 +275,60 @@ const OrderDetails = () => {
 
   // Handle order placement
   const handlePlaceOrder = async () => {
+    console.log("Order placement started");
+    console.log("Store products:", storeProducts);
+    console.log("Store data:", store);
+    console.log("Store ID:", store?._id);
+    
+    setIsPlacingOrder(true); // Set loading state
+    
     // Step 1: Validate inputs
     const nameValidationError = validateName(customerName);
     const phoneValidationError = validatePhone(phoneNumber);
     const addressValidationError = validateAddress(address);
-  
+
     setNameError(nameValidationError);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
-  
+
     let transactionValidationError = '';
     if (selectedPayment !== 'cod') {
       transactionValidationError = validateTransactionId(transactionId);
       setTransactionError(transactionValidationError);
     }
-  
+
     if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
       toast.error('❌ Please fix the errors before placing the order');
+      setIsPlacingOrder(false);
       return;
     }
-  
+
     if (selectedPayment !== 'cod' && !paymentCompleted) {
       toast.error('❌ Please complete the payment first');
+      setIsPlacingOrder(false);
       return;
     }
-  
-    // Step 2: Prepare order data with products array
+
+    // Step 2: Validate required data
+    if (!storeProducts || storeProducts.length === 0) {
+      toast.error('❌ No products found in cart');
+      setIsPlacingOrder(false);
+      return;
+    }
+
+    if (!store || !store._id) {
+      toast.error('❌ Store information is missing');
+      setIsPlacingOrder(false);
+      return;
+    }
+
+    if (!user || !user._id) {
+      toast.error('❌ User information is missing');
+      setIsPlacingOrder(false);
+      return;
+    }
+
+    // Step 3: Prepare order data with products array
     const orderProducts = storeProducts.map(product => ({
       productId: product._id,
       productName: product.name,
@@ -309,8 +338,8 @@ const OrderDetails = () => {
 
     const orderData = {
       products: orderProducts,
-      sellerId: store?._id || store,
-      buyerId: user?._id,
+      sellerId: store._id,
+      buyerId: user._id,
       totalAmount: parseFloat(calculateTotal()),
       totalItems: getTotalItems(),
       customerName: customerName.trim(),
@@ -320,28 +349,44 @@ const OrderDetails = () => {
       transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
       status: 'pending'
     };
-  
-    // Step 3: Send to backend
+
+    // Step 4: Send to backend
     try {
       console.log("📤 Sending orderData:", orderData);
-  
+
       const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
-  
+
       if (response.data) {
         toast.success(`✅ Order placed successfully! Order ID: ${response.data.orderId}`);
-        clearStoreCart(store?._id); 
+        clearStoreCart(store._id);
+        
+        // Navigate immediately after clearing cart
         setTimeout(() => {
-          navigate(`/storeprofile/${store?.storeName}`);
+          navigate(`/storeprofile/${store.storeName}`);
         }, 1500);
       }
     } catch (error) {
-      console.error("❌ Failed to place order:", error?.response?.data || error.message);
-      toast.error("🚫 Failed to place order. Please try again.");
+      console.error("❌ Failed to place order:", error);
+      
+      // More detailed error logging
+      if (error.response) {
+        console.error("Error response:", error.response.data);
+        console.error("Error status:", error.response.status);
+        toast.error(`🚫 Failed to place order: ${error.response.data.message || 'Server error'}`);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+        toast.error("🚫 No response from server. Please check your connection.");
+      } else {
+        console.error("Error setting up request:", error.message);
+        toast.error("🚫 Failed to place order. Please try again.");
+      }
+      
+      setIsPlacingOrder(false); // Reset loading state on error
     }
   };
 
@@ -353,7 +398,20 @@ const OrderDetails = () => {
     }
   };
 
-  if (!storeProducts|| storeProducts.length === 0) {
+  // Show loading state if placing order
+  if (isPlacingOrder) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-700 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Placing your order...</h2>
+          <p className="text-gray-600">Please wait while we process your order</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!storeProducts || storeProducts.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -395,55 +453,51 @@ const OrderDetails = () => {
               
               <div className="space-y-4">
                 {storeProducts.map((product, index) => {
-
-
                   const price = parseFloat(product.price) || 0;
                   const quantity = productQuantities[product._id] || 1;
                   const subtotal = (price * quantity).toFixed(2);
                   
-                  
                   return (
                     <div key={product._id} className="flex items-center bg-gray-50 rounded-xl p-4">
-                    {product.images && (
-                      <img 
-                        src={product.images?.[0]} 
-                        alt={product.name} 
-                        className="w-20 h-20 rounded-lg mr-4 object-cover bg-gray-200"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-black mb-1">{product.name}</h3>
-                      <p className="text-lg font-bold text-teal-700 mb-2">₹{price.toFixed(2)}</p>
-                      <div className="flex items-center">
-                        {/* Quantity Controls */}
-                        ...
-                        <span className="ml-4 font-semibold text-teal-700">₹{subtotal}</span>
+                      {product.images && (
+                        <img 
+                          src={product.images?.[0]} 
+                          alt={product.name} 
+                          className="w-20 h-20 rounded-lg mr-4 object-cover bg-gray-200"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-black mb-1">{product.name}</h3>
+                        <p className="text-lg font-bold text-teal-700 mb-2">₹{price.toFixed(2)}</p>
+                        <div className="flex items-center">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => decreaseQuantity(product._id)}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              <Minus size={16} className="text-gray-600" />
+                            </button>
+                            <span className="px-3 py-1 bg-gray-200 rounded text-sm font-semibold text-gray-700">
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={() => increaseQuantity(product._id)}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              <Plus size={16} className="text-gray-600" />
+                            </button>
+                          </div>
+                          <span className="ml-4 font-semibold text-teal-700">₹{subtotal}</span>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => removeFromCart(store?._id, product._id)}
+                        className="ml-4 text-red-500 hover:text-red-700"
+                        title="Remove item"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
-                    <div className="flex items-center space-x-2">
-  <Minus
-    onClick={() => decreaseQuantity(product._id)}
-    className="text-gray-600 cursor-pointer"
-  />
-  <span className="px-3 py-1 bg-gray-200 rounded text-sm font-semibold text-gray-700">
-    {quantity}
-  </span>
-  <Plus
-    onClick={() => increaseQuantity(product._id)}
-    className="text-gray-600 cursor-pointer"
-  />
-</div>
-
-
-                    <button
-                      onClick={() => removeFromCart(store?._id, product._id)}
-                      className="ml-4 text-red-500 hover:text-red-700"
-                      title="Remove item"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                  
                   );
                 })}
               </div>
@@ -604,36 +658,40 @@ const OrderDetails = () => {
               <div className="mt-4 space-y-2">
                 <h3 className="text-sm font-medium text-gray-700">Items:</h3>
                 {storeProducts.map((product) => {
-  const price = parseFloat(product.price) || 0;
-  const quantity = productQuantities[product._id] || 1;
-  const subtotal = (price * quantity).toFixed(2);
+                  const price = parseFloat(product.price) || 0;
+                  const quantity = productQuantities[product._id] || 1;
+                  const subtotal = (price * quantity).toFixed(2);
 
-  return (
-    <div key={product._id} className="flex justify-between text-xs text-gray-600">
-      <span>{product.name} x{quantity}</span>
-      <span>₹{subtotal}</span>
-    </div>
-  );
-})}
-
+                  return (
+                    <div key={product._id} className="flex justify-between text-xs text-gray-600">
+                      <span>{product.name} x{quantity}</span>
+                      <span>₹{subtotal}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Action Buttons */}
               <div className="mt-6 space-y-3">
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={!isFormValid()}
+                  disabled={!isFormValid() || isPlacingOrder}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                    isFormValid()
+                    isFormValid() && !isPlacingOrder
                       ? 'bg-teal-700 text-white hover:bg-teal-800'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  Place Order
+                  {isPlacingOrder ? 'Placing Order...' : 'Place Order'}
                 </button>
                 <button
                   onClick={handleGoBack}
-                  className="w-full py-3 px-4 border border-teal-300 text-teal-700 rounded-lg font-medium hover:bg-teal-50 transition-colors"
+                  disabled={isPlacingOrder}
+                  className={`w-full py-3 px-4 border border-teal-300 text-teal-700 rounded-lg font-medium transition-colors ${
+                    isPlacingOrder 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : 'hover:bg-teal-50'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -652,7 +710,6 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
-
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

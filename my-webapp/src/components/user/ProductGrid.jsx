@@ -108,9 +108,9 @@ const ProductsGrid = ({
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-xs line-clamp-2 leading-relaxed hidden sm:block">
-                  {product.description}
-                </p>
+                <p className="text-gray-600 text-xs leading-relaxed hidden sm:block">
+  {product.description?.slice(0, 60)}{product.description?.length > 70 ? '.....' : ''}
+</p>
 
                 <button
  onClick={(e) => {
