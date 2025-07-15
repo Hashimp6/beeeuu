@@ -510,23 +510,18 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
   const renderOrderCard = (item) => {
     const dateTime = formatDate(item.createdAt || item.orderDate);
     const formattedPrice = formatPrice(item.totalAmount || item.amount);
-    const productImage = item.productId?.image || item.product?.image;
-    const productName = item.productName || item.productId?.name || item.product?.name;
     const storeName = item.sellerName || item.seller?.name || item.store?.name || 'Store';
-    const quantity = item.quantity || 1;
-    const unitPrice = formatPrice(item.unitPrice || item.productId?.price);
     const StatusIcon = getStatusIcon(item.status);
-
+  
     const handleCancelOrder = async (orderId) => {
-      console.log("Clicked cancel for:", orderId, token);
       if (!orderId || !token) {
         alert("Missing order ID or auth token.");
         return;
       }
-    
+  
       const confirmed = window.confirm("Are you sure you want to cancel this order?");
       if (!confirmed) return;
-    
+  
       try {
         const response = await axios.patch(
           `${SERVER_URL}/orders/status/${orderId}`,
@@ -537,7 +532,7 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             },
           }
         );
-    
+  
         if (response.status === 200 || response.status === 204) {
           setData(prev =>
             prev.map(order =>
@@ -556,9 +551,10 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
         alert("Something went wrong while cancelling. Please try again.");
       }
     };
+  
     return (
       <div key={item._id} className="bg-white rounded-lg p-4 mb-6 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 hover:border-blue-300">
-        {/* Header Section */}
+        {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center space-x-2">
             <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-lg shadow-md">
@@ -576,15 +572,14 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
               </p>
             </div>
           </div>
-          
           {formattedPrice && (
             <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-3 py-1 rounded-lg shadow-md">
               <span className="text-xs font-bold">{formattedPrice}</span>
             </div>
           )}
         </div>
-    
-        {/* Status Badge */}
+  
+        {/* Status */}
         <div className="mb-3">
           <div 
             className="inline-flex items-center px-3 py-1 rounded-lg text-white text-xs font-bold shadow-md"
@@ -594,37 +589,43 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             {item.status.replace('_', ' ').toUpperCase()}
           </div>
         </div>
-    
-        {/* Product Section */}
-        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 mb-3 border border-gray-200">
-          <div className="flex items-center space-x-3">
-            {productImage && (
-              <div className="relative flex-shrink-0">
-                <img 
-                  src={productImage} 
-                  alt={productName}
-                  className="w-12 h-12 rounded-lg object-cover shadow-md border-2 border-white"
-                />
-                <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md">
-                  {quantity}
+  
+        {/* Products Loop */}
+        {item.products?.map((prod, index) => {
+          const unitPrice = formatPrice(prod.unitPrice);
+          const totalPrice = formatPrice(prod.totalPrice);
+          return (
+            <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 mb-3 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                {prod.productId?.image && (
+                  <div className="relative flex-shrink-0">
+                    <img 
+                      src={prod.productId.image} 
+                      alt={prod.productName}
+                      className="w-12 h-12 rounded-lg object-cover shadow-md border-2 border-white"
+                    />
+                    <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md">
+                      {prod.quantity}
+                    </div>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-gray-800 text-sm mb-1">{prod.productName}</h4>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-600 font-medium">Qty: {prod.quantity}</span>
+                    {unitPrice && (
+                      <span className="text-xs text-gray-700 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">
+                        {unitPrice} each
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-gray-800 text-sm mb-1">{productName}</h4>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-600 font-medium">Qty: {quantity}</span>
-                {unitPrice && (
-                  <span className="text-xs text-gray-700 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">
-                    {unitPrice} each
-                  </span>
-                )}
-              </div>
             </div>
-          </div>
-        </div>
-    
-        {/* Information Section */}
+          );
+        })}
+  
+        {/* Info Section */}
         <div className="space-y-2 mb-3">
           <div className="flex items-center bg-teal-50 p-2 rounded-lg border border-teal-200">
             <div className="bg-teal-500 p-1.5 rounded-lg mr-2 shadow-sm">
@@ -635,7 +636,7 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
               <p className="text-sm font-bold text-teal-700">{storeName}</p>
             </div>
           </div>
-    
+  
           {item.paymentMethod && (
             <div className="flex items-center bg-blue-50 p-2 rounded-lg border border-blue-200">
               <div className="bg-blue-500 p-1.5 rounded-lg mr-2 shadow-sm">
@@ -650,7 +651,7 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
               </div>
             </div>
           )}
-    
+  
           {item.trackingNumber && (
             <div className="flex items-center bg-purple-50 p-2 rounded-lg border border-purple-200">
               <div className="bg-purple-500 p-1.5 rounded-lg mr-2 shadow-sm">
@@ -663,7 +664,7 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </div>
           )}
         </div>
-    
+  
         {/* Cancel Button */}
         {item.status === 'pending' && (
           <div className="pt-3 border-t border-gray-200">
@@ -675,11 +676,12 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </button>
           </div>
         )}
-    
+  
         {renderRatingFeedbackSection(item)}
       </div>
     );
   };
+  
 
   useEffect(() => {
     fetchData();
