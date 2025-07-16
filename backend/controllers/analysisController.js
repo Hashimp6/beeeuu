@@ -119,15 +119,15 @@ const getStoreRevenue = async (req, res) => {
     // Appointments Revenue
     // -------------------------------
     const [monthlyAppointments, yearlyAppointments, totalAppointments] = await Promise.all([
-      Appointment.aggregate([
+      AppointmentModel.aggregate([
         { $match: { ...appointmentFilter, date: { $gte: startOfMonth } } },
         { $group: { _id: null, total: { $sum: "$amountPaid" } } }
       ]),
-      Appointment.aggregate([
+      AppointmentModel.aggregate([
         { $match: { ...appointmentFilter, date: { $gte: startOfYear } } },
         { $group: { _id: null, total: { $sum: "$amountPaid" } } }
       ]),
-      Appointment.aggregate([
+      AppointmentModel.aggregate([
         { $match: appointmentFilter },
         { $group: { _id: null, total: { $sum: "$amountPaid" } } }
       ])
@@ -137,15 +137,15 @@ const getStoreRevenue = async (req, res) => {
     // Orders Revenue
     // -------------------------------
     const [monthlyOrders, yearlyOrders, totalOrders] = await Promise.all([
-      Order.aggregate([
+      orderModel.aggregate([
         { $match: { ...orderFilter, orderDate: { $gte: startOfMonth } } },
         { $group: { _id: null, total: { $sum: "$totalAmount" } } }
       ]),
-      Order.aggregate([
+      orderModel.aggregate([
         { $match: { ...orderFilter, orderDate: { $gte: startOfYear } } },
         { $group: { _id: null, total: { $sum: "$totalAmount" } } }
       ]),
-      Order.aggregate([
+      orderModel.aggregate([
         { $match: orderFilter },
         { $group: { _id: null, total: { $sum: "$totalAmount" } } }
       ])

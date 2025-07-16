@@ -23,6 +23,7 @@ const StoreDashboard = () => {
     const navigate = useNavigate();
      const { user, token,setUser,logout } = useAuth() || {};
   const [store, setStore] = useState(null);
+  const [revenueData, setRevenueData] = useState(null); // NEW: revenue state
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('product');
     const [upiDropdownVisible, setUpiDropdownVisible] = useState(false);
@@ -64,15 +65,18 @@ const StoreDashboard = () => {
   }, [user]);
 
  
+  
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const { data } = await axios.get(`${SERVER_URL}/stores/store-analetics/${store._id}`);
-        console.log("Analytics data:", data.data);
-        setAnalyticsData(data.data);
+        // ✅ 1. Fetch Analytics Data
+        const analyticsRes = await axios.get(`${SERVER_URL}/stores/store-analetics/${store._id}`);
+        const analytics = analyticsRes.data.data;
+        console.log("Analytics data:", analytics);
+        setAnalyticsData(analytics);
   
-        // Calculate totals for all months
-        const totals = data.data.reduce((acc, item) => ({
+        // ✅ 2. Calculate Stats from Analytics
+        const totals = analytics.reduce((acc, item) => ({
           totalAppointments: acc.totalAppointments + item.totalAppointments,
           completedAppointments: acc.completedAppointments + item.completedAppointments,
           cancelledAppointments: acc.cancelledAppointments + item.cancelledAppointments,
@@ -92,109 +96,37 @@ const StoreDashboard = () => {
           totalRevenue: 0
         });
   
-        // Calculate pending appointments (total - completed - cancelled)
         const pendingAppointments = totals.totalAppointments - totals.completedAppointments - totals.cancelledAppointments;
-        
-        // Calculate pending orders (total - confirmed - cancelled - delivered)
         const pendingOrders = totals.totalOrders - totals.confirmedOrders - totals.cancelledOrders - totals.deliveredOrders;
   
         setStats({
           totalRevenue: totals.totalRevenue,
           todayAppointments: totals.totalAppointments,
-          pendingOrders: pendingOrders,
-          // Add these for pie chart
+          pendingOrders,
           completedAppointments: totals.completedAppointments,
           cancelledAppointments: totals.cancelledAppointments,
-          pendingAppointments: pendingAppointments,
+          pendingAppointments,
           confirmedOrders: totals.confirmedOrders,
           cancelledOrders: totals.cancelledOrders,
           deliveredOrders: totals.deliveredOrders
         });
   
+        // ✅ 3. Fetch Revenue Data (new API)
+        const revenueRes = await axios.get(`${SERVER_URL}/stores/revenue/${store._id}`);
+        console.log("Revenue Data:", revenueRes.data);
+        setRevenueData(revenueRes.data);
+  
       } catch (err) {
-        console.error("Error fetching analytics", err);
+        console.error("Error fetching analytics or revenue:", err);
         setAnalyticsData([]);
+        setRevenueData(null);
       }
     };
   
-    if (store?._id) fetchAnalytics();
+    if (store?._id) {
+      fetchAnalytics();
+    }
   }, [store]);
-  // const fetchStats = async () => {
-  //   try {
-  //     // Mock data - replace with real API calls
-  //     setStats({
-  //       pendingAppointments: 12,
-  //       completedAppointments: 145,
-  //       totalRevenue: 18500,
-  //       todayAppointments: 8,
-  //       cancelledAppointments: 3,
-  //       totalOrders: 89,
-  //       pendingOrders: 5,
-  //       completedOrders: 78
-  //     });
-  //   } catch (error) {
-  //     console.error('Error fetching stats:', error);
-  //   }
-  // };
-  // const handleUpdateUpi = async () => {
-  //   if (!upiInput.trim()) {
-  //     toast.error("Please enter a valid UPI ID");
-  //     return;
-  //   }
-  
-  //   setIsUpdatingUpi(true);
-  
-  //   try {
-  //     const storeId = store._id;
-  //     const response = await axios.put(
-  //       `${SERVER_URL}/upi/${storeId}/upi`,
-  //       { upi: upiInput },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           'Content-Type': 'application/json',
-  //         },
-  //       }
-  //     );
-  
-  //     if (response.data.success) {
-  //       setUser((prevUser) => ({
-  //         ...prevUser,
-  //         upi: upiInput
-  //       }));
-  
-  //       toast.success("UPI ID updated successfully!");
-  
-  //       setUpiModalVisible(false);
-  //       setUpiDropdownVisible(false);
-  //     } else {
-  //       toast.error("Failed to update UPI ID");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating UPI:", error);
-  //     toast.error("Something went wrong. Please try again.");
-  //   } finally {
-  //     setIsUpdatingUpi(false);
-  //   }
-  // };
-  
-//   const handleEditStore = () => {
-//     // Navigate to NewStore with existing store data
-//     navigation.navigate("NewStore", {
-//       editMode: true,
-//       storeData: {
-//         _id:store._id,
-//         storeName: store.storeName || store.name,
-//         description: store.description,
-//         place: store.place,
-//         category: store.category,
-//         phone: store.phone,
-//         profileImage: store.profileImage,
-//         // Add any other fields you want to pre-fill
-//       }
-//     });
-//   };
-
 
   const appointmentStatusData = [
     { name: 'Completed', value: stats.completedAppointments || 0, color: '#14b8a6' },
@@ -528,60 +460,57 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
             {/* Stats Cards - Show only on overview */}
             {activeTab === 'overview' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-teal-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                      <p className="text-3xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
-                      <p className="text-sm text-teal-600 mt-1">↑ 12% from last month</p>
-                    </div>
-                    <div className="bg-teal-100 p-3 rounded-full">
-                      <DollarSign className="w-6 h-6 text-teal-600" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Today's Appointments</p>
-                      <p className="text-3xl font-bold text-gray-900">{stats.todayAppointments}</p>
-                      <p className="text-sm text-green-600 mt-1">↑ 3 from yesterday</p>
-                    </div>
-                    <div className="bg-green-100 p-3 rounded-full">
-                      <Calendar className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Pending Orders</p>
-                      <p className="text-3xl font-bold text-gray-900">{stats.pendingOrders}</p>
-                      <p className="text-sm text-blue-600 mt-1">Need attention</p>
-                    </div>
-                    <div className="bg-blue-100 p-3 rounded-full">
-                      <Package className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                      <p className="text-3xl font-bold text-gray-900">{store?.reviews || 0}</p>
-                      <p className="text-sm text-purple-600 mt-1">Active users</p>
-                    </div>
-                    <div className="bg-purple-100 p-3 rounded-full">
-                      <Users className="w-6 h-6 text-purple-600" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    {/* Total Revenue */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-teal-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">This Month's Revenue</p>
+          <p className="text-3xl font-bold text-gray-900">₹{revenueData?.revenue?.month?.toLocaleString() || 0}</p>
+          <p className="text-sm text-teal-600 mt-1">
+            Yearly: ₹{revenueData?.revenue?.year?.toLocaleString() || 0}
+          </p>
+        </div>
+        <div className="bg-teal-100 p-3 rounded-full">
+          <DollarSign className="w-6 h-6 text-teal-600" />
+        </div>
+      </div>
+    </div>
+
+    {/* Appointments Revenue */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">Appointments Revenue</p>
+          <p className="text-3xl font-bold text-gray-900">₹{revenueData?.revenue?.breakdown?.appointments?.month?.toLocaleString() || 0}</p>
+          <p className="text-sm text-green-600 mt-1">
+            Yearly: ₹{revenueData?.revenue?.breakdown?.appointments?.year?.toLocaleString() || 0}
+          </p>
+        </div>
+        <div className="bg-green-100 p-3 rounded-full">
+          <Calendar className="w-6 h-6 text-green-600" />
+        </div>
+      </div>
+    </div>
+
+    {/* Orders Revenue */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600">Orders Revenue</p>
+          <p className="text-3xl font-bold text-gray-900">₹{revenueData?.revenue?.breakdown?.orders?.month?.toLocaleString() || 0}</p>
+          <p className="text-sm text-blue-600 mt-1">
+            Yearly: ₹{revenueData?.revenue?.breakdown?.orders?.year?.toLocaleString() || 0}
+          </p>
+        </div>
+        <div className="bg-blue-100 p-3 rounded-full">
+          <Package className="w-6 h-6 text-blue-600" />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
 
             {/* Tab Content */}
             {activeTab === 'overview' && (

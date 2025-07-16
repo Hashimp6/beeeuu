@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { 
   ArrowLeft, 
   Minus, 
@@ -46,7 +47,9 @@ const OrderDetails = () => {
   const [transactionId, setTransactionId] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-
+  const [isMobile, setIsMobile] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+const [upiLinkToShow, setUpiLinkToShow] = useState('');
   // Validation error states
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -96,6 +99,11 @@ const OrderDetails = () => {
   ];
 
   
+useEffect(() => {
+  // Detect if user is on mobile
+  const mobileCheck = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  setIsMobile(mobileCheck);
+}, []);
   // Validation functions
   const validateName = (name) => {
     const trimmedName = name.trim();
@@ -255,11 +263,35 @@ const OrderDetails = () => {
       setShowPaymentModal(true);
     }
   };
-
+  const generateUPILink = (upiId, storeName, amount, transactionNote) => {
+    return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(storeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+  };
+  
+  
   // Handle payment process
   const handlePaymentProcess = () => {
-    alert(`Opening ${paymentOptions.find(p => p.id === selectedPayment)?.name} app...`);
+    const upiId = store?.upi;
+    const amount = calculateTotal();
+    const name = store?.storeName || "Merchant";
+  
+    if (!upiId) {
+      toast.error("❌ Store does not have a UPI ID.");
+      return;
+    }
+  
+    const note = `Order by ${user?.username} | ${storeProducts.slice(0, 2).map(p => p.name).join(", ")}${storeProducts.length > 2 ? '...' : ''}`;
+    const upiLink = generateUPILink(upiId, name, amount, note);
+  
+    if (isMobile) {
+      // Open payment app
+      window.location.href = upiLink;
+    } else {
+      // Show QR code
+      setShowQRCode(true);
+      setUpiLinkToShow(upiLink); // Set UPI link for QR
+    }
   };
+  
 
   // Confirm payment completion
   const confirmPaymentCompletion = () => {
@@ -783,6 +815,25 @@ const OrderDetails = () => {
           </div>
         </div>
       )}
+      {showQRCode && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center">
+      <h2 className="text-lg font-bold text-teal-700 mb-2">Scan to Pay</h2>
+      <p className="text-gray-600 mb-4">Use Google Pay / PhonePe to scan & pay</p>
+      <QRCodeCanvas value={upiLinkToShow} size={200} />
+
+      <div className="mt-4">
+        <button
+          onClick={() => setShowQRCode(false)}
+          className="text-sm text-teal-700 hover:underline mt-2"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
