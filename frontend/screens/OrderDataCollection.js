@@ -18,19 +18,21 @@ import axios from 'axios';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { SERVER_URL } from '../config';
+import { useCart } from '../context/CartContext';
+import Toast from 'react-native-toast-message';
 
 const OrderDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const store = route.params.store|| {};
-  const product =route.params.itemDetails
-  console.log("fss",product);
-  console.log("lss",store);
-  
+  const { cart, updateCartQuantity, removeFromCart,clearStoreCart} = useCart();
+  const storeId = store.storeId || store._id;
+  const products = cart?.[storeId]?.products || [];
   const { user, token } = useAuth() || {};
 console.log("authuser",user);
 
   // Form states
+  const [isLoading, setIsLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState(user?.username || '');
   const [address, setAddress] = useState(user?.address ||'');
@@ -39,18 +41,19 @@ console.log("authuser",user);
   const [transactionId, setTransactionId] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  
   // Validation error states
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
   const [transactionError, setTransactionError] = useState('');
-
-  // Product details
-  const productPrice = parseFloat(product.price) || 0;
-  const productName = product.name || product.productName || 'Product';
-  const productImage = product.image || product.imageUrl || null;
-  const storeId = store.storeId || store._id;
+  useEffect(() => {
+    if (!orderPlaced && (!cart?.[storeId] || cart[storeId].products.length === 0)) {
+      Alert.alert('Cart Empty', 'Your cart is empty. Please add items before proceeding.');
+      navigation.goBack();
+    }
+  }, [cart, storeId, orderPlaced]);
 
   // Payment options
   const paymentOptions = [
@@ -156,26 +159,14 @@ console.log("authuser",user);
 
   // Calculate total
   const calculateTotal = () => {
-    return (productPrice * quantity).toFixed(2);
+    return products.reduce((sum, item) => {
+      const p = item.productId || item;
+      const price = parseFloat(p.price) || 0;
+      const qty = item.quantity || 1;
+      return sum + (price * qty);
+    }, 0).toFixed(2);
   };
 
-  // Handle quantity changes
-  const increaseQuantity = () => {
-    setQuantity(prev => prev + 1);
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
-  };
-
-  const handleQuantityChange = (text) => {
-    const num = parseInt(text);
-    if (!isNaN(num) && num > 0) {
-      setQuantity(num);
-    }
-  };
 
   // Handle payment selection
   const handlePaymentSelect = (paymentId) => {
@@ -191,33 +182,40 @@ console.log("authuser",user);
   };
 
   // Generate payment deep link
-  const generatePaymentDeepLink = (paymentMethod) => {
-    const amount = calculateTotal();
-    const merchantName = store.storeName || 'Merchant';
-    const merchantUPI = store.upi || 'merchant@paytm';
-    
-    console.log("merchant upi",merchantUPI);
-    
-    let deepLink = '';
-    
-    switch (paymentMethod) {
-      case 'gpay':
-        deepLink = `gpay://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
-        break;
-      case 'phonepe':
-        deepLink = `phonepe://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
-        break;
-      case 'paytm':
-        deepLink = `paytmmp://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
-        break;
-      case 'upi':
-        deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(productName)}`;
-        break;
-    }
-    
-    console.log(`🔗 Generated ${paymentMethod.toUpperCase()} Deep Link:`, deepLink);
-    return deepLink;
-  };
+// Replace the generatePaymentDeepLink function with this fixed version:
+
+const generatePaymentDeepLink = (paymentMethod) => {
+  const amount = calculateTotal();
+  const merchantName = store.storeName || 'Merchant';
+  const merchantUPI = store.upi || 'merchant@paytm';
+  
+  // Generate a proper transaction note
+  const transactionNote = products.length === 1 
+    ? `Payment for ${products[0].productId?.name || products[0].name || 'Product'}`
+    : `Payment for ${products.length} items from ${merchantName}`;
+  
+  console.log("merchant upi", merchantUPI);
+  
+  let deepLink = '';
+  
+  switch (paymentMethod) {
+    case 'gpay':
+      deepLink = `gpay://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      break;
+    case 'phonepe':
+      deepLink = `phonepe://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      break;
+    case 'paytm':
+      deepLink = `paytmmp://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      break;
+    case 'upi':
+      deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      break;
+  }
+  
+  console.log(`🔗 Generated ${paymentMethod.toUpperCase()} Deep Link:`, deepLink);
+  return deepLink;
+};
 
   // Handle payment app opening
   const openPaymentApp = async (paymentMethod) => {
@@ -327,11 +325,6 @@ console.log("authuser",user);
     }
 
     const orderData = {
-      productId: product._id || product.id,
-      productName: productName,
-      quantity: quantity,
-      unitPrice: productPrice,
-      totalAmount: calculateTotal(),
       buyerId: user._id,
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
@@ -340,12 +333,24 @@ console.log("authuser",user);
       transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
       storeId: storeId,
       sellerId: store._id,
-      status: 'pending'
+      status: 'pending',
+      products: products.map((item) => {
+        const product = item.productId || item;
+        return {
+          productId: product._id,
+          productName: product.name || product.productName,
+          unitPrice: parseFloat(product.price) || 0,
+          quantity: item.quantity || 1
+        };
+      }),
+      totalAmount: calculateTotal(),
+      totalItems: products.reduce((sum, item) => sum + (item.quantity || 1), 0)
     };
+    
 
     try {
       console.log("order data ", orderData);
-
+      setIsLoading(true);
       // Send order to server
       const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
         headers: {
@@ -355,12 +360,19 @@ console.log("authuser",user);
       });
 
       if (response.data) {
+        setOrderPlaced(true);
+Toast.show({
+  type: 'success',
+  text1: 'Order Placed',
+  text2: `Order ID: ${response.data.orderId || 'N/A'}`,
+});
+navigation.goBack();
         console.log("✅ Order placed successfully", response.data);
-        
+        clearStoreCart(storeId);
         // Show success message
         Alert.alert(
           'Order Placed Successfully!',
-          `Your order for ${productName} has been placed. Order ID: ${response.data.orderId || 'N/A'}`,
+          `Your order  has been placed. Order ID: ${response.data.orderId || 'N/A'}`,
           [
             {
               text: 'OK',
@@ -373,6 +385,8 @@ console.log("authuser",user);
     } catch (error) {
       console.error("❌ Failed to place order:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to place order. Please try again.");
+    }finally {
+      setIsLoading(false); // Add this line
     }
   };
 
@@ -399,47 +413,53 @@ console.log("authuser",user);
           {/* Product Details */}
           <View style={styles.productContainer}>
             <Text style={styles.sectionTitle}>Product Details</Text>
-            <View style={styles.productCard}>
-              {productImage && (
-                <Image source={{ uri: productImage }} style={styles.productImage} />
-              )}
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{productName}</Text>
-                <Text style={styles.productPrice}>₹{productPrice.toFixed(2)}</Text>
-                {store.storeName && (
-                  <Text style={styles.storeName}>Store: {store.storeName}</Text>
-                )}
-              </View>
-            </View>
+            {products.map((item, index) => {
+  const p = item.productId || item;
+  return (
+    <View key={index} style={styles.productCard}>
+  <Image 
+    source={{ uri: p.images?.[0] || p.image || p.imageUrl }} 
+    style={styles.productImage} 
+  />
+  <View style={styles.productInfo}>
+    <Text style={styles.productName}>{p.name || p.productName}</Text>
+    <Text style={styles.productPrice}>₹{p.price}</Text>
+
+    {/* Quantity controls */}
+    <View style={styles.quantityControls}>
+      <TouchableOpacity
+        onPress={() => updateCartQuantity(store._id, p._id, Math.max((item.quantity || 1) - 1, 1))}
+        style={styles.qtyBtn}
+      >
+        <Ionicons name="remove" size={18} color="#333" />
+      </TouchableOpacity>
+      <Text style={styles.qtyText}>{item.quantity || 1}</Text>
+      <TouchableOpacity
+        onPress={() => updateCartQuantity(store._id, p._id, (item.quantity || 1) + 1)}
+        style={styles.qtyBtn}
+      >
+        <Ionicons name="add" size={18} color="#333" />
+      </TouchableOpacity>
+    </View>
+
+    {/* Delete Button */}
+    <TouchableOpacity
+      onPress={() => removeFromCart(store._id, p._id)}
+      style={styles.deleteBtn}
+    >
+      <Ionicons name="trash" size={18} color="#fff" />
+      <Text style={{ color: "#fff", marginLeft: 4 }}>Remove</Text>
+    </TouchableOpacity>
+  </View>
+</View>
+
+  );
+})}
+
           </View>
 
           {/* Quantity Selection */}
           <View style={styles.quantityContainer}>
-            <Text style={styles.sectionTitle}>Quantity</Text>
-            <View style={styles.quantityControls}>
-              <TouchableOpacity 
-                style={styles.quantityButton} 
-                onPress={decreaseQuantity}
-                disabled={quantity <= 1}
-              >
-                <Ionicons name="remove" size={20} color={quantity <= 1 ? "#ccc" : "#155366"} />
-              </TouchableOpacity>
-              
-              <TextInput
-                style={styles.quantityInput}
-                value={quantity.toString()}
-                onChangeText={handleQuantityChange}
-                keyboardType="numeric"
-                textAlign="center"
-              />
-              
-              <TouchableOpacity 
-                style={styles.quantityButton} 
-                onPress={increaseQuantity}
-              >
-                <Ionicons name="add" size={20} color="#155366" />
-              </TouchableOpacity>
-            </View>
             <Text style={styles.totalAmount}>Total: ₹{calculateTotal()}</Text>
           </View>
 
@@ -576,27 +596,20 @@ console.log("authuser",user);
           )}
 
           {/* Order Summary */}
-          <View style={styles.orderSummary}>
-            <Text style={styles.sectionTitle}>Order Summary</Text>
-            <View style={styles.summaryDetails}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Product:</Text>
-                <Text style={styles.summaryValue}>{productName}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Quantity:</Text>
-                <Text style={styles.summaryValue}>{quantity}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Unit Price:</Text>
-                <Text style={styles.summaryValue}>₹{productPrice.toFixed(2)}</Text>
-              </View>
-              <View style={[styles.summaryRow, styles.totalRow]}>
-                <Text style={styles.totalLabel}>Total Amount:</Text>
-                <Text style={styles.totalValue}>₹{calculateTotal()}</Text>
-              </View>
-            </View>
-          </View>
+          {products.map((item, index) => {
+  const p = item.productId || item;
+  return (
+    <View key={index} style={styles.summaryRow}>
+      <Text style={styles.summaryLabel}>{p.name || p.productName} x {item.quantity || 1}</Text>
+      <Text style={styles.summaryValue}>₹{(parseFloat(p.price) * (item.quantity || 1)).toFixed(2)}</Text>
+    </View>
+  );
+})}
+<View style={[styles.summaryRow, styles.totalRow]}>
+  <Text style={styles.totalLabel}>Total Amount:</Text>
+  <Text style={styles.totalValue}>₹{calculateTotal()}</Text>
+</View>
+
 
         </ScrollView>
         
@@ -608,15 +621,23 @@ console.log("authuser",user);
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.placeOrderButton,
-              !isFormValid() && styles.placeOrderButtonDisabled
-            ]}
-            onPress={handlePlaceOrder}
-            disabled={!isFormValid()}
-          >
-            <Text style={styles.placeOrderButtonText}>Place Order</Text>
-          </TouchableOpacity>
+  style={[
+    styles.placeOrderButton,
+    (!isFormValid() || isLoading) && styles.placeOrderButtonDisabled
+  ]}
+  onPress={handlePlaceOrder}
+  disabled={!isFormValid() || isLoading}
+>
+  {isLoading ? (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Ionicons name="reload" size={18} color="#fff" style={{ marginRight: 8 }} />
+      <Text style={styles.placeOrderButtonText}>Placing...</Text>
+    </View>
+  ) : (
+    <Text style={styles.placeOrderButtonText}>Place Order</Text>
+  )}
+</TouchableOpacity>
+
         </View>
       </KeyboardAvoidingView>
 
@@ -761,6 +782,30 @@ const styles = StyleSheet.create({
   productInfo: {
     flex: 1,
   },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  qtyBtn: {
+    backgroundColor: '#ddd',
+    padding: 6,
+    borderRadius: 4,
+  },
+  qtyText: {
+    marginHorizontal: 10,
+    fontSize: 16,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#d9534f',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },  
   productName: {
     fontSize: 16,
     fontWeight: '600',
@@ -810,6 +855,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#155366',
     textAlign: 'center',
+  },
+  placeOrderButtonDisabled: {
+    backgroundColor: '#A0A0A0',
   },
   customerDetailsContainer: {
     marginBottom: 20,

@@ -19,34 +19,27 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileShareHandler from '../components/ProfileShare';
+import { useCart } from '../context/CartContext';
+import ProductDetailModal from '../components/ProductDetailModal';
 
 const SellerProfile = () => {
+   const { addToCart,cart  } = useCart();
   const [activeTab, setActiveTab] = useState('products');
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
-    const [token, setToken] = useState(null);
   const route = useRoute(); 
-  const { user,  isAuthenticated } = useAuth(); 
+  const { user,  isAuthenticated,token } = useAuth(); 
   const [products, setProducts] = useState([]);
   const [store, setStore] = useState(null);
   const [error, setError] = useState('');
   const [gallery, setGallery] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const { name } = route.params;
+ 
   useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem('authToken');
-        if (!storedToken) {
-          throw new Error('No token found');
-        }
-        console.log("token is ", storedToken);
-        setToken(storedToken);
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-    loadToken();
-  }, []);
+    console.log('🧺 Updated Cart:', cart);
+  }, [cart]);
+
   const openLink = (url) => {
     if (url && url.trim() !== '') {
       Linking.openURL(url);
@@ -76,6 +69,23 @@ const SellerProfile = () => {
         setLoading(false);
       }
     };
+
+    const handleOrder = (product) => {
+      // Use the `store` from SellerProfile context, not product.store
+      addToCart(product, store);
+    
+      console.log('🛒 Product added:', product);
+      console.log('📦 Correct Store ID:', store._id);
+    
+      Toast.show({
+        type: 'success',
+        text1: 'Added to Cart',
+        text2: `${product.name} has been added to your cart.`,
+      });
+    };
+    
+
+    
     const handleAppointment = (productId,productName) => {
       setLoading(true);
       try {
@@ -180,7 +190,7 @@ const handleShare = async () => {
       try {
         console.log("soo",name);
         const response = await axios.get(`${SERVER_URL}/stores/storeprofile/${name}`);
-       console.log("sroo",response.data.data);
+       
        
         setStore({
           ...response.data.data,
@@ -210,7 +220,6 @@ const handleShare = async () => {
           },
         });
         setProducts(response.data);
-        console.log("prdss",response.data);
         
       } catch (err) {
         console.error(err);
@@ -259,6 +268,7 @@ const handleShare = async () => {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={styles.container}>
       {/* Profile Card */}
       <View style={styles.profileCard}>
@@ -353,60 +363,64 @@ const handleShare = async () => {
 
       {/* Tab Content */}
       {activeTab === 'products' ? (
-  <View style={styles.productList}>
-    {products && products.length > 0 ? (
-      products.map((item) => (
-        <View key={item._id} style={styles.productCard}>
-          <Image
-            source={{ 
-              uri: item.image || 'https://picsum.photos/300?random=11' 
-            }}
-            style={styles.productImage}
-          />
-          <View style={styles.productInfo}>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productDetails}>{item.description}</Text>
-            <View style={styles.productFooter}>
-              <Text style={styles.productPrice}>₹{item.price}</Text>
-              <TouchableOpacity
-              style={styles.bookNowBtn}
-              onPress={() => {
-                if (item.type === 'service') {
-                  handleAppointment(item._id,item.name)
-                } else if (item.type === 'product') {
-                  // Navigate to order details screen
-                  navigation.navigate('OrderDetails', {
-                    itemId: item._id,
-                    itemName: item.name,
-                    itemDetails: item,
-                    store
-                  });
-                } else {
-                  alert("Unknown item type");
-                }
-              }}
-            >
-              <Text style={styles.bookNowText}>
-                {item.type === 'service' ? 'Book' : 'Buy'}
-              </Text>
-            </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      ))
-    ) : (
-      <View style={styles.noDataContainer}>
-        <View style={styles.iconWrapper}>
-          <Text style={styles.noDataIcon}>🛍️</Text>
-        </View>
-        <Text style={styles.noDataTitle}>No Products Found</Text>
-        <Text style={styles.noDataSubtitle}>
-          It looks like there are no products listed in this store yet. 
-          Please check back soon or browse other stores.
-        </Text>
-      </View>
-    )}
-  </View>
+   <View style={styles.productList}>
+   {products && products.length > 0 ? (
+     products.map((item) => (
+       <TouchableOpacity
+         key={item._id}
+         style={styles.productCard}
+         onPress={() => setSelectedProduct(item)}
+       >
+         <Image
+           source={{ 
+             uri: item.images && item.images.length > 0 
+               ? item.images[0] 
+               : 'https://picsum.photos/300?random=11'
+           }}
+           style={styles.productImage}
+         />
+         <View style={styles.productInfo}>
+           <Text style={styles.productName}>{item.name}</Text>
+           <Text style={styles.productDetails}>
+             {item.description?.length > 30 
+               ? item.description.slice(0, 30) + '...' 
+               : item.description}
+           </Text>
+           <View style={styles.productFooter}>
+             <Text style={styles.productPrice}>₹{item.price}</Text>
+             <TouchableOpacity
+               style={styles.bookNowBtn}
+               onPress={() => {
+                 if (item.type === 'service') {
+                   handleAppointment(item._id, item.name);
+                 } else if (item.type === 'product') {
+                   handleOrder(item);
+                 } else {
+                   alert("Unknown item type");
+                 }
+               }}
+             >
+               <Text style={styles.bookNowText}>
+                 {item.type === 'service' ? 'Book' : 'Add to Cart'}
+               </Text>
+             </TouchableOpacity>
+           </View>
+         </View>
+       </TouchableOpacity>
+     ))
+   ) : (
+     <View style={styles.noDataContainer}>
+       <View style={styles.iconWrapper}>
+         <Text style={styles.noDataIcon}>🛍️</Text>
+       </View>
+       <Text style={styles.noDataTitle}>No Products Found</Text>
+       <Text style={styles.noDataSubtitle}>
+         It looks like there are no products listed in this store yet. 
+         Please check back soon or browse other stores.
+       </Text>
+     </View>
+   )}
+ </View>
 ) : (
   <View style={styles.gallery}>
     {gallery && gallery.length > 0 ? (
@@ -433,11 +447,59 @@ const handleShare = async () => {
         </Text>
       </View>
     )}
+    
   </View>
-)}
-<Toast />
+)}</ScrollView>
 
-    </ScrollView>
+{selectedProduct && (
+  <ProductDetailModal
+    product={selectedProduct}
+    onClose={() => setSelectedProduct(null)}
+    handleOrderProduct={handleOrder}
+    handleAppointment={handleAppointment}
+    likedProducts={new Set()} // Optional if you have like feature
+    toggleLike={() => {}}     // Optional if you have like feature
+  />
+)}
+
+{/* Floating Cart Icon */}
+<View>
+<TouchableOpacity
+  style={styles.cartButton}
+  onPress={() => {
+    const storeId = store._id;
+    const storeCart = cart[storeId];
+
+    if (storeCart && storeCart.products.length > 0) {
+      const firstProduct = storeCart.products[0]; // or let them choose
+
+      navigation.navigate('OrderDetails', {
+        store: storeCart.store,
+        itemDetails: storeCart.products,
+      });
+    } else {
+      Toast.show({
+        type: 'info',
+        text1: 'Cart is empty',
+        text2: 'No items in cart for this store.',
+      });
+    }
+  }}
+>
+    <Ionicons name="cart" size={24} color="white" />
+    {/* Inline badge inside button */}
+    {cart[store._id]?.products?.length > 0 && (
+      <View style={styles.cartBadge}>
+        <Text style={styles.cartBadgeText}>
+          {cart[store._id].products.length}
+        </Text>
+      </View>
+    )}
+  </TouchableOpacity>
+</View>
+
+<Toast />
+    </View>
   );
 };
 const styles = StyleSheet.create({
@@ -445,6 +507,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     flex: 1,
   },
+  cartButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#155366',
+    padding: 14,
+    borderRadius: 50,
+    zIndex: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

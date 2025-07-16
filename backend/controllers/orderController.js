@@ -82,6 +82,7 @@ const createOrder = async (req, res) => {
       ...product,
       totalPrice: product.quantity * product.unitPrice,
     }));
+    orderData.orderId = `ORD-${Date.now()}`;
     const order = new Order(orderData);
     await order.save();
     console.log("order saved");

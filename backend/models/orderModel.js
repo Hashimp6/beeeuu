@@ -127,25 +127,25 @@ const orderSchema = new mongoose.Schema({
     type: Date
   },
   
-  // Order ID for reference
   orderId: {
     type: String,
-    unique: true
-  }
+    unique: false // let us manage uniqueness manually later
+  },
+  
 }, {
   timestamps: true
 });
 
-// Pre-save middleware to generate order ID
-orderSchema.pre('save', async function(next) {
-  if (!this.orderId) {
-    // Generate order ID like ORD-2024-001234
-    const year = new Date().getFullYear();
-    const count = await mongoose.model('Order').countDocuments();
-    this.orderId = `ORD-${year}-${String(count + 1).padStart(6, '0')}`;
-  }
-  next();
-});
+// // Pre-save middleware to generate order ID
+// orderSchema.pre('save', async function(next) {
+//   if (!this.orderId) {
+//     const year = new Date().getFullYear();
+//     const count = await mongoose.model('Order').countDocuments();
+//     this.orderId = `ORD-${year}-${String(count + 1).padStart(6, '0')}`;
+//   }
+//   next();
+// });
+
 
 // Pre-save middleware to calculate totals and validate products
 orderSchema.pre('save', function(next) {

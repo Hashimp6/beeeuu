@@ -8,6 +8,7 @@ import AppNavigator from "./navigation/AppNavigator.js";
 import linking from "./navigation/linkingConfig.js";
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './components/ToastConfig.js'; 
+import { CartProvider } from "./context/CartContext.js";
 
 export default function App() {
   return (
@@ -15,7 +16,9 @@ export default function App() {
       <NotificationProvider>
         <SocketProvider>
           <NavigationContainer linking={linking}>
+             <CartProvider>
             <AppNavigator />
+            </CartProvider>
           </NavigationContainer>
         </SocketProvider>
       </NotificationProvider>
