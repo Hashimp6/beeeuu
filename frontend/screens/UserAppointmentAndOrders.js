@@ -564,23 +564,17 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
   };
 
   const renderOrderCard = ({ item }) => {
-    console.log("imss",item);
-    
     const dateTime = formatDate(item.createdAt || item.orderDate);
-    const formattedPrice = formatPrice(item.totalAmount || item.amount);
-    const productImage = item.productId?.image || item.product?.image;
-    const productName = item.productName || item.productId?.name || item.product?.name;
+    const formattedPrice = formatPrice(item.totalAmount);
     const storeName = item.sellerName || item.seller?.name || item.store?.name || 'Store';
-    const location = item.location|| 'location';
-    const quantity = item.quantity || 1;
-    const unitPrice = formatPrice(item.unitPrice || item.productId?.price);
-
+    const location = item.location || 'location';
+  
     return (
       <View style={styles.card}>
         {/* Header with Order ID and Price */}
         <View style={styles.cardHeader}>
           <View style={styles.dateTimeContainer}>
-            <Text style={styles.orderIdText}>Order #{item.orderId || item._id?.slice(-6)}</Text>
+            <Text style={styles.orderIdText}>Order #{item._id?.slice(-6)}</Text>
             <Text style={[
               styles.dateText,
               dateTime.isToday && styles.todayText,
@@ -589,7 +583,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
               {dateTime.dateStr} {dateTime.timeStr}
             </Text>
           </View>
-          
+  
           <View style={styles.headerActions}>
             {formattedPrice && (
               <View style={styles.priceChip}>
@@ -598,41 +592,50 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             )}
           </View>
         </View>
-
+  
         {/* Status Badge */}
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Icon 
-            name={getStatusIcon(item.status)} 
-            size={16} 
-            color="#FFFFFF" 
-          />
+          <Icon name={getStatusIcon(item.status)} size={16} color="#FFFFFF" />
           <Text style={styles.statusBadgeText}>
             {item.status.replace('_', ' ').toUpperCase()}
           </Text>
         </View>
-
-        {/* Product Info with Image */}
-        <View style={styles.productSection}>
-          {productImage && (
-            <Image 
-              source={{ uri: productImage }} 
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          )}
-          <View style={styles.productDetails}>
-            <Text style={styles.productName} numberOfLines={2}>
-              {productName}
-            </Text>
-            <View style={styles.quantityPriceRow}>
-              <Text style={styles.quantityText}>Qty: {quantity}</Text>
-              {unitPrice && (
-                <Text style={styles.unitPriceText}>{unitPrice} each</Text>
+  
+        {/* Loop over all products */}
+        {item.products?.map((product, index) => {
+          const productImage = product.productId?.image; // If populated via ref
+          const productName = product.productName;
+          const unitPrice = formatPrice(product.unitPrice);
+          const totalPrice = formatPrice(product.totalPrice);
+          const quantity = product.quantity;
+  
+          return (
+            <View key={index} style={styles.productSection}>
+              {productImage && (
+                <Image
+                  source={{ uri: productImage }}
+                  style={styles.productImage}
+                  resizeMode="cover"
+                />
               )}
+              <View style={styles.productDetails}>
+                <Text style={styles.productName} numberOfLines={2}>
+                  {productName}
+                </Text>
+                <View style={styles.quantityPriceRow}>
+                  <Text style={styles.quantityText}>Qty: {quantity}</Text>
+                  {unitPrice && (
+                    <Text style={styles.unitPriceText}>{unitPrice} each</Text>
+                  )}
+                </View>
+                {totalPrice && (
+                  <Text style={styles.totalPriceText}>Total: {totalPrice}</Text>
+                )}
+              </View>
             </View>
-          </View>
-        </View>
-
+          );
+        })}
+  
         {/* Order Details */}
         <View style={styles.infoSection}>
           {/* Store Name */}
@@ -640,58 +643,53 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             <Icon name="store" size={16} color="#666" />
             <Text style={styles.shopText}>{storeName}</Text>
           </View>
-          {/* Customer Info */}
-          {/* {item.customerName && (
-            <View style={styles.serviceRow}>
-              <Icon name="person" size={16} color="#666" />
-              <Text style={styles.serviceText}>Customer: {item.customerName}</Text>
+  
+          {/* Delivery Address */}
+          {item.deliveryAddress && (
+            <View style={styles.locationRow}>
+              <Icon name="location-on" size={16} color="#666" />
+              <Text style={styles.locationText} numberOfLines={2}>
+                {item.deliveryAddress}
+              </Text>
             </View>
-          )} */}
-
+          )}
+  
           {/* Phone Number */}
-          {/* {item.phoneNumber && (
+          {item.phoneNumber && (
             <View style={styles.serviceRow}>
               <Icon name="phone" size={16} color="#666" />
               <Text style={styles.serviceText}>{item.phoneNumber}</Text>
             </View>
-          )} */}
-
-          {/* Delivery Address */}
-          {/* {(item.deliveryAddress || item.shippingAddress) && (
-            <View style={styles.locationRow}>
-              <Icon name="location-on" size={16} color="#666" />
-              <Text style={styles.locationText} numberOfLines={2}>
-                {item.deliveryAddress || item.shippingAddress}
-              </Text>
-            </View>
-          )} */}
-
+          )}
+  
           {/* Payment Method */}
           {item.paymentMethod && (
             <View style={styles.paymentRow}>
               <Icon name="payment" size={16} color="#666" />
               <Text style={styles.paymentText}>
-                Payment: {item.paymentMethod.toUpperCase()} 
+                Payment: {item.paymentMethod.toUpperCase()}
                 {item.paymentStatus && ` (${item.paymentStatus})`}
               </Text>
             </View>
           )}
-
-          {item.trackingNumber && (
+  
+          {/* Transaction ID */}
+          {item.transactionId && (
             <View style={styles.notesRow}>
-              <Icon name="local-shipping" size={16} color="#666" />
+              <Icon name="receipt" size={16} color="#666" />
               <Text style={styles.notesText}>
-                Tracking: {item.trackingNumber}
+                Transaction ID: {item.transactionId}
               </Text>
             </View>
           )}
         </View>
-
+  
         {/* Rating and Feedback Section */}
         {renderRatingFeedbackSection(item)}
       </View>
     );
   };
+  
 
   // Function to get the current data based on active tab and status
   const getCurrentData = () => {

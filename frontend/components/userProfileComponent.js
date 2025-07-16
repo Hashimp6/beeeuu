@@ -27,6 +27,7 @@ const UserProfileComponent = ({ store }) => {
   const { user, setUser } = useAuth() || {}; // Fixed: Use setUser instead of setuser
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
+  const [showPolicyDropdown, setShowPolicyDropdown] = useState(false);
   const [userInfo, setUserInfo] = useState(user); // Local state for user data
   const [formData, setFormData] = useState({
     userId: user?._id || "",
@@ -545,7 +546,7 @@ const UserProfileComponent = ({ store }) => {
             <View style={styles.actionItems}>
               <TouchableOpacity 
                 style={styles.actionItem}
-                onPress={() => navigation.navigate("NotificationSettings")}
+                onPress={() => navigation.navigate("SettingsScreen")}
               >
                 <View style={styles.actionItemLeft}>
                   <Icon name="notifications" size={18} color="#14b8a6" />
@@ -555,15 +556,27 @@ const UserProfileComponent = ({ store }) => {
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={styles.actionItem}
-                onPress={() => navigation.navigate("PasswordChange")}
-              >
-                <View style={styles.actionItemLeft}>
-                  <Icon name="lock" size={18} color="#14b8a6" />
-                  <Text style={styles.actionItemText}>Security</Text>
-                </View>
-                <Icon name="chevron-right" size={20} color="#94a3b8" />
-              </TouchableOpacity>
+  style={styles.actionItem}
+  onPress={() => setShowPolicyDropdown(!showPolicyDropdown)}
+>
+  <View style={styles.actionItemLeft}>
+    <Icon name="lock" size={18} color="#14b8a6" />
+    <Text style={styles.actionItemText}>T&C and Privacy Policy</Text>
+  </View>
+  <Icon name="chevron-right" size={20} color="#94a3b8" />
+</TouchableOpacity>
+
+{showPolicyDropdown && (
+  <View style={styles.dropdown}>
+    <TouchableOpacity onPress={() => Linking.openURL('https://www.serchby.com/privacy-policy')}>
+      <Text style={styles.dropdownLink}>Privacy Policy</Text>
+    </TouchableOpacity>
+    <TouchableOpacity onPress={() => Linking.openURL('https://www.serchby.com/terms')}>
+      <Text style={styles.dropdownLink}>Terms & Conditions</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
             </View>
           </GlassmorphismCard>
 
@@ -604,6 +617,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  dropdown: {
+    marginLeft: 40,
+    marginTop: 4,
+    backgroundColor: '#f1f5f9',
+    padding: 10,
+    borderRadius: 8,
+  },
+  
+  dropdownLink: {
+    fontSize: 14,
+    color: '#155366',
+    marginBottom: 8,
+    textDecorationLine: 'underline',
+  }
+,  
   avatar: {
     width: 100,
     height: 100,
