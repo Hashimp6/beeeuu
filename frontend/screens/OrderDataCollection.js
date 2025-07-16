@@ -42,7 +42,7 @@ console.log("authuser",user);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
-  
+
   // Validation error states
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -200,10 +200,10 @@ const generatePaymentDeepLink = (paymentMethod) => {
   
   switch (paymentMethod) {
     case 'gpay':
-      deepLink = `gpay://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+    deepLink = `upi://pay?pa=${merchantUPI}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
       break;
     case 'phonepe':
-      deepLink = `phonepe://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+      deepLink = `upi://pay?pa=${merchantUPI}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
       break;
     case 'paytm':
       deepLink = `paytmmp://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
