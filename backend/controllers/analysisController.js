@@ -92,4 +92,95 @@ const getStoreAnalytics = async (req, res) => {
   }
 };
 
-module.exports = {getStoreAnalytics}
+//revenue calculation 
+
+const getStoreRevenue = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    if (!storeId) return res.status(400).json({ message: 'Store ID is required' });
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    // Helper to filter valid appointments
+    const appointmentFilter = {
+      store: storeId,
+      status: 'completed'
+    };
+
+    // Helper to filter valid orders
+    const orderFilter = {
+      sellerId: storeId,
+      status: 'delivered' // or 'completed' if you also use that
+    };
+
+    // -------------------------------
+    // Appointments Revenue
+    // -------------------------------
+    const [monthlyAppointments, yearlyAppointments, totalAppointments] = await Promise.all([
+      Appointment.aggregate([
+        { $match: { ...appointmentFilter, date: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } }
+      ]),
+      Appointment.aggregate([
+        { $match: { ...appointmentFilter, date: { $gte: startOfYear } } },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } }
+      ]),
+      Appointment.aggregate([
+        { $match: appointmentFilter },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } }
+      ])
+    ]);
+
+    // -------------------------------
+    // Orders Revenue
+    // -------------------------------
+    const [monthlyOrders, yearlyOrders, totalOrders] = await Promise.all([
+      Order.aggregate([
+        { $match: { ...orderFilter, orderDate: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]),
+      Order.aggregate([
+        { $match: { ...orderFilter, orderDate: { $gte: startOfYear } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]),
+      Order.aggregate([
+        { $match: orderFilter },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ])
+    ]);
+
+    const format = (val) => val?.[0]?.total || 0;
+
+    return res.status(200).json({
+      storeId,
+      revenue: {
+        month: format(monthlyAppointments) + format(monthlyOrders),
+        year: format(yearlyAppointments) + format(yearlyOrders),
+        total: format(totalAppointments) + format(totalOrders),
+        breakdown: {
+          appointments: {
+            month: format(monthlyAppointments),
+            year: format(yearlyAppointments),
+            total: format(totalAppointments),
+          },
+          orders: {
+            month: format(monthlyOrders),
+            year: format(yearlyOrders),
+            total: format(totalOrders),
+          }
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error("Error in revenue calc:", err);
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+
+
+
+module.exports = {getStoreAnalytics,getStoreRevenue}

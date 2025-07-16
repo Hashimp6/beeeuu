@@ -423,7 +423,8 @@ const handleTouchEnd = () => {
   {/* 🛒 Cart Button */}
   <button
   onClick={() => {
-    const storeCart = cart[store._id]; // get products for current store
+    const storeCart = store?._id ? cart[store._id] : null;
+ // get products for current store
     if (storeCart && storeCart.products && storeCart.products.length > 0) {
       navigate('/order-details', {
         state: {

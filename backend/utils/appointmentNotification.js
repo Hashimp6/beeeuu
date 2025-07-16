@@ -6,38 +6,41 @@ const { sendPushNotification } = require('../services/notificationService');
 // Send appointment notification to a user
 const sendAppointmentNotification = async (userId, title, body, appointmentData) => {
   try {
-    // Get user's push token
-    const user = await User.findById(userId).select('pushToken username');
-    
-    if (!user || !user.pushToken) {
-      console.log(`No push token found for user: ${userId}`);
+    // Get user's push tokens
+    const user = await User.findById(userId).select('pushTokens username');
+
+    if (!user || !user.pushTokens || user.pushTokens.length === 0) {
+      console.log(`No push tokens found for user: ${userId}`);
       return false;
     }
 
-    // Send push notification
-    const success = await sendPushNotification(
-      user.pushToken,
-      title,
-      body,
-      {
-        type: 'appointment',
-        appointmentId: appointmentData._id,
-        action: appointmentData.action || 'view'
-      }
+    const results = await Promise.allSettled(
+      user.pushTokens.map(token =>
+        sendPushNotification(token, title, body, {
+          type: 'appointment',
+          appointmentId: appointmentData._id,
+          action: appointmentData.action || 'view',
+        })
+      )
     );
 
-    if (success) {
+    const anySuccess = results.some(
+      result => result.status === 'fulfilled' && result.value === true
+    );
+
+    if (anySuccess) {
       console.log(`✅ Appointment notification sent to ${user.username}`);
     } else {
       console.log(`❌ Failed to send appointment notification to ${user.username}`);
     }
 
-    return success;
+    return anySuccess;
   } catch (error) {
     console.error('Error sending appointment notification:', error);
     return false;
   }
 };
+
 
 // Get store owner's user ID from store ID
 const getStoreOwnerId = async (storeId) => {

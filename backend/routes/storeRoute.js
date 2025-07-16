@@ -15,7 +15,7 @@ const {
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
-const { getStoreAnalytics } = require("../controllers/analysisController");
+const { getStoreAnalytics, getStoreRevenue } = require("../controllers/analysisController");
 
 
 router.get('/storeprofile/:name', findStoreByName);
@@ -26,6 +26,8 @@ router.get("/nearby",getNearbyStores);
  router.get('/:storeId/upi', getStoreUpi);
  //for store analetics
 router.get("/store-analetics/:storeId", getStoreAnalytics);
+//for revenue
+router.get('/revenue/:storeId', getStoreRevenue);
 // Apply authentication middleware to all routes
 router.use(protect);
 

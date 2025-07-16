@@ -478,9 +478,11 @@ console.log("catef",data);
             />
           </div>
           {/* Keep User Profile Component visible even in appointment/order view */}
-          <div className="hidden xl:block max-w-sm w-full px-2">
-            <UserProfileComponent setHistory={setHistory} />
-          </div>
+          <div className="hidden xl:block w-[380px] px-4">
+  <div className="h-[calc(98vh-64px)] overflow-y-auto bg-white border-l border-gray-200 rounded-l-lg shadow-sm p-4">
+    <UserProfileComponent setHistory={setHistory} />
+  </div>
+</div>
         </div>
       ) : (
         // Default view with stores
@@ -546,9 +548,11 @@ console.log("catef",data);
           </div>
 
           {/* User Profile Component - Hidden on mobile, visible on desktop */}
-          <div className="hidden xl:block">
-            <UserProfileComponent setHistory={setHistory} />
-          </div>
+          <div className="hidden xl:block w-[380px] px-4">
+  <div className="h-[calc(98vh-64px)] overflow-y-auto bg-white border-l border-gray-200 rounded-l-lg shadow-sm p-4">
+    <UserProfileComponent setHistory={setHistory} />
+  </div>
+</div>
         </div>
       )}
     </div>
