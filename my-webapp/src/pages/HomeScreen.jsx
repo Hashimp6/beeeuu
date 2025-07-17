@@ -4,6 +4,7 @@ import MainAreaComponent from '../components/user/UserMainContent';
 import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const HomeLayout = () => {
     const navigate = useNavigate();
@@ -27,6 +28,10 @@ const HomeLayout = () => {
     useEffect(() => {
         if (user?.place) {
             setUserLocation(user.place);
+        }
+        else{
+            toast.error('Please select your location');
+            setShowModal(true); 
         }
     }, [user]);
 const handleSetSelect= () => {
@@ -224,22 +229,22 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
   <Home size={18} className="text-gray-600 group-hover:text-white" />
   <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
 </button>
-     <button
+     {/* <button
                             onClick={navigateToCategory}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
                             >
                               <Layers size={18} className="text-gray-600 group-hover:text-white" />
                               <span className="text-gray-700 font-medium group-hover:text-white">Category</span>
                             
-                        </button>
+                        </button> */}
                         
-                        <button
+                        {/* <button
                             onClick={navigateToContact}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
                             >
                               <BookOpen size={18} className="text-gray-600 group-hover:text-white" />
                               <span className="text-gray-700 font-medium group-hover:text-white">Contact Us</span>                            
-                        </button>
+                        </button> */}
                         <button
                             onClick={handleSetSelect}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
