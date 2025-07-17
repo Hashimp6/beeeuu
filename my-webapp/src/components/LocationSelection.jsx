@@ -193,6 +193,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           coordinates: [coordinates.longitude, coordinates.latitude],
         },
         locationName: locationName,
+        place:locationName
       };
       
       setUser(updatedUser);
