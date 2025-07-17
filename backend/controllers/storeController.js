@@ -829,6 +829,23 @@ const findStoreByName = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+const updateUPI = async (req, res) => {
+  const { storeId } = req.params;
+  const { upi } = req.body;
+
+  try {
+    const store = await Store.findById(storeId);
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    store.upi = upi;
+    await store.save();
+
+    res.status(200).json({ message: "UPI updated successfully", upi: store.upi });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating UPI", error });
+  }
+};
 
 
   module.exports = {
@@ -843,5 +860,6 @@ const findStoreByName = async (req, res) => {
     getStoreUpi,
     getNearbyStores,
     getNearbyStoresSimple,
-    findStoreByName
+    findStoreByName,
+    updateUPI
   };

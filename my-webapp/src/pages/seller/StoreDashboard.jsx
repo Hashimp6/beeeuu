@@ -32,6 +32,7 @@ const StoreDashboard = () => {
   const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsData, setAnalyticsData] = useState([]);
+const [newUpi, setNewUpi] = useState("");
   const [stats, setStats] = useState({
     totalRevenue: 0,
     todayAppointments: 0,
@@ -127,7 +128,21 @@ const StoreDashboard = () => {
       fetchAnalytics();
     }
   }, [store]);
-
+ 
+  
+  const handleUpiUpdate = async () => {
+    try {
+      const storeId=store._id
+      console.log("jh",storeId);
+      
+      await axios.put(`${SERVER_URL}/stores/update-upi/${storeId}`, { upi: newUpi });
+      alert("UPI Updated successfully");
+      setStore((prev) => ({ ...prev, upi: newUpi }));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update UPI");
+    }
+  };
   const appointmentStatusData = [
     { name: 'Completed', value: stats.completedAppointments || 0, color: '#14b8a6' },
     { name: 'Pending', value: stats.pendingAppointments || 0, color: '#f59e0b' },
@@ -566,7 +581,35 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">Store Settings</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+  <h3 className="text-lg font-semibold text-gray-900 mb-4">Store UPI</h3>
+  {store.upi ? (
+    <div className="mb-4">
+      <p className="text-gray-700">
+        <span className="font-semibold">Current UPI:</span> {store.upi}
+      </p>
+    </div>
+  ) : (
+    <p className="text-gray-500 mb-4">No UPI ID set yet.</p>
+  )}
+
+  <div className="flex items-center space-x-4">
+    <input
+      type="text"
+      placeholder="Enter new UPI ID"
+      className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+      value={newUpi}
+      onChange={(e) => setNewUpi(e.target.value)}
+    />
+    <button
+      onClick={handleUpiUpdate}
+      className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+    >
+      {store.upi ? "Update" : "Add"} UPI
+    </button>
+  </div>
+</div>
+
                     {[
                       { title: 'Products', description: 'Manage your store products', icon: ShoppingBag, color: 'teal' },
                       { title: 'Gallery', description: 'Upload and manage store images', icon: Camera, color: 'purple' },
