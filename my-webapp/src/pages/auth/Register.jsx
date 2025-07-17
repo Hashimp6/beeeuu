@@ -379,7 +379,7 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
                 className="text-black text-sm font-bold ml-1 hover:underline"
                 onClick={() => navigate('/login')}
               >
-                Sign In
+                Log In
               </button>
             </div>
           </div>

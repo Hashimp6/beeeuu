@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, Phone, User, ChevronLeft, ChevronRight, Check, X, Menu, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,6 +7,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const AppointmentScheduler = ({ onClose}) => {
+  const calendarRef = useRef(null);
+const phoneInputRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { product, store } = location.state || {};
@@ -32,7 +34,21 @@ const AppointmentScheduler = ({ onClose}) => {
       });
     }
   }, [user]);
-
+  useEffect(() => {
+    // When component mounts
+    if (!selectedDate || !selectedTime) {
+      // Scroll calendar into view
+      if (calendarRef.current) {
+        calendarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      // If already selected, allow focus to phone
+      if (phoneInputRef.current) {
+        phoneInputRef.current.focus();
+      }
+    }
+  }, []);
+  
   const timeSlotCategories = [
     {
       id: 'morning',
@@ -298,7 +314,9 @@ const AppointmentScheduler = ({ onClose}) => {
             {/* Left Column - Date & Time Selection */}
             <div className="space-y-6">
               {/* Date Selection */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              
+              <div ref={calendarRef}
+ className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <button
@@ -511,6 +529,7 @@ const AppointmentScheduler = ({ onClose}) => {
                       Contact Number *
                     </label>
                     <input
+                      ref={phoneInputRef}
                       type="tel"
                       value={formData.contactNo}
                       onChange={(e) => handleInputChange('contactNo', e.target.value)}

@@ -283,7 +283,7 @@ const LoginPage = () => {
                 onClick={() => navigate('/register')}
                 className="font-bold text-black hover:text-gray-700 transition-colors duration-200"
               >
-                Sign Up
+                Register
               </button>
             </p>
           </div>
