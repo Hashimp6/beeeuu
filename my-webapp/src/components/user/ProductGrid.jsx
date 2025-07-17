@@ -71,17 +71,7 @@ const ProductsGrid = ({
                   </span>
                 </div>
 
-                {/* Like Button */}
-                <button
-                  onClick={() => toggleLike(product._id)}
-                  className={`absolute bottom-1.5 sm:bottom-2 right-1.5 sm:right-2 w-7 sm:w-8 h-7 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-sm border ${
-                    likedProducts.has(product._id)
-                      ? 'bg-red-500 text-white shadow-md border-red-500 scale-110'
-                      : 'bg-white/90 text-gray-600 hover:bg-white hover:text-red-500 border-white/50 hover:scale-110'
-                  }`}
-                >
-                  <Heart size={12} className={likedProducts.has(product._id) ? 'fill-current' : ''} />
-                </button>
+              
 
                 {/* Price */}
                 <div className="absolute bottom-1.5 sm:bottom-2 left-1.5 sm:left-2">

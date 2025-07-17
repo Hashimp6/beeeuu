@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Heart, ShoppingBag, Calendar, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useCart } from '../../context/CartContext';
 
 const ProductDetailModal = ({
+  store,
   product,
   onClose,
   likedProducts,
@@ -12,6 +15,7 @@ const ProductDetailModal = ({
   slideInterval = 3000, // 3 seconds
 }) => {
   const [currentImage, setCurrentImage] = useState(0);
+      const { addToCart } = useCart();
 
   // Auto slide images
   useEffect(() => {
@@ -97,16 +101,7 @@ const ProductDetailModal = ({
               <p className="text-sm text-gray-500">{product.category}</p>
             </div>
 
-            <button
-              onClick={() => toggleLike(product._id)}
-              className={`flex items-center p-2 rounded-full transition shadow ${
-                likedProducts.has(product._id)
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white'
-              }`}
-            >
-              <Heart size={16} className={likedProducts.has(product._id) ? 'fill-current' : ''} />
-            </button>
+        
           </div>
 
           <p className="text-gray-700 text-sm">{product.description}</p>
@@ -137,15 +132,28 @@ const ProductDetailModal = ({
           {/* Action Button */}
           <div className="pt-4">
             <button
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation();
+                if (product.type === 'service') {
+                  handleAppointment(product);
+                } else {
+                  addToCart(product, store);
+                  toast.success(`${product.name} added to cart 🛒`);
+            
+                  // Animation trigger
+                  const btn = e.currentTarget;
+                  btn.classList.add("animate-cart-jump");
+                  setTimeout(() => btn.classList.remove("animate-cart-jump"), 400);
+                  setTimeout(() => {
+                  onClose();
+                }, 500); 
+                }
+                
+              }}
+              className={`w-full py-1.5 sm:py-2 rounded-md sm:rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-1 sm:gap-1.5 shadow-md hover:shadow-lg transform hover:scale-105 text-xs sm:text-sm ${
                 product.type === 'service'
-                  ? handleAppointment(product)
-                  : handleOrderProduct(product)
-              }
-              className={`w-full py-2 px-4 text-sm font-medium rounded-md shadow text-white transition ${
-                product.type === 'service'
-                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700'
-                  : 'bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black'
+                  ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700'
+                  : 'bg-gradient-to-r from-black to-gray-800 text-white hover:from-gray-800 hover:to-black'
               }`}
             >
               {product.type === 'service' ? (

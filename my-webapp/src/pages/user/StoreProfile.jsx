@@ -424,7 +424,7 @@ const handleTouchEnd = () => {
   <button
   onClick={() => {
     const storeCart = store?._id ? cart[store._id] : null;
- // get products for current store
+
     if (storeCart && storeCart.products && storeCart.products.length > 0) {
       navigate('/order-details', {
         state: {
@@ -436,11 +436,19 @@ const handleTouchEnd = () => {
       toast.error("No product in cart for this store 🚫");
     }
   }}
-  className="flex items-center gap-1 sm:gap-2 bg-gray-100 text-gray-800 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium text-sm sm:text-base"
+  className="relative flex items-center gap-1 sm:gap-2 bg-gray-100 text-gray-800 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium text-sm sm:text-base"
 >
   <ShoppingCart size={16} className="sm:w-4 sm:h-4" />
   <span className="hidden sm:inline">Cart</span>
+
+  {/* 🔴 Badge positioned relative to button */}
+  {store && cart[store._id]?.products?.length > 0 && (
+    <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+      {cart[store._id].products.length}
+    </span>
+  )}
 </button>
+
 
 </div>
 
@@ -947,6 +955,7 @@ const handleTouchEnd = () => {
  
     {selectedProduct && (
         <ProductDetailModal
+        store={store}
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)} // ✅ close modal
           likedProducts={likedProducts}
