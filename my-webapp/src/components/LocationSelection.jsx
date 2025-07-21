@@ -3,11 +3,12 @@ import { MapPin, Search, X, Locate, AlertCircle, Loader } from 'lucide-react';
 import { SERVER_URL } from '../Config';
 import axios from 'axios';
 import { useAuth } from '../context/UserContext';
+import toast from 'react-hot-toast';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24';
 
 const LocationSelectionModal = ({ visible, onClose }) => {
-  const { user,token, setUser} = useAuth(); // Get user and updateUser from auth context
+  const { user,token, setUser,location, setLocation} = useAuth(); // Get user and updateUser from auth context
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -166,41 +167,61 @@ const LocationSelectionModal = ({ visible, onClose }) => {
   // Update user location with real API call
   const updateUserLocation = async (coordinates, locationName) => {
     try {
-      if (!user?._id || !token) {
-        throw new Error('User not authenticated');
-      }
-
-      // Update on the server
-      const response = await axios.put(
-        `${SERVER_URL}/users/location/${user._id}`,
-        {
-          coordinates: [coordinates.longitude, coordinates.latitude], 
-          locationName: locationName,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Update user in auth context
-      const updatedUser = {
-        ...user,
-        location: {
-          type: 'Point',
-          coordinates: [coordinates.longitude, coordinates.latitude],
-        },
-        locationName: locationName,
-        place:locationName
+      const locationData = {
+        type: 'Point',
+        coordinates: [coordinates.longitude, coordinates.latitude],
       };
-      
-      setUser(updatedUser);
-      
-      return updatedUser;
+  
+      // ✅ If user is logged in
+      if (user?._id && token) {
+        const response = await axios.put(
+          `${SERVER_URL}/users/location/${user._id}`,
+          {
+            coordinates: locationData.coordinates,
+            locationName,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
+        const updatedUser = {
+          ...user,
+          location: locationData,
+          locationName,
+          place: locationName,
+        };
+  
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        localStorage.setItem(
+          'location',
+          JSON.stringify({ location: locationData, place: locationName })
+        );
+        const locationDetails = {
+          location: locationData,
+          place: locationName,
+        };
+        setLocation(locationDetails)
+  
+        toast.success('📍 Location updated successfully');
+        return updatedUser;
+      } else {
+        // ❌ No user logged in
+        localStorage.setItem(
+          'location',
+          JSON.stringify({ location: locationData, place: locationName })
+        );
+  
+        toast.error('⚠️ Please login to save your location permanently');
+        return { location: locationData, place: locationName };
+      }
     } catch (err) {
       console.error('❌ Location update failed:', err);
+      toast.error('❌ Failed to update location');
       throw new Error('Failed to update location data');
     }
   };
@@ -331,9 +352,9 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">Select Your Location</h2>
-            {user.locationName && (
+            {location.place && (
               <p className="text-sm text-gray-600 mt-1">
-                Current: {user.locationName}
+                Current: {location.place}
               </p>
             )}
           </div>

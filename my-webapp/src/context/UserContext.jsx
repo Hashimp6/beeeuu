@@ -9,6 +9,10 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [location, setLocation] = useState(() => {
+    const saved = localStorage.getItem('location');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Load stored auth data on mount
   useEffect(() => {
@@ -35,8 +39,13 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem('authToken', newToken);
       localStorage.setItem('user', JSON.stringify(userData));
-
+      const locationData = {
+        location: userData.location,
+        place: userData.place||userData.locationName,
+      };
+      localStorage.setItem('location', JSON.stringify(locationData));
       setToken(newToken);
+      setLocation(locationData)
       setUser(userData);
 
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -54,11 +63,13 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('location');
 
     delete axios.defaults.headers.common['Authorization'];
 
     setToken(null);
     setUser(null);
+    setLocation(null);
   };
 
   const getCurrentUser = async () => {
@@ -67,7 +78,13 @@ export function AuthProvider({ children }) {
       const res = await axios.get(`${SERVER_URL}/users/me`);
       const userData = res.data;
       localStorage.setItem('user', JSON.stringify(userData));
+      const locationData = {
+        location: userData.location,
+        place: userData.place||userData.locationName,
+      };
+      localStorage.setItem('location', JSON.stringify(locationData));
       setUser(userData);
+      setLocation(locationData)
       return { success: true };
     } catch (e) {
       console.error('Get user failed', e);
@@ -86,6 +103,7 @@ export function AuthProvider({ children }) {
       setToken,
       loading,
       error,
+      location,
       login,
       logout,
       getCurrentUser,
