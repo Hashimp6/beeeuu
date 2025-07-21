@@ -72,11 +72,22 @@ const subcategoryImageStorage = new CloudinaryStorage({
 });
 const uploadSubcategoryImage = multer({ storage: subcategoryImageStorage });
 
+
+const offerImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "offers",
+    allowed_formats: ["jpg", "jpeg", "png"],
+    transformation: [{ width: 800, height: 800, crop: "limit" }],
+  },
+});
+const uploadOfferImage = multer({ storage: offerImageStorage });
 module.exports = {
   uploadStoreImage,
   uploadProductImage,
   uploadGalleryImage,
   uploadChatImage,
   uploadCategoryIcon,
-  uploadSubcategoryImage
+  uploadSubcategoryImage,
+  uploadOfferImage
 };

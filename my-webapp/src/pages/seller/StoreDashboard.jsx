@@ -7,7 +7,8 @@ import {
   Image,
   StoreIcon,
   MessageCircle,
-  LogOut
+  LogOut,
+  Tag
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
@@ -18,6 +19,7 @@ import OrderManagement from '../../components/Store/OrderManagement';
 import ProductManagement from '../../components/Store/ProductManagement';
 import GalleryManagement from '../../components/Store/GalleryManagement';
 import { useNavigate } from 'react-router-dom';
+import OfferManagement from '../../components/Store/OfferManagement';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -322,6 +324,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
   const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'Offers', label: 'Offers', icon: Tag },
     { id: 'appointments', label: 'Appointments', icon: Calendar },
     { id: 'orders', label: 'Orders', icon: Package },
     { id: 'product', label: 'Product / Service', icon: StoreIcon },
@@ -559,7 +562,9 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
                 </div>
               </div>
             )}
-
+ {activeTab === 'Offers' && (
+            <OfferManagement storeId={store._id}/>
+            )}
             {activeTab === 'appointments' && (
             <AppointmentManagement storeId={store._id} />
             )}

@@ -24,11 +24,13 @@ const protect = async (req, res, next) => {
     }
 
     try {
+      console.log("Received token:", token,process.env.JWT_SECRET);
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+      console.log("lllss",decoded);
       // Add user from payload to request
       req.user = await User.findById(decoded.id).select("-password");
+      console.log("lll",req.user);
       
       if (!req.user) {
         return res.status(401).json({

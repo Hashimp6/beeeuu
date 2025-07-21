@@ -9,14 +9,14 @@ import HomeScreen from './HomeScreen';
 import LocationSelectionModal from '../components/LocationSelection';
 import ProfileScreen from '../components/ProfileScreen';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import StoreSearchPage from './SearchStoreScreen';
+import OffersReelsFeed from './OfferReelScreen';
 
 const AppLayout = () => {
   const route = useRoute();
   const navigation = useNavigation();
   
   // Get initial tab from route params, default to 'Home'
-  const initialTab = route.params?.initialTab || 'Home';
+  const initialTab = route.params?.initialTab || 'Offers';
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
@@ -90,6 +90,9 @@ const AppLayout = () => {
   // Function to render the content based on active tab
   const renderContent = () => {
     switch (activeTab) {
+      case 'Offers':
+        return <OffersReelsFeed/>;
+
       case 'Home':
         return (
           <HomeScreen 
@@ -102,7 +105,7 @@ const AppLayout = () => {
           />
         );
       case 'Search':
-        return  <StoreSearchPage/>
+        return  
       case 'Profile':
         return <ProfileScreen />;
       
@@ -168,6 +171,7 @@ const AppLayout = () => {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
+        
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Home' && styles.activeNavItem]} 
           onPress={() => handleTabPress('Home')}
@@ -179,6 +183,17 @@ const AppLayout = () => {
           />
           <Text style={[styles.navText, activeTab === 'Home' && styles.activeNavText]}>Home</Text>
         </TouchableOpacity>
+        <TouchableOpacity 
+  style={[styles.navItem, activeTab === 'Offers' && styles.activeNavItem]} 
+  onPress={() => handleTabPress('Offers')}
+>
+  <Ionicons 
+    name={activeTab === 'Offers' ? 'pricetags' : 'pricetags-outline'} 
+    size={24} 
+    color={activeTab === 'Offers' ? "#155366" : '#555'} 
+  />
+  <Text style={[styles.navText, activeTab === 'Offers' && styles.activeNavText]}>Offers</Text>
+</TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Search' && styles.activeNavItem]} 
@@ -289,6 +304,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
+  
 // Add this new style
 bottomNavContainer: {
   paddingBottom: Platform.OS === 'ios' ? 0 : 10, // Extra padding for Android

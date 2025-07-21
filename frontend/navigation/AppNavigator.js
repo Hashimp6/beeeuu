@@ -126,7 +126,7 @@ const AppNavigator = () => {
         name="Home"
         component={AppLayout}
         options={{ headerShown: false }}
-        initialParams={{ initialTab: 'Home' }}
+        initialParams={{ initialTab: 'Offers' }}
       />
        <Stack.Screen 
         name="StoreAdmin"

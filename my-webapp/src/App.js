@@ -21,6 +21,7 @@ import PrivacyPolicy from "./pages/policies/Policy";
 import ReturnRefundPolicy from "./pages/policies/ReturnPolicy";
 import ShippingPolicy from "./pages/policies/ShippingPolicy";
 import TermsAndConditions from "./pages/policies/Terms";
+import OfferReelPage from "./pages/user/Offers";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -60,6 +61,7 @@ function App() {
           <Route path="/return-policy" element={<ReturnRefundPolicy/>} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
           <Route path="/store/:storeName" element={<StoreProfile />} />
+          <Route path="/offers" element={<OfferReelPage/>} />
           <Route
   path="/home"
   element={

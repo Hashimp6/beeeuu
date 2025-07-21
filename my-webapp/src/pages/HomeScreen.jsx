@@ -5,6 +5,7 @@ import LocationSelectionModal from '../components/LocationSelection';
 import { useAuth } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import OfferReelPage from './user/Offers';
 
 const HomeLayout = () => {
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ const HomeLayout = () => {
       const [showProfileMobile, setShowProfileMobile] = useState(false);
     const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
     const [chat, setChat] = useState(false);
+    const [showOffers, setShowOffers] = useState(false);
     const [dropdowns, setDropdowns] = useState({
         distance: false,
         nearby: false,
@@ -38,6 +40,14 @@ const handleSetSelect= () => {
   setShowProfileMobile(true);
   setIsDrawerOpen(false); 
 };
+const handleShowOffers = () => {
+    setShowOffers(true);
+    setIsDrawerOpen(false); // close drawer if opened
+};
+const handleBackToMain = () => {
+    setShowOffers(false);
+};
+
     const handleLocationUpdate = (locationData) => {
         setSelectedLocation(locationData);
         setUserLocation(locationData.locationName || 'Current Location');
@@ -113,29 +123,28 @@ const handleSetSelect= () => {
                     />
 
                     {/* Center: Desktop Navigation */}
-                    <nav className="hidden md:flex items-center space-x-8">
-                        {/* <button
-                            onClick={navigateToHome}
-                           className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
-                        >
-                            <Home size={18} />
-                            <span>Home</span>
-                        </button> */}
-                        {/* <button
-                            onClick={navigateToCategory}
-className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
-                        >
-                            <Grid size={18} />
-                            <span>Category</span>
-                        </button> */}
-                        {/* <button
-                            onClick={navigateToContact}
-                          className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-colors font-medium"
-                        >
-                            <Phone size={18} />
-                            <span>Contact Us</span>
-                        </button> */}
-                    </nav>
+             {/* Desktop Tabs */}
+<div className="hidden md:flex justify-center border-b border-gray-200 bg-white">
+  <div className="flex space-x-8 px-6 py-3">
+    <button
+      onClick={handleBackToMain}
+      className={`text-sm font-medium ${
+        !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+      } transition-colors`}
+    >
+      Home
+    </button>
+    <button
+      onClick={handleShowOffers}
+      className={`text-sm font-medium ${
+        showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+      } transition-colors`}
+    >
+      Offers
+    </button>
+  </div>
+</div>
+
 
                     {/* Right Corner: Location, Message & Mobile Menu */}
                     <div className="flex items-center gap-2 sm:gap-4">
@@ -171,13 +180,23 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col ">
-                    <div className="flex-1 overflow-auto">
-                    <MainAreaComponent
-            select={showProfileMobile} 
-          />
-                    </div>
-            </main>
+          {/* Main Content Area */}
+<main className="flex-1 flex flex-col">
+
+<div className="flex-1 overflow-auto">
+  {showOffers ? (
+  
+        <OfferReelPage />
+   
+  ) : (
+    <MainAreaComponent
+      select={showProfileMobile}
+      onOpenOffers={handleShowOffers}
+    />
+  )}
+</div>
+</main>
+
 
             {/* Location Selection Modal */}
             <LocationSelectionModal
@@ -229,6 +248,14 @@ className="flex items-center gap-2 text-gray-700 hover:text-teal-700 transition-
   <Home size={18} className="text-gray-600 group-hover:text-white" />
   <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
 </button>
+<button
+  onClick={handleShowOffers}
+  className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+>
+  <Grid size={18} className="text-gray-600 group-hover:text-white" />
+  <span className="text-gray-700 font-medium group-hover:text-white">Offers</span>
+</button>
+
      {/* <button
                             onClick={navigateToCategory}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"

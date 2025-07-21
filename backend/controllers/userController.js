@@ -220,6 +220,7 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+console.log("uokkk ",token);
 
     // Return user data (excluding password)
     const userData = user.toObject();
