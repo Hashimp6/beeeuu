@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Navigation, Eye, Zap, X } from 'lucide-react';
-import { SERVER_URL } from '../../Config';
-import axios from 'axios';
+import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search } from 'lucide-react';
 
 const OfferReelPage = () => {
   const [currentOffer, setCurrentOffer] = useState(null);
@@ -12,14 +10,13 @@ const OfferReelPage = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState('all'); // Main category state for API
   const containerRef = useRef(null);
-  const [offers, setOffers] = useState([  {
+  
+  const [offers, setOffers] = useState([{
     "location": {
         "type": "Point",
-        "coordinates": [
-            76.8604367,
-            8.8977417
-        ]
+        "coordinates": [76.8604367, 8.8977417]
     },
     "_id": "687caa0a4efb59579514dad1",
     "storeId": {
@@ -28,74 +25,129 @@ const OfferReelPage = () => {
         "profileImage": "https://res.cloudinary.com/dhed9kuow/image/upload/v1752042211/store_profiles/xthuo1cbj2vi0sq9jmd2.png",
         "place": "Ayoor, Kerala, India",
         "phone": "6485970539",
-        "averageRating": 3.5
+        "averageRating": 4.2,
+        "rating": 4.2,
+        "address": "123 Main Street, Ayoor"
     },
-    "title": "Big Sale on BURger",
-    "description": "Up to 50% off branded shoes",
-    "image": "https://res.cloudinary.com/dhed9kuow/image/upload/v1753000458/offers/sf1ino4v0e3fi1imymmt.jpg",
+    "title": "Big Sale on Burger",
+    "description": "Up to 50% off branded shoes and delicious burgers",
+    "image": "https://d1csarkz8obe9u.cloudfront.net/posterpreviews/chicken-food-ads-design-template-41c5a162667a95621944cc49edf5c058_screen.jpg?ts=1695355301",
     "discountType": "percent",
     "discountValue": "50",
     "validFrom": "2025-07-19T00:00:00.000Z",
     "validTo": "2025-07-30T00:00:00.000Z",
     "category": "Food",
-    "tags": [
-        "food",
-        "burger",
-        "offer"
-    ],
+    "tags": ["food", "burger", "offer"],
     "isPremium": false,
     "isActive": true,
     "originalPrice": 2000,
     "offerPrice": 1000,
     "place": "Ayoor, Kerala, India",
+    "distance": 250,
     "createdAt": "2025-07-20T08:34:18.916Z",
     "updatedAt": "2025-07-20T08:34:18.916Z",
     "__v": 0
-}]);
-  const [error, setError] = useState(null);
+  }]);
+  
+  const [filteredOffers, setFilteredOffers] = useState(offers);
   const [currentIndex, setCurrentIndex] = useState(0);
- 
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        const location = JSON.parse(localStorage.getItem("location"));
-        const lat = location?.lat;
-        const lng = location?.lng;
 
-        if (!lat || !lng) {
-          setError("Location not found. Please allow location access.");
-          setLoading(false);
-          return;
-        }
-
-        const response = await axios.get(
-          `${SERVER_URL}/offers/nearby?lat=${lat}&lng=${lng}&radius=5000`
-        );
-
-        if (response.data.success && response.data.data?.length) {
-          setOffers(response.data.data);
-        } else {
-          setError("No offers found nearby.");
-        }
-      } catch (err) {
-        setError("Failed to fetch offers.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOffers();
-  }, []);
-
+  const categories = [
+    { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },
+    { id: 'Food', name: 'Food & Dining', color: 'from-yellow-500 to-orange-500' },
+    { id: 'Fashion', name: 'Fashion', color: 'from-purple-500 to-pink-500' },
+    { id: 'Electronics', name: 'Electronics', color: 'from-blue-500 to-cyan-500' },
+    { id: 'Beauty', name: 'Beauty & Wellness', color: 'from-pink-500 to-rose-500' },
+    { id: 'Automotive', name: 'Automotive', color: 'from-gray-500 to-slate-600' },
+    { id: 'Home', name: 'Home & Garden', color: 'from-green-500 to-emerald-500' },
+    { id: 'Sports', name: 'Sports & Fitness', color: 'from-teal-500 to-green-500' },
+    { id: 'Entertainment', name: 'Entertainment', color: 'from-indigo-500 to-purple-500' }
+  ];
 
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      setCurrentOffer(offers[currentIndex]);
+      setCurrentOffer(filteredOffers[currentIndex]);
       setLoading(false);
     }, 200);
-  }, [currentIndex]);
+  }, [currentIndex, filteredOffers]);
+
+  // Filter offers based on selected category
+  useEffect(() => {
+    setFilteredOffers(offers);
+  }, [offers]);
+
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId);
+    // Here you can call your API with the selected category
+    console.log('Selected category for API:', categoryId);
+  };
+
+  // Desktop Filter Sidebar Component
+  const DesktopFilters = () => (
+    <div className="hidden lg:block w-80 bg-gradient-to-b from-gray-900 to-black border-r border-gray-800 p-6 overflow-y-auto" style={{ height: 'calc(100vh - 80px)' }}>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-white text-xl font-bold">Categories</h2>
+      </div>
+
+      <div className="space-y-2">
+        {categories.map(category => (
+          <button
+            key={category.id}
+            onClick={() => handleCategoryChange(category.id)}
+            className={`w-full p-3 rounded-xl text-left transition-all transform hover:scale-105 ${
+              selectedCategory === category.id
+                ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/10'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <span className="font-medium">{category.name}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Mobile Filter Dropdown
+  const MobileFilterDropdown = () => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const selectedName = categories.find((cat) => cat.id === selectedCategory)?.name || 'All Categories';
+  
+    return (
+      <div className="lg:hidden absolute top-4 right-4 z-30">
+        <button
+          onClick={() => setShowDropdown(!showDropdown)}
+          className="px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full border border-white/20 hover:bg-white/20 transition-all flex items-center gap-2"
+        >
+          {selectedName}
+          {showDropdown ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+  
+        {showDropdown && (
+          <div className="mt-2 w-64 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl shadow-lg p-3 absolute right-0">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => {
+                  handleCategoryChange(category.id);
+                  setShowDropdown(false);
+                }}
+                className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium mb-1 ${
+                  selectedCategory === category.id
+                    ? 'bg-teal-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleSwipe = (direction) => {
     if (showDetails || showImagePreview) return;
@@ -153,20 +205,20 @@ const OfferReelPage = () => {
   };
 
   const loadNextOffer = () => {
-    if (loading) return;
+    if (loading || filteredOffers.length === 0) return;
     setLoading(true);
     setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % offers.length;
+      const nextIndex = (currentIndex + 1) % filteredOffers.length;
       setCurrentIndex(nextIndex);
       setLoading(false);
     }, 300);
   };
 
   const loadPreviousOffer = () => {
-    if (loading) return;
+    if (loading || filteredOffers.length === 0) return;
     setLoading(true);
     setTimeout(() => {
-      const prevIndex = currentIndex === 0 ? offers.length - 1 : currentIndex - 1;
+      const prevIndex = currentIndex === 0 ? filteredOffers.length - 1 : currentIndex - 1;
       setCurrentIndex(prevIndex);
       setLoading(false);
     }, 300);
@@ -193,11 +245,11 @@ const OfferReelPage = () => {
       case 'percent':
         return `${discountValue}% OFF`;
       case 'flat':
-        return `${discountValue} OFF`;
+        return `₹${discountValue} OFF`;
       case 'freebie':
         return discountValue === "100" ? "BOGO" : `${discountValue}% OFF`;
       case 'cashback':
-        return `${discountValue} CASHBACK`;
+        return `₹${discountValue} CASHBACK`;
       default:
         return `${discountValue}% OFF`;
     }
@@ -209,6 +261,29 @@ const OfferReelPage = () => {
         <div className="relative">
           <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
           <Zap className="absolute inset-0 m-auto w-6 h-6 text-teal-400 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (filteredOffers.length === 0) {
+    return (
+      <div className="flex h-screen" style={{ height: 'calc(100vh - 80px)' }}>
+        <DesktopFilters />
+        <div className="flex-1 bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+              <Search className="w-12 h-12 text-gray-400" />
+            </div>
+            <h2 className="text-white text-2xl font-bold mb-2">No offers found</h2>
+            <p className="text-gray-400 mb-6">Try selecting a different category</p>
+            <button
+              onClick={() => handleCategoryChange('all')}
+              className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all"
+            >
+              Show All Categories
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -231,31 +306,15 @@ const OfferReelPage = () => {
           alt={currentOffer.title}
           className="max-w-full max-h-full object-contain"
         />
-        {/* Image Info Overlay */}
-        <div className="absolute bottom-6 left-6 right-6 bg-black/70 backdrop-blur-sm rounded-2xl p-4">
-          <h3 className="text-white font-bold text-lg">{currentOffer.title}</h3>
-          <p className="text-gray-300 text-sm">{currentOffer.storeId.storeName}</p>
-        </div>
       </div>
     );
   }
 
-  // Details Modal - NO FULL IMAGE, just compact design
+  // Details Modal
   if (showDetails) {
     return (
       <div className="h-screen bg-gradient-to-b from-gray-900 to-black relative overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-purple-600/20"></div>
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, rgba(20, 184, 166, 0.1) 0%, transparent 50%), 
-                            radial-gradient(circle at 75% 75%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)`
-          }}></div>
-        </div>
-
-        {/* Details Content */}
         <div className="relative z-10 h-full flex flex-col">
-          {/* Header with Close Button */}
           <div className="p-4 pt-6 flex items-center justify-between">
             <h2 className="text-white text-xl font-bold">Offer Details</h2>
             <button 
@@ -266,9 +325,7 @@ const OfferReelPage = () => {
             </button>
           </div>
 
-          {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-4 pb-6">
-            {/* Compact Offer Image */}
             <div className="relative mb-6">
               <img 
                 src={currentOffer.image} 
@@ -294,11 +351,10 @@ const OfferReelPage = () => {
               )}
             </div>
 
-            {/* Store Info */}
             <div className="flex items-center space-x-3 mb-6">
               <img 
                 src={currentOffer.storeId.profileImage} 
-                alt={currentOffer.storeId.profileImage}
+                alt={currentOffer.storeId.storeName}
                 className="w-14 h-14 rounded-full border-2 border-teal-400"
               />
               <div className="flex-1">
@@ -313,23 +369,20 @@ const OfferReelPage = () => {
               </div>
             </div>
 
-            {/* Offer Title */}
             <h1 className="text-white text-2xl font-bold mb-4 leading-tight">
               {currentOffer.title}
             </h1>
 
-            {/* Description */}
             <p className="text-gray-200 text-base mb-6 leading-relaxed">
               {currentOffer.description}
             </p>
 
-            {/* Price Section */}
             <div className="bg-gradient-to-r from-teal-500/20 to-teal-600/20 backdrop-blur-sm border border-teal-500/30 rounded-2xl p-5 mb-6">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-gray-400 text-lg line-through">${currentOffer.originalPrice}</span>
-                    <span className="text-white text-3xl font-bold">${currentOffer.offerPrice}</span>
+                    <span className="text-gray-400 text-lg line-through">₹{currentOffer.originalPrice}</span>
+                    <span className="text-white text-3xl font-bold">₹{currentOffer.offerPrice}</span>
                   </div>
                   <div className="flex items-center space-x-1 mt-2">
                     <Clock className="w-4 h-4 text-teal-400" />
@@ -342,18 +395,6 @@ const OfferReelPage = () => {
               </div>
             </div>
 
-            {/* Category and Distance */}
-            <div className="flex items-center space-x-4 mb-6">
-              <span className="inline-block bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-full text-white text-sm font-medium">
-                {currentOffer.category}
-              </span>
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4 text-teal-400" />
-                <span className="text-white text-sm font-medium">{currentOffer.distance}m away</span>
-              </div>
-            </div>
-
-            {/* Store Details */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 mb-6">
               <h4 className="text-white font-semibold text-lg mb-4">Store Information</h4>
               
@@ -375,30 +416,26 @@ const OfferReelPage = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <button 
-                  onClick={() => setLiked(!liked)}
-                  className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
-                >
-                  <Heart className={`w-6 h-6 ${liked ? 'text-red-500 fill-current' : 'text-white'}`} />
-                </button>
-                
-                <button className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20">
-                  <Share2 className="w-6 h-6 text-white" />
-                </button>
-                
-                <button 
-                  onClick={() => setSaved(!saved)}
-                  className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
-                >
-                  <Bookmark className={`w-6 h-6 ${saved ? 'text-teal-400 fill-current' : 'text-white'}`} />
-                </button>
-              </div>
+            <div className="flex items-center space-x-3 mb-6">
+              <button 
+                onClick={() => setLiked(!liked)}
+                className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
+              >
+                <Heart className={`w-6 h-6 ${liked ? 'text-red-500 fill-current' : 'text-white'}`} />
+              </button>
+              
+              <button className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20">
+                <Share2 className="w-6 h-6 text-white" />
+              </button>
+              
+              <button 
+                onClick={() => setSaved(!saved)}
+                className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
+              >
+                <Bookmark className={`w-6 h-6 ${saved ? 'text-teal-400 fill-current' : 'text-white'}`} />
+              </button>
             </div>
 
-            {/* Main CTA */}
             <button className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform active:scale-95 shadow-lg shadow-teal-500/25">
               <span className="text-lg">Claim This Offer</span>
             </button>
@@ -408,107 +445,126 @@ const OfferReelPage = () => {
     );
   }
 
-  // Main Offer View - With nav space
+  // Main Layout
   return (
-    <div className="flex justify-center h-screen  overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
-    <div className="relative w-full sm:w-[420px] max-w-[420px] h-full  overflow-hidden">
-   {/* Background Image with Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${currentOffer.image})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-      </div>
+    <div className="flex h-screen" style={{ height: 'calc(100vh - 80px)' }}>
+      {/* Desktop Filter Sidebar */}
+      <DesktopFilters />
 
-      {/* Swipe Container */}
-      <div 
-        ref={containerRef}
-        className="relative z-10 h-full flex flex-col touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onWheel={handleWheel}
-        style={{ touchAction: 'pan-y' }}
-      >
-        {/* Distance Badge */}
-        <div className="absolute top-4 right-4 z-20">
-          <div className="flex items-center space-x-1 text-white text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">
-            <MapPin className="w-4 h-4" />
-            <span>{currentOffer.distance}m</span>
-          </div>
-        </div>
-
-        {/* Eye Button to Preview Full Image */}
-        <div className="absolute top-4 left-4 z-30">
-          <button
-            onClick={() => setShowImagePreview(true)}
-            className="p-2 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
+      {/* Main Offer View - Increased width for desktop */}
+      <div className="flex-1 flex justify-center overflow-hidden">
+        <div className="relative w-full lg:w-[600px] lg:max-w-[600px] h-full overflow-hidden">
+          {/* Background Image with Overlay */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${currentOffer.image})` }}
           >
-            <Eye className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {/* Bottom Content */}
-        <div className="flex-1 flex items-end pb-6 px-4">
-          <div className="w-full">
-            {/* Store Info */}
-            <div className="flex items-center space-x-3 mb-4">
-              <img 
-                src={currentOffer.storeId.profileImage} 
-                alt={currentOffer.storeId.storeName}
-                className="w-12 h-12 rounded-full border-2 border-teal-400"
-              />
-              <div className="flex-1">
-                <h3 className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-white text-sm">{currentOffer.storeId.rating}</span>
-                  </div>
-                  <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Offer Title */}
-            <h1 className="text-white text-3xl font-bold mb-4 leading-tight">
-              {currentOffer.title}
-            </h1>
-
-            {/* Price Display */}
-            <div className="bg-gradient-to-r from-teal-500/90 to-teal-600/90 backdrop-blur-sm rounded-2xl p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-white/80 text-lg line-through">${currentOffer.originalPrice}</span>
-                  <span className="text-white text-2xl font-bold">${currentOffer.offerPrice}</span>
-                </div>
-                <div className="text-white text-2xl font-bold">
-                  {getDiscountDisplay(currentOffer.discountType, currentOffer.discountValue)}
-                </div>
-              </div>
-            </div>
-
-            {/* Show Details Button */}
-            <button 
-              onClick={() => setShowDetails(true)}
-              className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform active:scale-98 shadow-lg"
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <span className="text-lg">View Details</span>
-              </div>
-            </button>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
           </div>
-        </div>
 
-        {/* Swipe Hint */}
-        <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
-          <div className="text-white/60 text-sm text-center">
-            <ChevronUp className="w-6 h-6 mx-auto mb-1" />
-            <div>Swipe up for next</div>
+          {/* Mobile Filter Dropdown */}
+          <MobileFilterDropdown />
+
+          {/* Swipe Container */}
+          <div 
+            ref={containerRef}
+            className="relative z-10 h-full flex flex-col touch-pan-y"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onWheel={handleWheel}
+            style={{ touchAction: 'pan-y' }}
+          >
+            {/* Distance Badge */}
+            <div className="absolute top-4 left-4 z-40">
+              <div className="flex items-center space-x-1 text-black text-sm bg-white px-3 py-1 rounded-full border border-gray-300 shadow-md">
+                <MapPin className="w-4 h-4 text-black" />
+                <span>{currentOffer.distance}m</span>
+              </div>
+            </div>
+
+            {/* Eye Button to Preview Full Image */}
+            <div className="absolute top-16 left-4 z-30">
+              <button
+                onClick={() => setShowImagePreview(true)}
+                className="p-2 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
+              >
+                <Eye className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Premium Badge */}
+            {currentOffer.isPremium && (
+              <div className="absolute top-16 right-4 z-30">
+                <div className="bg-gradient-to-r from-teal-400 to-teal-600 px-3 py-1 rounded-full">
+                  <div className="flex items-center space-x-1">
+                    <Zap className="w-3 h-3 text-white" />
+                    <span className="text-white text-xs font-bold">PREMIUM</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Content */}
+            <div className="flex-1 flex items-end pb-6 px-4">
+              <div className="w-full">
+                {/* Store Info */}
+                <div className="flex items-center space-x-3 mb-4">
+                  <img 
+                    src={currentOffer.storeId.profileImage} 
+                    alt={currentOffer.storeId.storeName}
+                    className="w-12 h-12 rounded-full border-2 border-teal-400"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-white text-sm">{currentOffer.storeId.rating}</span>
+                      </div>
+                      <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Offer Title */}
+                <h1 className="text-white text-3xl font-bold mb-4 leading-tight">
+                  {currentOffer.title}
+                </h1>
+
+                {/* Price Display */}
+                <div className="bg-gradient-to-r from-teal-500/90 to-teal-600/90 backdrop-blur-sm rounded-2xl p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-white/80 text-lg line-through">₹{currentOffer.originalPrice}</span>
+                      <span className="text-white text-2xl font-bold">₹{currentOffer.offerPrice}</span>
+                    </div>
+                    <div className="text-white text-2xl font-bold">
+                      {getDiscountDisplay(currentOffer.discountType, currentOffer.discountValue)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Show Details Button */}
+                <button 
+                  onClick={() => setShowDetails(true)}
+                  className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform active:scale-98 shadow-lg"
+                >
+                  <span className="text-lg">View Details</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Swipe Hint */}
+            <div className="absolute bottom-40 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
+              <div className="text-white/60 text-sm text-center">
+                <ChevronUp className="w-6 h-6 mx-auto mb-1" />
+                <div>Swipe up for next</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };
