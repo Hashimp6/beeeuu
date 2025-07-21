@@ -29,7 +29,8 @@ import ResetPasswordScreen from '../screens/login/ResetPasswordScreen';
 import ForgotPasswordScreen from '../screens/login/ForgotPasswordScreen';
 import StoreAdminScreen from '../screens/store/StoreHome';
 import SettingsScreen from '../screens/SettingsScreen';
-
+import StoreOffers from '../screens/store/ManageOfferScreen';
+import AddOfferComponent from '../screens/store/AddOfferScreen';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -157,6 +158,16 @@ const AppNavigator = () => {
           <Stack.Screen
             name="NewStore"
             component={NewStore}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="StoreOffers"
+            component={StoreOffers}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="NewOffer"
+            component={AddOfferComponent}
             options={{ headerShown: false }}
           />
           <Stack.Screen

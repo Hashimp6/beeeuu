@@ -335,6 +335,19 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
 
         <View style={styles.card}>
         <TouchableOpacity
+  style={styles.settingOption}
+  onPress={() => {
+    navigation.navigate("StoreOffers", { store });
+  }}
+>
+            <View style={styles.settingOptionLeft}>
+              <Icon name="local-offer" size={20} color="#e74c3c" />
+              <Text style={styles.settingOptionText}>Offers</Text>
+            </View>
+            <Icon name="chevron-right" size={20} color="#888" />
+          </TouchableOpacity>
+
+        <TouchableOpacity
             style={styles.settingOption}
             onPress={() =>  navigation.navigate("storeProduct", { store})}
           >

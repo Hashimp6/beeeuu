@@ -449,7 +449,7 @@ const OfferReelPage = () => {
         </div>
 
         {/* Bottom Content */}
-        <div className="flex-1 flex items-end pb-6 px-4">
+        <div className="flex-1 flex items-end pb-14 px-4">
           <div className="w-full">
             {/* Store Info */}
             <div className="flex items-center space-x-3 mb-4">

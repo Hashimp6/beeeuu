@@ -495,15 +495,15 @@ const SellerProfile = ({ navigation }) => {
           {store?.products?.length > 0 ? (
             store.products.map((item) => (
               <View key={item._id} style={styles.card}>
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={{ 
-                      uri: item.image || 'https://picsum.photos/300?random=11' 
-                    }}
-                    style={styles.cardImage}
-                    resizeMode="cover"
-                  />
-                </View>
+               <View style={styles.imageContainer}>
+  <Image
+    source={{
+      uri: item.images?.[0] || 'https://picsum.photos/300?random=11'
+    }}
+    style={styles.cardImage}
+    resizeMode="cover"
+  />
+</View>
                 <View style={styles.info}>
                   <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.desc} numberOfLines={2}>
