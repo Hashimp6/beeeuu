@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search } from 'lucide-react';
+import { useAuth } from '../../context/UserContext';
 
 const OfferReelPage = () => {
+  const {location}=useAuth()
+  console.log("loc",location);
+  
   const [currentOffer, setCurrentOffer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
