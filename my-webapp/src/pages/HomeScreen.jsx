@@ -9,54 +9,85 @@ import OfferReelPage from './user/Offers';
 
 const HomeLayout = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); // assuming this gives you the logged-in user
+    const { user, location,setLocation, isAuthenticated } = useAuth(); // Add isAuthenticated check
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-      const [showProfileMobile, setShowProfileMobile] = useState(false);
-    const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
+    const [showProfileMobile, setShowProfileMobile] = useState(false);
+    const [userLocation, setUserLocation] = useState('Current Location');
     const [chat, setChat] = useState(false);
     const [showOffers, setShowOffers] = useState(false);
-    const [dropdowns, setDropdowns] = useState({
-        distance: false,
-        nearby: false,
-        category: false
-    });
     const [showModal, setShowModal] = useState(false);
-    const [selectedFilters, setSelectedFilters] = useState({
-        distance: '20 km',
-        nearby: 'Default',
-        category: 'All Categories'
-    });
-    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [isGuest, setIsGuest] = useState(false);
+    const [locationPromptShown, setLocationPromptShown] = useState(false);
+
+    // Initialize location and guest status
     useEffect(() => {
         if (user?.place) {
             setUserLocation(user.place);
+            setIsGuest(false);
+        } else if (location?.place) {
+            setUserLocation(location.place);
+            setIsGuest(!isAuthenticated);
+        } else {
+            setIsGuest(!isAuthenticated);
+            // Only show location prompt once for guests, and don't make it mandatory
+            if (!isAuthenticated && !locationPromptShown) {
+                setLocationPromptShown(true);
+                // Optional: Show a gentler prompt instead of error
+                toast('Select your location to see nearby stores', {
+                    duration: 3000,
+                    icon: '📍'
+                });
+            }
         }
-        else{
-            toast.error('Please select your location');
-            setShowModal(true); 
-        }
-    }, [user]);
-const handleSetSelect= () => {
-  setShowProfileMobile(true);
-  setIsDrawerOpen(false); 
-};
-const handleShowOffers = () => {
-    setShowOffers(true);
-    setIsDrawerOpen(false); // close drawer if opened
-};
-const handleBackToMain = () => {
-    setShowOffers(false);
-};
+    }, [user, location, isAuthenticated, locationPromptShown]);
 
-    const handleLocationUpdate = (locationData) => {
-        setSelectedLocation(locationData);
-        setUserLocation(locationData.locationName || 'Current Location');
-        setShowModal(false);
-        console.log('Location updated:', locationData);
+    // Show offers by default on initial load
+    useEffect(() => {
+        setShowOffers(true);
+    }, []);
+
+    const handleSetSelect = () => {
+        // Redirect to login if not authenticated
+        if (!isAuthenticated) {
+            toast.error('Please login to access your profile');
+            navigate('/login');
+            return;
+        }
+        setShowProfileMobile(true);
+        setIsDrawerOpen(false);
     };
 
+    const handleShowOffers = () => {
+        setShowOffers(true);
+        setIsDrawerOpen(false);
+    };
+
+    const handleBackToMain = () => {
+        setShowOffers(false);
+    };
+
+    const handleLocationUpdate = (locationData) => {
+        // For guest users, locationData is already in correct format from modal
+        if (!isAuthenticated && locationData.place) {
+          setLocation(locationData);
+          setUserLocation(locationData.place);
+        } else if (locationData.locationName) {
+          // For logged-in users (if needed)
+          const locationObj = {
+            place: locationData.locationName,
+            location: locationData.location
+          };
+          setLocation(locationObj);  // ✅ Update context
+          setUserLocation(locationObj.place);  // ✅ Update display name
+        }
+        
+        setShowModal(false);
+      };
+      
+
     const openLocationModal = () => {
-        console.log('Open location modal');
+        console.log("model opening");
+        
         setShowModal(true);
     };
 
@@ -67,8 +98,8 @@ const handleBackToMain = () => {
             setShowModal(false);
         }
     };
+
     const navigateToHome = () => {
-        // In a real app, you'd use router.push('/home') or navigate('/home')
         console.log("Navigating to /home");
         setIsDrawerOpen(false);
     };
@@ -88,31 +119,23 @@ const handleBackToMain = () => {
     };
 
     const openChat = () => {
-        setChat(prev => !prev);
-        console.log('Toggle chat');
+        // Redirect to login if not authenticated
+        if (!isAuthenticated) {
+            toast.error('Please login to access chat');
+            navigate('/login');
+            return;
+        }
+        navigate('/chat');
     };
 
-    const toggleDropdown = (type) => {
-        setDropdowns(prev => ({
-            ...prev,
-            [type]: !prev[type]
-        }));
-    };
-
-    const selectFilter = (type, value) => {
-        setSelectedFilters(prev => ({
-            ...prev,
-            [type]: value
-        }));
-        setDropdowns(prev => ({
-            ...prev,
-            [type]: false
-        }));
+    const handleLoginRedirect = () => {
+        navigate('/login');
+        setIsDrawerOpen(false);
     };
 
     return (
         <div className="flex flex-col min-h-screen bg-white">
-            {/* Top Navbar - Mobile First */}
+            {/* Top Navbar */}
             <header className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
                 <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
                     {/* Left Corner: Logo */}
@@ -121,30 +144,6 @@ const handleBackToMain = () => {
                         alt="Logo"
                         className="h-8 w-auto object-contain sm:h-10"
                     />
-
-                    {/* Center: Desktop Navigation */}
-             {/* Desktop Tabs */}
-<div className="hidden md:flex justify-center border-b border-gray-200 bg-white">
-  <div className="flex space-x-8 px-6 py-3">
-    <button
-      onClick={handleBackToMain}
-      className={`text-sm font-medium ${
-        !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
-      } transition-colors`}
-    >
-      Home
-    </button>
-    <button
-      onClick={handleShowOffers}
-      className={`text-sm font-medium ${
-        showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
-      } transition-colors`}
-    >
-      Offers
-    </button>
-  </div>
-</div>
-
 
                     {/* Right Corner: Location, Message & Mobile Menu */}
                     <div className="flex items-center gap-2 sm:gap-4">
@@ -162,11 +161,11 @@ const handleBackToMain = () => {
 
                         {/* Message Button */}
                         <button
-      onClick={() => navigate('/chat')}
-      className="relative p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
-    >
-      <MessageCircle size={20} className="text-gray-700 sm:w-[22px] sm:h-[22px]" />
-    </button>
+                            onClick={openChat}
+                            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
+                        >
+                            <MessageCircle size={20} className="text-gray-700 sm:w-[22px] sm:h-[22px]" />
+                        </button>
 
                         {/* Mobile Menu Button */}
                         <button
@@ -179,31 +178,71 @@ const handleBackToMain = () => {
                 </div>
             </header>
 
+            {/* Home / Offers Tabs */}
+            <div className="flex justify-center border-b border-gray-200 bg-white">
+                <div className="flex space-x-6 sm:space-x-8 px-4 py-2 sm:px-6 sm:py-3">
+                    <button
+                        onClick={handleBackToMain}
+                        className={`text-sm font-medium ${
+                            !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+                        } transition-colors`}
+                    >
+                        Stores
+                    </button>
+                    <button
+                        onClick={handleShowOffers}
+                        className={`text-sm font-medium ${
+                            showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+                        } transition-colors`}
+                    >
+                        Offers
+                    </button>
+                </div>
+            </div>
+
+            {/* Guest User Notice */}
+            {isGuest && (
+                <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+                    <div className="flex items-center justify-between max-w-4xl mx-auto">
+                        <div className="flex items-center gap-2">
+                            <User size={16} className="text-blue-600" />
+                            <span className="text-sm text-blue-800">
+                                You're browsing as a guest. Login for full access.
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => navigate('/login')}
+                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700 transition-colors"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content Area */}
-          {/* Main Content Area */}
-<main className="flex-1 flex flex-col">
-
-<div className="flex-1 overflow-auto">
-  {showOffers ? (
-  
-        <OfferReelPage />
-   
-  ) : (
-    <MainAreaComponent
-      select={showProfileMobile}
-      onOpenOffers={handleShowOffers}
-    />
-  )}
-</div>
-</main>
-
+            <main className="flex-1 flex flex-col">
+                <div className="flex-1 overflow-auto">
+                    {showOffers ? (
+                        <OfferReelPage />
+                    ) : (
+                        <MainAreaComponent
+                            select={showProfileMobile}
+                            onOpenOffers={handleShowOffers}
+                            isGuest={isGuest}
+                        />
+                    )}
+                </div>
+            </main>
 
             {/* Location Selection Modal */}
             <LocationSelectionModal
                 visible={showModal}
                 onClose={closeModal}
             />
-             {isDrawerOpen && (
+
+            {/* Mobile Drawer Overlay */}
+            {isDrawerOpen && (
                 <div 
                     className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
                     onClick={toggleDrawer}
@@ -241,44 +280,40 @@ const handleBackToMain = () => {
 
                     {/* Navigation Items */}
                     <div className="space-y-2">
-                    <button
-  onClick={navigateToHome}
-  className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
->
-  <Home size={18} className="text-gray-600 group-hover:text-white" />
-  <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
-</button>
-<button
-  onClick={handleShowOffers}
-  className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
->
-  <Grid size={18} className="text-gray-600 group-hover:text-white" />
-  <span className="text-gray-700 font-medium group-hover:text-white">Offers</span>
-</button>
-
-     {/* <button
-                            onClick={navigateToCategory}
-                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
-                            >
-                              <Layers size={18} className="text-gray-600 group-hover:text-white" />
-                              <span className="text-gray-700 font-medium group-hover:text-white">Category</span>
-                            
-                        </button> */}
-                        
-                        {/* <button
-                            onClick={navigateToContact}
-                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
-                            >
-                              <BookOpen size={18} className="text-gray-600 group-hover:text-white" />
-                              <span className="text-gray-700 font-medium group-hover:text-white">Contact Us</span>                            
-                        </button> */}
                         <button
-                            onClick={handleSetSelect}
+                            onClick={navigateToHome}
                             className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
-                            >
-                              <User size={18} className="text-gray-600 group-hover:text-white" />
-                              <span className="text-gray-700 font-medium group-hover:text-white">Profile</span>                            
+                        >
+                            <Home size={18} className="text-gray-600 group-hover:text-white" />
+                            <span className="text-gray-700 font-medium group-hover:text-white">Home</span>
                         </button>
+
+                        <button
+                            onClick={handleShowOffers}
+                            className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+                        >
+                            <Grid size={18} className="text-gray-600 group-hover:text-white" />
+                            <span className="text-gray-700 font-medium group-hover:text-white">Offers</span>
+                        </button>
+
+                        {/* Profile or Login Button */}
+                        {isAuthenticated ? (
+                            <button
+                                onClick={handleSetSelect}
+                                className="group w-full flex items-center gap-3 p-3 rounded-lg bg-white hover:bg-teal-700 transition-colors text-left"
+                            >
+                                <User size={18} className="text-gray-600 group-hover:text-white" />
+                                <span className="text-gray-700 font-medium group-hover:text-white">Profile</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleLoginRedirect}
+                                className="group w-full flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-left border border-blue-200"
+                            >
+                                <User size={18} className="text-blue-600" />
+                                <span className="text-blue-700 font-medium">Login / Register</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

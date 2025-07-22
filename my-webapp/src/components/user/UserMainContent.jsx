@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, ChevronDown, Mail, Phone, MapPin, Edit2, Calendar, FileText, LogOut, LogIn, User, X, Menu } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import StoreCard from '../StoreCard';
@@ -8,19 +8,18 @@ import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './UserProfileComponent';
 import UserAppointmentsOrders from '../../pages/user/AppointmentsAndOrders';
 
-const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
-  const { user, token, setUser, setToken } = useAuth(); 
+const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest = false }) => {
+  const { user, token, setUser, setToken, location, isAuthenticated } = useAuth(); 
   const navigate = useNavigate();
-  const [history, setHistory] = useState(null); // Initialize as null
+  const [history, setHistory] = useState(null);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [show, setShow] = useState(false);
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryNames, setCategoryNames] = useState([]);
-   const [dropdowns, setDropdowns] = useState({
+  const [dropdowns, setDropdowns] = useState({
     distance: false,
     nearby: false,
     category: false
@@ -31,13 +30,16 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
     nearby: 'Default',
     category: 'All Categories'
   });
+
+  // Default coordinates for guests (Kochi, Kerala as per user location)
+  const DEFAULT_COORDINATES = {
+    latitude: 9.9312,
+    longitude: 76.2673
+  };
+
   useEffect(() => {
-    setShow(select); // sync show state with passed prop
+    setShow(select);
   }, [select]);
-  // Debug function to check history state
-  useEffect(() => {
-    console.log('History state changed:', history);
-  }, [history]);
 
   // Debounce search text
   useEffect(() => {
@@ -62,27 +64,24 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
     }
   }, [debouncedSearchText, filters]);
 
+  // Handle authentication check for logged-in users
   useEffect(() => {
-    if (!user || !token) {
+    if (!isGuest && (!user || !token)) {
       const storedUser = localStorage.getItem('user');
       const storedToken = localStorage.getItem('authToken');
 
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
-      } else {
-        console.warn('No auth data found. Redirecting to login...');
-        navigate('/login');
       }
     }
-  }, [user, token, setUser, setToken, navigate]);
+  }, [user, token, setUser, setToken, isGuest]);
+
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/category/group`);
-const data = response.data;
-console.log("catef",data);
-
-      // Extract all subcategory names from all main categories
+      const data = response.data;
+  
       const allSubcategories = [];
       data.forEach(mainCategory => {
         mainCategory.categories.forEach(subCategory => {
@@ -90,31 +89,59 @@ console.log("catef",data);
         });
       });
       
-      // Set the category names (including 'All Categories' at the beginning)
       setCategoryNames(['All Categories', ...allSubcategories]);
-      console.log("catef",allSubcategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      
+      // Enhanced fallback categories for guests
+      const fallbackCategories = [
+        'All Categories',
+        'Restaurants',
+        'Cafes',
+        'Shopping',
+        'Services',
+        'Healthcare',
+        'Beauty & Spa',
+        'Automotive',
+        'Electronics',
+        'Grocery'
+      ];
+      
+      setCategoryNames(fallbackCategories);
+      
+      // Don't show error to guests, just log it
+      if (!isGuest) {
+        setError('Could not load categories. Please try again later.');
+      }
     }
   };
-  const fetchStores = async (searchTerm = '', filterData = filters, customUser = user) => {
-    console.log("fetchStores called with:", { searchTerm, filterData });
-
-    if (!token) {
-      console.error('Authentication token not available');
-      setError('Authentication token not available');
-      return;
+  
+  const fetchStores = useCallback(async (searchTerm = '', filterData = filters) => {
+    console.log("fetchStores called with:", { searchTerm, filterData, isGuest });
+  
+    // Get coordinates - use default for guests or when location is not available
+    let latitude, longitude;
+    
+    if (location?.location?.coordinates) {
+      latitude = location.location.coordinates[1];
+      longitude = location.location.coordinates[0];
+    } else {
+      // Use default coordinates for guests
+      latitude = DEFAULT_COORDINATES.latitude;
+      longitude = DEFAULT_COORDINATES.longitude;
+      
+      // Optionally show a subtle notice to guests about location
+      if (isGuest && !error) {
+        console.log('Using default location for guest user');
+      }
     }
-
-    const latitude = user?.location?.coordinates?.[1] || 9.9312;
-    const longitude = user?.location?.coordinates?.[0] || 76.2673;
     
     setLoading(true);
     setError(null);
-
+  
     try {
       const distanceValue = parseInt(filterData.distance.split(' ')[0]);
-
+  
       const getSortByValue = (nearby) => {
         switch (nearby.toLowerCase()) {
           case 'rating': return 'averageRating';
@@ -124,7 +151,7 @@ console.log("catef",data);
           default: return 'distance';
         }
       };
-
+  
       const params = {
         latitude,
         longitude,
@@ -134,57 +161,96 @@ console.log("catef",data);
         sortBy: getSortByValue(filterData.nearby),
         sortOrder: filterData.nearby.toLowerCase() === 'rating' ? 'desc' : 'asc'
       };
-
+  
       if (filterData.category !== 'All Categories') {
         params.category = filterData.category;
       }
-
+  
       if (searchTerm && searchTerm.trim()) {
         params.search = searchTerm.trim();
-        console.log("Adding search term:", searchTerm.trim());
       }
-
+  
+      // Enhanced headers handling
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+  
+      // Only include auth for logged-in users
+      if (!isGuest && token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+  
       const response = await axios.get(`${SERVER_URL}/stores/nearby`, {
         params,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers,
+        timeout: 10000 // Add timeout for better UX
       });
-
+  
+      // Enhanced response handling
+      let storesData = [];
+      
       if (response.data && response.data.data && response.data.data.stores) {
-        const { stores: newStores } = response.data.data;
-        setStores(newStores || []);
-      } else {
-        const stores = response.data.stores || response.data || [];
-        setStores(stores);
+        storesData = response.data.data.stores;
+      } else if (response.data.stores) {
+        storesData = response.data.stores;
+      } else if (Array.isArray(response.data)) {
+        storesData = response.data;
       }
-
+  
+      setStores(storesData || []);
+  
     } catch (err) {
-      const errorMessage = err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to fetch stores';
+      console.error('Store fetch error:', err);
+      
+      let errorMessage = 'Failed to fetch stores';
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.response?.status === 401) {
+        if (isGuest) {
+          // For guests, try to show stores without auth-required features
+          errorMessage = 'Showing limited store information. Login for full features.';
+        } else {
+          errorMessage = 'Session expired. Please login again.';
+        }
+      } else if (err.response?.status === 403) {
+        errorMessage = isGuest ? 
+          'Some features require login. Showing available stores.' : 
+          'Access denied. Please check your permissions.';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else {
+        errorMessage = err.response?.data?.message || 
+                      err.response?.data?.error || 
+                      err.message || 
+                      'Failed to fetch stores';
+      }
+      
       setError(errorMessage);
+      
+      // For guests, you might want to show cached/fallback data
+      if (isGuest && err.response?.status === 401) {
+        // Could implement fallback data here if needed
+      }
+      
     } finally {
       setLoading(false);
     }
-  };
-
+  }, [filters, isGuest, token, location]);
+  
   useEffect(() => {
     const loadInitialData = async () => {
-      if (user && token) {
-        console.log("⏳ Fetching stores...");
-        await fetchStores('', filters, user);   // ✅ High priority
-  
-        console.log("📦 Now fetching categories...");
-        fetchCategories();                      // ✅ Lower priority
-      }
+      console.log("⏳ Loading initial data...", { isGuest, hasToken: !!token });
+      
+      // Always fetch stores (works for both guests and logged-in users)
+      await fetchStores('', filters);
+      
+      // Always try to fetch categories
+      fetchCategories();
     };
-  
+
     loadInitialData();
-  }, [user, token]);
-  
+  }, [fetchStores, filters]);
 
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
@@ -229,12 +295,70 @@ console.log("catef",data);
     fetchStores(searchQuery, defaultFilters);
   };
 
-  // Function to handle going back to main content
+  // Guest Location Notice Component
+  const GuestLocationNotice = () => (
+    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="flex items-start gap-2">
+        <MapPin size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+        <div className="text-sm">
+          <p className="text-blue-800 font-medium">Using default location</p>
+          <p className="text-blue-600">
+            Showing stores near Kochi, Kerala. 
+            <button 
+              onClick={() => navigate('/login')} 
+              className="underline hover:text-blue-800 ml-1"
+            >
+              Login
+            </button> for personalized location-based results.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+  
+  // Enhanced Error Display Component
+  const ErrorDisplay = ({ error, isGuest, onRetry }) => {
+    if (!error) return null;
+    
+    const isAuthError = error.includes('login') || error.includes('Session expired');
+    
+    return (
+      <div className={`mb-4 p-3 border rounded-lg ${
+        isAuthError ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
+      }`}>
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <p className={`text-sm ${
+              isAuthError ? 'text-yellow-800' : 'text-red-600'
+            }`}>
+              {error}
+            </p>
+            {isGuest && isAuthError && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={onRetry}
+                  className="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleBackToMain = () => {
     setHistory(null);
   };
 
-  // Determine what type to pass to UserAppointmentsOrders
   const getAppointmentOrderType = () => {
     if (history === 'appointment' || history === 'appointments') {
       return 'appointments';
@@ -244,13 +368,49 @@ console.log("catef",data);
     }
     return null;
   };
+
+  // Handle profile access for guests
+  const handleProfileAccess = () => {
+    if (isGuest) {
+      navigate('/login');
+      return;
+    }
+    setShow(true);
+  };
+
+  // Show login prompt for guests trying to access profile features
+  if (show && isGuest) {
+    return (
+      <div className="flex items-center justify-center h-[calc(98vh-64px)] bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <User size={48} className="mx-auto mb-4 text-gray-400" />
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Login Required</h2>
+          <p className="text-gray-600 mb-6">Please login to access your profile and account features.</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setShow(false)}
+              className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Continue Browsing
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (show && !history) {
     return (
       <div className="lg:hidden bg-gray-50 p-4 h-[calc(98vh-64px)] overflow-y-auto">
-        {/* Optional: add back button */}
         <div className="flex justify-end mb-2">
           <button
-            onClick={() => setShow(false)} // collapse profile
+            onClick={() => setShow(false)}
             className="p-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
             <X size={18} />
@@ -260,9 +420,10 @@ console.log("catef",data);
       </div>
     );
   }
+
   return (
     <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-      {/* Mobile Horizontal Filters - Only show when not in appointment/order view */}
+      {/* Mobile Horizontal Filters */}
       {!history && (
         <div className="lg:hidden bg-white border-b border-gray-200 py-2 px-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -443,16 +604,15 @@ console.log("catef",data);
 
             {dropdowns.category && (
               <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-               {categoryNames.map((cat) => (
-  <button
-    key={cat}
-    onClick={() => selectFilter('category', cat)}
-    className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
-  >
-    {cat}
-  </button>
-))}
-
+                {categoryNames.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => selectFilter('category', cat)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 hover:text-teal-700 transition-colors ${filters.category === cat ? 'bg-teal-50 text-teal-700' : 'text-gray-700'}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -479,16 +639,16 @@ console.log("catef",data);
           </div>
           {/* Keep User Profile Component visible even in appointment/order view */}
           <div className="hidden xl:block w-[380px] px-4">
-  <div className="h-[calc(98vh-64px)] overflow-y-auto bg-white border-l border-gray-200 rounded-l-lg shadow-sm p-4">
-    <UserProfileComponent setHistory={setHistory} />
-  </div>
-</div>
+            <div className="h-[calc(98vh-64px)] overflow-y-auto bg-white border-l border-gray-200 rounded-l-lg shadow-sm p-4">
+              <UserProfileComponent setHistory={setHistory} />
+            </div>
+          </div>
         </div>
       ) : (
         // Default view with stores
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Center Content */}
-         <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-y-auto bg-gray-50 h-[calc(98vh-64px)] scrollbar-hide">
+          <div className="flex-1 px-8 py-2 lg:px-12 lg:py-6 overflow-y-auto bg-gray-50 h-[calc(98vh-64px)] scrollbar-hide">
 
             {/* Search Bar */}
             <div className="mb-2 lg:mb-6 flex justify-center">
@@ -503,7 +663,7 @@ console.log("catef",data);
                   className="w-full pl-10 pr-12 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-sm lg:text-base"
                 />
                 <button
-                  onClick={handleSearch}
+                  onClick={() => fetchStores(searchQuery, filters)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-teal-500 touch-manipulation"
                 >
                   <Search size={16} />
@@ -511,11 +671,17 @@ console.log("catef",data);
               </div>
             </div>
 
-            {error && (
-              <div className="mb-4 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
+            {/* Guest Location Notice */}
+            {isGuest && !location?.location?.coordinates && (
+              <GuestLocationNotice />
             )}
+
+            {/* Error Display */}
+            <ErrorDisplay 
+              error={error} 
+              isGuest={isGuest} 
+              onRetry={() => fetchStores(searchQuery, filters)} 
+            />
 
             {loading && (
               <div className="flex items-center justify-center py-12">

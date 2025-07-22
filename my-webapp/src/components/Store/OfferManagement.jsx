@@ -27,7 +27,7 @@ const AddOfferForm = ({
     onClose, 
     onSubmit, 
     editingOffer = null,
-    loading = false 
+    loading = false
   }) => {
     const [offerData, setOfferData] = useState({
       // Required fields
@@ -113,8 +113,8 @@ const AddOfferForm = ({
           storeId: storeId
         });
         
-        if (editingOffer.imageUrl) {
-          setImagePreview(editingOffer.imageUrl);
+        if (editingOffer.image) {
+          setImagePreview(editingOffer.image);
         }
       } else {
         // Reset form for new offer
@@ -208,59 +208,34 @@ const AddOfferForm = ({
   
     const handleSubmit = async () => {
       if (!validateForm()) return;
-  
-      setSubmitting(true);
-  
+    
+      setSubmitting(true); // Set local loading state
+    
       try {
-        const formData = new FormData();
-        
-        // Calculate end date based on start date and duration
+        // Calculate end date
         const validFrom = offerData.startDate;
         const validTo = calculateValidTo(offerData.startDate, parseInt(offerData.duration));
-  
-        // Prepare data for submission
+    
         const submissionData = {
           ...offerData,
           validFrom,
           validTo
         };
-  
-        Object.keys(submissionData).forEach(key => {
-          if (key === 'image' && submissionData[key]) {
-            formData.append('image', submissionData[key]);
-          } else if (key !== 'image' && submissionData[key] !== '') {
-            formData.append(key, submissionData[key]);
-          }
-        });
-  
-        const url = editingOffer
-          ? `${SERVER_URL}/offers/${editingOffer.id}`
-          : `${SERVER_URL}/offers`;
-  
-        const method = editingOffer ? 'put' : 'post';
-  
-        const response = await axios({
-          method,
-          url,
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-  
-        toast.success(`Offer ${editingOffer ? 'updated' : 'created'} successfully!`);
-  
-        if (onSubmit) onSubmit(response.data);
+    
+        if (onSubmit) {
+          await onSubmit(submissionData); // Wait for the submission to complete
+        }
+        
+        // Only close if submission was successful
         onClose();
       } catch (error) {
-        console.error('Error submitting offer:', error);
-        const msg = error?.response?.data?.message || 'Failed to save offer. Please try again.';
-        toast.error(msg);
-        setErrors(prev => ({ ...prev, submit: msg }));
+        console.error('Submission error:', error);
+        setErrors(prev => ({ ...prev, submit: 'Failed to save offer. Please try again.' }));
       } finally {
-        setSubmitting(false);
+        setSubmitting(false); // Reset local loading state
       }
     };
+    
   
     const handleInputChange = (field, value) => {
       setOfferData(prev => ({ ...prev, [field]: value }));
@@ -526,16 +501,33 @@ const AddOfferForm = ({
                 Cancel
               </button>
               <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {submitting ? (
-                  <RefreshCw size={16} className="animate-spin" />
-                ) : (
-                  editingOffer ? 'Update Offer' : 'Add Offer'
-                )}
-              </button>
+  onClick={handleSubmit}
+  disabled={submitting} // Use local submitting state instead of loading prop
+  className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50 w-full"
+>
+  {submitting ? ( // Use local submitting state
+    <>
+      <svg
+        className="w-4 h-4 animate-spin text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+        />
+      </svg>
+      Processing...
+    </>
+  ) : (
+    editingOffer ? "Update Offer" : "Add Offer"
+  )}
+</button>
+
+
             </div>
           </div>
         </div>
@@ -704,59 +696,64 @@ const OfferManagement = ({ storeId }) => {
 
   // Handle submit (add/edit offer)
   const handleSubmitOffer = async (offerData) => {
-    setLoading(true);
+    // Remove setLoading(true) from here since we're handling it in the form
     
     try {
-        const payload = {
-            ...offerData,
-            storeId, // ✅ backend expects this, not seller
-            discountValue: parseFloat(offerData.discountValue),
-            minPurchaseAmount: offerData.minPurchaseAmount ? parseFloat(offerData.minPurchaseAmount) : undefined,
-            maxDiscountAmount: offerData.maxDiscountAmount ? parseFloat(offerData.maxDiscountAmount) : undefined,
-            validFrom: offerData.validFrom,
-            validTo: offerData.validTo,
-            originalPrice: offerData.originalPrice || 0, // optional if used
-            offerPrice: offerData.offerPrice || 0,
-            category: offerData.category || '',
-            tags: offerData.tags || '',
-          };
-          
-
-      console.log("offer data", payload);
-
+      const formData = new FormData();
+  
+      // Append all fields
+      formData.append("title", offerData.title);
+      formData.append("description", offerData.description);
+      formData.append("discountType", offerData.discountType);
+      formData.append("category", offerData.category);
+      formData.append("startDate", offerData.startDate);
+      formData.append("duration", offerData.duration);
+      formData.append("discountValue", offerData.discountValue);
+      formData.append("originalPrice", offerData.originalPrice);
+      formData.append("offerPrice", offerData.offerPrice);
+      formData.append("isActive", offerData.isActive);
+      formData.append("storeId", offerData.storeId);
+      formData.append("validFrom", offerData.validFrom);
+      formData.append("validTo", offerData.validTo);
+  
+      // Append image only if it's present
+      if (offerData.image) {
+        formData.append("image", offerData.image);
+      }
+  
       const offerId = editingOffer?._id;
-      const url = editingOffer 
-        ? `${SERVER_URL}/offers/${storeId}/${offerId}`
+      const url = editingOffer
+        ? `${SERVER_URL}/offers/${offerId}`
         : `${SERVER_URL}/offers`;
-
-      const method = editingOffer ? 'put' : 'post';
-      console.log("offer request", url, method);
-
+  
+      const method = editingOffer ? "put" : "post";
+  
       const response = await axios({
         method,
         url,
-        data: payload,
+        data: formData,
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
       });
-
-      console.log('Offer saved:', response.data);
-      
-      // Refresh offers after successful save
+  
+      toast.success("Offer saved successfully!");
       await fetchOffers();
+      setEditingOffer(null); // Reset editing state
       
-      setShowAddForm(false);
-      setEditingOffer(null);
+      // Return success to indicate completion
+      return { success: true };
       
     } catch (err) {
-      console.error('Error saving offer:', err);
-      setError('Failed to save offer. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error("Error saving offer:", err);
+      toast.error("Failed to save offer");
+      
+      // Throw error to be caught by form component
+      throw new Error("Failed to save offer. Please try again.");
     }
   };
+  
 
   // Handle delete offer
   const handleDeleteOffer = async (offerId) => {
@@ -987,16 +984,16 @@ const OfferManagement = ({ storeId }) => {
 
       {/* Add/Edit Offer Form Modal */}
       <AddOfferForm
-      storeId={storeId}
-        isVisible={showAddForm}
-        onClose={() => {
-          setShowAddForm(false);
-          setEditingOffer(null);
-        }}
-        onSubmit={handleSubmitOffer}
-        editingOffer={editingOffer}
-        loading={loading}
-      />
+  storeId={storeId}
+  isVisible={showAddForm}
+  onClose={() => {
+    setShowAddForm(false);
+    setEditingOffer(null);
+  }}
+  onSubmit={handleSubmitOffer}
+  editingOffer={editingOffer}
+  // Remove loading prop - not needed anymore
+/>
 
       {/* View Offer Modal */}
       <OfferViewModal
