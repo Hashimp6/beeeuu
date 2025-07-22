@@ -104,6 +104,7 @@ export function AuthProvider({ children }) {
       loading,
       error,
       location,
+      setLocation,
       login,
       logout,
       getCurrentUser,

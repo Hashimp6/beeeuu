@@ -2,11 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import { SERVER_URL } from '../../Config';
+
 const OfferReelPage = () => {
-  const {location}=useAuth()
-  console.log("loc",location.location.coordinates);
-  const coords=location.location.coordinates
+  const { location, user } = useAuth();
+  
+  // Add null checks for location
+  const coords = location?.location?.coordinates || null;
+  console.log("loc", coords);
+  
   const [currentOffer, setCurrentOffer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -15,7 +20,8 @@ const OfferReelPage = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState('all'); // Main category state for API
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [locationError, setLocationError] = useState(false);
   const containerRef = useRef(null);
   
   const [offers, setOffers] = useState([{
@@ -57,42 +63,79 @@ const OfferReelPage = () => {
   const [filteredOffers, setFilteredOffers] = useState(offers);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const fetchNearbyOffers = async (lat, lng, category = '') => {
+    const { type, id } = getUserIdentifier();
+    try {
+      const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
+        params: {
+          lat,
+          lng,
+          category,
+          [type === 'temp' ? 'tempUserId' : 'userId']: id
+        },
+      });
   
-const fetchNearbyOffers = async (lat, lng, category = '') => {
-  try {
-    const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
-      params: {
-        lat,
-        lng,
-        category,
-        radius: 1000,
-      },
-      withCredentials: true, // include cookies if using auth
-    });
-
-    if (response.data.success && response.data.data) {
-      console.log("offrs",response.data.data);
-      
-      return response.data.data;
-    } else {
-      console.warn('No offers found:', response.data.message);
-      return null;
+      if (response.data.success && response.data.data) {
+        console.log("offers array:", response.data.data);
+        return response.data.data;
+      } else {
+        console.warn('No offers found:', response.data.message);
+        return [];
+      }
+    } catch (err) {
+      console.error('Error fetching nearby offers:', err);
+      return [];
     }
-  } catch (err) {
-    console.error('Error fetching nearby offers:', err);
-    return null;
-  }
-};
-useEffect(() => {
-  const fetchOffers = async () => {
-    if (!coords || coords.length !== 2) return;
+  };
 
-    const [lng, lat] = coords;
-    const nearbyOffer = await fetchNearbyOffers(lat, lng, selectedCategory !== 'all' ? selectedCategory : '');
+  const getUserIdentifier = () => {
+    if (user && user._id) {
+      return { type: 'user', id: user._id };
+    }
 
-    if (nearbyOffer) {
-      setOffers([nearbyOffer]);
-      setFilteredOffers([nearbyOffer]);
+    let tempId = localStorage.getItem("tempUserId");
+    if (!tempId) {
+      tempId = uuidv4();
+      localStorage.setItem("tempUserId", tempId);
+    }
+
+    return { type: 'temp', id: tempId };
+  };
+
+  // Function to request location permission for guest users
+  const requestLocationPermission = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // Create a mock location object similar to what useAuth provides
+          const mockLocation = {
+            location: {
+              coordinates: [longitude, latitude]
+            }
+          };
+          // You might want to update this in your context or handle it locally
+          fetchOffersWithCoords(latitude, longitude);
+          setLocationError(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setLocationError(true);
+          // Use default location or show error
+        }
+      );
+    } else {
+      setLocationError(true);
+      console.error('Geolocation is not supported by this browser.');
+    }
+  };
+
+  const fetchOffersWithCoords = async (lat, lng) => {
+    const nearbyOffers = await fetchNearbyOffers(lat, lng, selectedCategory !== 'all' ? selectedCategory : '');
+    
+    if (nearbyOffers && nearbyOffers.length > 0) {
+      setOffers(nearbyOffers);
+      setFilteredOffers(nearbyOffers);
       setCurrentIndex(0);
     } else {
       setOffers([]);
@@ -100,8 +143,20 @@ useEffect(() => {
     }
   };
 
-  fetchOffers();
-}, [coords, selectedCategory]); // refetch when coords or category changes
+  useEffect(() => {
+    const fetchOffers = async () => {
+      // Check if we have coordinates from the auth context
+      if (coords && coords.length === 2) {
+        const [lng, lat] = coords;
+        await fetchOffersWithCoords(lat, lng);
+      } else {
+        // For guest users or when location is not available, request permission
+        requestLocationPermission();
+      }
+    };
+
+    fetchOffers();
+  }, [coords, selectedCategory]);
 
   const categories = [
     { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },
@@ -123,16 +178,42 @@ useEffect(() => {
     }, 200);
   }, [currentIndex, filteredOffers]);
 
-  // Filter offers based on selected category
   useEffect(() => {
     setFilteredOffers(offers);
   }, [offers]);
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
-    // Here you can call your API with the selected category
     console.log('Selected category for API:', categoryId);
   };
+
+  // Location Permission Component for Guest Users
+  const LocationPermissionRequest = () => (
+    <div className="flex h-screen" style={{ height: 'calc(100vh - 80px)' }}>
+      <DesktopFilters />
+      <div className="flex-1 bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <div className="w-24 h-24 bg-teal-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+            <MapPin className="w-12 h-12 text-teal-400" />
+          </div>
+          <h2 className="text-white text-2xl font-bold mb-4">Location Access Required</h2>
+          <p className="text-gray-400 mb-6 leading-relaxed">
+            To show you the best nearby offers, we need access to your location. 
+            Your location data is only used to find relevant deals around you.
+          </p>
+          <button
+            onClick={requestLocationPermission}
+            className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all mb-4"
+          >
+            Allow Location Access
+          </button>
+          <p className="text-gray-500 text-sm">
+            You can change this permission anytime in your browser settings
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
   // Desktop Filter Sidebar Component
   const DesktopFilters = () => (
@@ -199,6 +280,11 @@ useEffect(() => {
       </div>
     );
   };
+
+  // Show location permission request if no coordinates available
+  if (locationError || (!coords && !loading)) {
+    return <LocationPermissionRequest />;
+  }
 
   const handleSwipe = (direction) => {
     if (showDetails || showImagePreview) return;
@@ -530,7 +616,7 @@ useEffect(() => {
             <div className="absolute top-4 left-4 z-40">
               <div className="flex items-center space-x-1 text-black text-sm bg-white px-3 py-1 rounded-full border border-gray-300 shadow-md">
                 <MapPin className="w-4 h-4 text-black" />
-                <span>{currentOffer.distance}m</span>
+                <span>{currentOffer.distanceKm || currentOffer.distance} Km</span>
               </div>
             </div>
 

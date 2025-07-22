@@ -25,9 +25,8 @@ import OfferReelPage from "./pages/user/Offers";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { user,isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const location = useLocation();
-
 
   if (!isAuthenticated && !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -35,6 +34,7 @@ const ProtectedRoute = ({ children }) => {
 
   return children;
 };
+
 // Auth Route Component (redirects authenticated users away from auth pages)
 const AuthRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -47,7 +47,8 @@ const AuthRoute = ({ children }) => {
 };
 
 function App() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  
   return (
     <>
       <CustomToaster />
@@ -61,15 +62,19 @@ function App() {
           <Route path="/return-policy" element={<ReturnRefundPolicy/>} />
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
           <Route path="/store/:storeName" element={<StoreProfile />} />
-          <Route path="/offers" element={<OfferReelPage/>} />
+          <Route path="/offers" element={<HomeLayout />} />
+          
+          {/* Public Home Route - accessible to everyone */}
           <Route
-  path="/home"
-  element={
-    <ProtectedRoute>
-      {user?.role === "seller" ? <StoreDashboard /> : <HomeLayout />}
-    </ProtectedRoute>
-  }
-/>
+            path="/home"
+            element={
+              // If authenticated and seller, show dashboard; otherwise show home layout
+              isAuthenticated && user?.role === "seller"
+                ? <StoreDashboard />
+                : <HomeLayout />
+            }
+          />
+
           {/* Auth Routes - Only unauthenticated users can access */}
           <Route 
             path="/register" 
@@ -113,15 +118,15 @@ function App() {
           />
           
           {/* Protected Routes - Only authenticated users can access */}
-          
           <Route 
-  path="/newStore" 
-  element={ <ProtectedRoute>
-    <NewStore />
-    </ProtectedRoute>
-  } 
-/>
-           <Route 
+            path="/newStore" 
+            element={
+              <ProtectedRoute>
+                <NewStore />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/chat" 
             element={
               <ProtectedRoute>
@@ -145,7 +150,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
-                <Route 
+          <Route 
             path="/appointmentOrOrder" 
             element={
               <ProtectedRoute>

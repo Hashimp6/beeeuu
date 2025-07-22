@@ -211,13 +211,12 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         return updatedUser;
       } else {
         // ❌ No user logged in
-        localStorage.setItem(
-          'location',
-          JSON.stringify({ location: locationData, place: locationName })
-        );
-  
-        toast.error('⚠️ Please login to save your location permanently');
-        return { location: locationData, place: locationName };
+        const guestLocationData = { place: locationName, location: locationData };
+        localStorage.setItem('location', JSON.stringify(guestLocationData));
+        setLocation(guestLocationData);
+        
+        toast.success('📍 Location updated successfully');
+        return guestLocationData;
       }
     } catch (err) {
       console.error('❌ Location update failed:', err);
@@ -343,7 +342,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
   };
 
   // Don't render if not visible or no user
-  if (!visible || !user) return null;
+  if (!visible) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[19999] p-4">
@@ -352,11 +351,11 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">Select Your Location</h2>
-            {location.place && (
-              <p className="text-sm text-gray-600 mt-1">
-                Current: {location.place}
-              </p>
-            )}
+            {location?.place && (
+  <p className="text-sm text-gray-600 mt-1">
+    Current: {location.place}
+  </p>
+)}
           </div>
           <button
             onClick={() => onClose()}
