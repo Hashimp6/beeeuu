@@ -9,10 +9,10 @@ import OfferReelPage from './user/Offers';
 
 const HomeLayout = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); // assuming this gives you the logged-in user
+    const { user,location } = useAuth(); // assuming this gives you the logged-in user
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
       const [showProfileMobile, setShowProfileMobile] = useState(false);
-    const [userLocation, setUserLocation] = useState(user?.place || 'Current Location');
+    const [userLocation, setUserLocation] = useState(location?.place || 'Current Location');
     const [chat, setChat] = useState(false);
     const [showOffers, setShowOffers] = useState(false);
     const [dropdowns, setDropdowns] = useState({
@@ -36,6 +36,9 @@ const HomeLayout = () => {
             setShowModal(true); 
         }
     }, [user]);
+    useEffect(() => {
+        setShowOffers(true); // 👈 Show Offers by default on initial load
+      }, []);
 const handleSetSelect= () => {
   setShowProfileMobile(true);
   setIsDrawerOpen(false); 
@@ -124,15 +127,16 @@ const handleBackToMain = () => {
 
                     {/* Center: Desktop Navigation */}
              {/* Desktop Tabs */}
-<div className="hidden md:flex justify-center border-b border-gray-200 bg-white">
-  <div className="flex space-x-8 px-6 py-3">
+{/* Home / Offers Tabs - Shown on all screens */}
+<div className="flex justify-center border-b border-gray-200 bg-white">
+  <div className="flex space-x-6 sm:space-x-8 px-4 py-2 sm:px-6 sm:py-3">
     <button
       onClick={handleBackToMain}
       className={`text-sm font-medium ${
         !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
       } transition-colors`}
     >
-      Home
+      Stores
     </button>
     <button
       onClick={handleShowOffers}
@@ -144,6 +148,7 @@ const handleBackToMain = () => {
     </button>
   </div>
 </div>
+
 
 
                     {/* Right Corner: Location, Message & Mobile Menu */}

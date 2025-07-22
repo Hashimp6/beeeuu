@@ -88,11 +88,23 @@ const getNearbyOffers = async (req, res) => {
       storeName, 
       lastDistance = 0, 
       lastOfferId,
+      userId,
+      tempUserId ,
+ 
       batchSize = 20 // Fetch 20 offers at once
     } = req.query;
     
-    const userId = req.user._id;
+    const UserId = req.user?._id ||userId|| tempUserId;
+
+    if (!UserId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User ID or temp ID is required" 
+      });
+    }
     
+    // Then based on type, fetch seen offers
+    let seenOfferRecord = await UserSeenOffer.findOne({ UserId });
     // Location is essential - always required
     if (!lat || !lng) {
       return res.status(400).json({ 
@@ -101,7 +113,7 @@ const getNearbyOffers = async (req, res) => {
       });
     }
     
-    const seenOfferRecord = await UserSeenOffer.findOne({ userId });
+
     const seenOfferIds = seenOfferRecord ? seenOfferRecord.seenOffers : [];
     
     // Build base query

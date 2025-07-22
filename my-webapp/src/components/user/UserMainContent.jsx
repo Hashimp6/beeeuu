@@ -9,7 +9,7 @@ import UserProfileComponent from './UserProfileComponent';
 import UserAppointmentsOrders from '../../pages/user/AppointmentsAndOrders';
 
 const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
-  const { user, token, setUser, setToken } = useAuth(); 
+  const { user, token, setUser, setToken ,location} = useAuth(); 
   const navigate = useNavigate();
   const [history, setHistory] = useState(null); // Initialize as null
   const [stores, setStores] = useState([]);
@@ -72,7 +72,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange,select }) => {
         setToken(storedToken);
       } else {
         console.warn('No auth data found. Redirecting to login...');
-        navigate('/login');
+        // navigate('/login');
       }
     }
   }, [user, token, setUser, setToken, navigate]);
@@ -106,8 +106,8 @@ console.log("catef",data);
       return;
     }
 
-    const latitude = user?.location?.coordinates?.[1] || 9.9312;
-    const longitude = user?.location?.coordinates?.[0] || 76.2673;
+    const latitude = location.location.coordinates?.[1] || 9.9312;
+    const longitude = location.location.coordinates?.[0] || 76.2673;
     
     setLoading(true);
     setError(null);
