@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
-
+import axios from 'axios';
+import { SERVER_URL } from '../../Config';
 const OfferReelPage = () => {
   const {location}=useAuth()
-  console.log("loc",location);
-  
+  console.log("loc",location.location.coordinates);
+  const coords=location.location.coordinates
   const [currentOffer, setCurrentOffer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -55,6 +56,52 @@ const OfferReelPage = () => {
   
   const [filteredOffers, setFilteredOffers] = useState(offers);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  
+const fetchNearbyOffers = async (lat, lng, category = '') => {
+  try {
+    const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
+      params: {
+        lat,
+        lng,
+        category,
+        radius: 1000,
+      },
+      withCredentials: true, // include cookies if using auth
+    });
+
+    if (response.data.success && response.data.data) {
+      console.log("offrs",response.data.data);
+      
+      return response.data.data;
+    } else {
+      console.warn('No offers found:', response.data.message);
+      return null;
+    }
+  } catch (err) {
+    console.error('Error fetching nearby offers:', err);
+    return null;
+  }
+};
+useEffect(() => {
+  const fetchOffers = async () => {
+    if (!coords || coords.length !== 2) return;
+
+    const [lng, lat] = coords;
+    const nearbyOffer = await fetchNearbyOffers(lat, lng, selectedCategory !== 'all' ? selectedCategory : '');
+
+    if (nearbyOffer) {
+      setOffers([nearbyOffer]);
+      setFilteredOffers([nearbyOffer]);
+      setCurrentIndex(0);
+    } else {
+      setOffers([]);
+      setFilteredOffers([]);
+    }
+  };
+
+  fetchOffers();
+}, [coords, selectedCategory]); // refetch when coords or category changes
 
   const categories = [
     { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },

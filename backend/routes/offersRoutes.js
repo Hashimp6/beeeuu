@@ -21,7 +21,7 @@ const {
 router.post("/", uploadOfferImage.single("image"), createOffer);
 
 // ✅ Get nearby offers for logged-in users
-router.get("/nearby", protect, getNearbyOffers);
+router.get("/nearby",  getNearbyOffers);
 
 // ✅ Search offers by keyword/category/location
 router.get("/search", searchOffers);

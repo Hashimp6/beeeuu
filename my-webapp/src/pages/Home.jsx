@@ -113,24 +113,12 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-teal-100 animate-slide-down">
             <div className="px-4 py-6 space-y-4">
-              <a href="#" className="block text-gray-700 hover:text-teal-600 font-semibold transition-colors">
-                Marketplace
-              </a>
-              <a href="#" className="block text-gray-700 hover:text-teal-600 font-semibold transition-colors">
-                Sell
-              </a>
-              <a href="#" className="block text-gray-700 hover:text-teal-600 font-semibold transition-colors">
-                Services
-              </a>
-              <a href="#" className="block text-gray-700 hover:text-teal-600 font-semibold transition-colors">
-                About
-              </a>
               <div className="flex flex-col space-y-3 pt-4">
                 <button   onClick={() => navigate("/login")} className="text-gray-800 hover:text-teal-600 px-6 py-3 rounded-xl text-base font-bold transition-all duration-300 hover:bg-teal-50 text-center">
                   Login
                 </button>
-                <button   onClick={() => navigate("/login")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-3 rounded-xl text-base font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl">
-                  Get Started
+                <button   onClick={() => navigate("/Register")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-3 rounded-xl text-base font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl">
+                  Register
                 </button>
               </div>
             </div>
@@ -1219,7 +1207,6 @@ const Footer = () => {
   <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Contact Us</h3>
   <ul className="space-y-2 sm:space-y-3 text-gray-400 text-base sm:text-lg">
   <li>Hashim Husain</li>
-  <li>Aadhar no: 5188 0625 4008</li>
     <li className="flex items-center space-x-2">
       <PhoneCall className="w-4 h-4 text-green-500" />
       <a href="https://wa.me/917012455400" target="_blank" rel="noopener noreferrer">
