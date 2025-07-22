@@ -299,7 +299,22 @@ const UserProfileComponent = ({  setHistory }) => {
       </div>
     </div>
   );
-
+  if (!user) {
+    return (
+      <div className="min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-gray-100 to-teal-100 px-4">
+        <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center space-y-5">
+          <h2 className="text-xl font-bold text-gray-800">Please Login</h2>
+          <p className="text-gray-600 text-sm">You must be logged in to view your profile details.</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold transition-all duration-300"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="h-[90vh] bg-gradient-to-br from-gray-50 via-white to-teal-50 overflow-hidden">
       <SuccessNotification />

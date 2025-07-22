@@ -144,7 +144,27 @@ const HomeLayout = () => {
                         alt="Logo"
                         className="h-8 w-auto object-contain sm:h-10"
                     />
-
+  {/* Home / Offers Tabs */}
+  <div className="flex justify-center border-b border-gray-200 bg-white">
+                <div className="flex space-x-6 sm:space-x-8 px-4 py-2 sm:px-6 sm:py-3">
+                    <button
+                        onClick={handleBackToMain}
+                        className={`text-sm font-medium ${
+                            !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+                        } transition-colors`}
+                    >
+                        Stores
+                    </button>
+                    <button
+                        onClick={handleShowOffers}
+                        className={`text-sm font-medium ${
+                            showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
+                        } transition-colors`}
+                    >
+                        Offers
+                    </button>
+                </div>
+            </div>
                     {/* Right Corner: Location, Message & Mobile Menu */}
                     <div className="flex items-center gap-2 sm:gap-4">
                         {/* Location Button - Hidden on small screens */}
@@ -178,27 +198,7 @@ const HomeLayout = () => {
                 </div>
             </header>
 
-            {/* Home / Offers Tabs */}
-            <div className="flex justify-center border-b border-gray-200 bg-white">
-                <div className="flex space-x-6 sm:space-x-8 px-4 py-2 sm:px-6 sm:py-3">
-                    <button
-                        onClick={handleBackToMain}
-                        className={`text-sm font-medium ${
-                            !showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
-                        } transition-colors`}
-                    >
-                        Stores
-                    </button>
-                    <button
-                        onClick={handleShowOffers}
-                        className={`text-sm font-medium ${
-                            showOffers ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-teal-600'
-                        } transition-colors`}
-                    >
-                        Offers
-                    </button>
-                </div>
-            </div>
+          
 
             {/* Guest User Notice */}
             {isGuest && (

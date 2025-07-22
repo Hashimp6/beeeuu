@@ -29,7 +29,11 @@ import {
   Menu,
   X,
   Truck,
-  PhoneCall
+  PhoneCall,
+  ChevronLeft,
+  Flame,
+  Timer,
+  Gift
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/UserContext";
@@ -172,6 +176,7 @@ const {user}=useAuth()
     }
     return newParticles;
   };
+
 
   const handleCardTransition = () => {
     if (isTransitioning) return;
@@ -1037,6 +1042,424 @@ const Testimonials = () => {
   );
 };
 
+
+const HotOffersSection = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [timeLeft, setTimeLeft] = useState({});
+  const [likedOffers, setLikedOffers] = useState(new Set());
+
+  // Sample offers data - you can replace with real data
+  const hotOffers = [
+    {
+      id: 1,
+      storeName: "Spice Route Biriyani",
+      storeImage: "🍛",
+      offer: "Special Monday Biriyani",
+      discount: "40% OFF",
+      originalPrice: "₹350",
+      offerPrice: "₹210",
+      category: "Food",
+      distance: "0.8 km",
+      rating: 4.8,
+      offerType: "Day Special",
+      validUntil: "2025-07-22T23:59:59",
+      gradient: "from-orange-500 to-red-600",
+      tagColor: "bg-red-100 text-red-800",
+      description: "Authentic Malabar Biriyani with special spices",
+      isFlashDeal: false,
+      soldCount: 67
+    },
+    {
+      id: 2,
+      storeName: "Glamio Beauty Studio",
+      storeImage: "💄",
+      offer: "Hair Color + Styling Combo",
+      discount: "50% OFF",
+      originalPrice: "₹3,500",
+      offerPrice: "₹1,750",
+      category: "Beauty",
+      distance: "1.2 km",
+      rating: 4.9,
+      offerType: "Combo Deal",
+      validUntil: "2025-07-23T18:00:00",
+      gradient: "from-pink-500 to-purple-600",
+      tagColor: "bg-pink-100 text-pink-800",
+      description: "Professional hair coloring with premium styling",
+      isFlashDeal: true,
+      soldCount: 23
+    },
+    {
+      id: 3,
+      storeName: "Tech Zone Electronics",
+      storeImage: "📱",
+      offer: "Weekend Phone Deals",
+      discount: "25% OFF",
+      originalPrice: "₹45,000",
+      offerPrice: "₹33,750",
+      category: "Electronics",
+      distance: "2.1 km",
+      rating: 4.6,
+      offerType: "Weekend Special",
+      validUntil: "2025-07-23T20:00:00",
+      gradient: "from-blue-500 to-indigo-600",
+      tagColor: "bg-blue-100 text-blue-800",
+      description: "Latest smartphones with warranty",
+      isFlashDeal: false,
+      soldCount: 12
+    },
+    {
+      id: 4,
+      storeName: "Kerala Spice Market",
+      storeImage: "🌶️",
+      offer: "Traditional Spice Bundle",
+      discount: "35% OFF",
+      originalPrice: "₹800",
+      offerPrice: "₹520",
+      category: "Groceries",
+      distance: "0.5 km",
+      rating: 4.7,
+      offerType: "Bundle Deal",
+      validUntil: "2025-07-24T21:00:00",
+      gradient: "from-green-500 to-emerald-600",
+      tagColor: "bg-green-100 text-green-800",
+      description: "Authentic Kerala spices - cardamom, pepper & more",
+      isFlashDeal: true,
+      soldCount: 89
+    },
+    {
+      id: 5,
+      storeName: "Fitness First Gym",
+      storeImage: "💪",
+      offer: "Monthly Membership",
+      discount: "60% OFF",
+      originalPrice: "₹2,500",
+      offerPrice: "₹999",
+      category: "Fitness",
+      distance: "1.5 km",
+      rating: 4.5,
+      offerType: "New Member",
+      validUntil: "2025-07-25T23:59:59",
+      gradient: "from-yellow-500 to-orange-600",
+      tagColor: "bg-yellow-100 text-yellow-800",
+      description: "Full gym access + personal trainer session",
+      isFlashDeal: false,
+      soldCount: 34
+    }
+  ];
+
+  // Calculate time left for offers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const newTimeLeft = {};
+
+      hotOffers.forEach(offer => {
+        const distance = new Date(offer.validUntil).getTime() - now;
+        
+        if (distance > 0) {
+          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+          newTimeLeft[offer.id] = { days, hours, minutes, seconds };
+        }
+      });
+
+      setTimeLeft(newTimeLeft);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-slide functionality
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % Math.ceil(hotOffers.length / 2));
+    }, 5000);
+
+    return () => clearInterval(slideTimer);
+  }, [hotOffers.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide(prev => (prev + 1) % Math.ceil(hotOffers.length / 2));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide(prev => prev === 0 ? Math.ceil(hotOffers.length / 2) - 1 : prev - 1);
+  };
+
+  const toggleLike = (offerId) => {
+    const newLiked = new Set(likedOffers);
+    if (newLiked.has(offerId)) {
+      newLiked.delete(offerId);
+    } else {
+      newLiked.add(offerId);
+    }
+    setLikedOffers(newLiked);
+  };
+
+  const formatTimeLeft = (time) => {
+    if (!time) return "Expired";
+    if (time.days > 0) return `${time.days}d ${time.hours}h left`;
+    if (time.hours > 0) return `${time.hours}h ${time.minutes}m left`;
+    return `${time.minutes}m ${time.seconds}s left`;
+  };
+
+  return (
+    <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-red-300 rounded-full mix-blend-multiply filter blur-xl animate-float"></div>
+        <div className="absolute top-40 right-20 w-48 h-48 bg-orange-300 rounded-full mix-blend-multiply filter blur-xl animate-float-delayed"></div>
+        <div className="absolute bottom-20 left-1/2 w-40 h-40 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl animate-float-slow"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        {/* Section Header */}
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <div className="inline-flex items-center bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full text-sm sm:text-base font-bold mb-4 sm:mb-6 shadow-xl animate-bounce">
+            <Flame className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-pulse" />
+            🔥 Hot Offers Near You! 🔥
+          </div>
+          
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4 sm:mb-6 animate-fade-in">
+            <span className="bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+              Poli Sanam!
+            </span>{" "}
+            <span className="text-gray-900">Best Offers</span>
+          </h2>
+          
+          <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 font-medium animate-fade-in delay-300 max-w-3xl mx-auto">
+            <strong>Adipoli deals & combo offers!</strong> Limited time only - grab them before they're gone! 🏃‍♂️💨
+          </p>
+        </div>
+
+        {/* Offers Carousel */}
+        <div className="relative">
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-2xl rounded-full p-3 sm:p-4 transition-all duration-300 hover:scale-110 -ml-2 sm:-ml-6"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+          </button>
+          
+          <button
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-2xl rounded-full p-3 sm:p-4 transition-all duration-300 hover:scale-110 -mr-2 sm:-mr-6"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+          </button>
+
+          {/* Offers Grid */}
+          <div className="overflow-hidden rounded-3xl">
+            <div 
+              className="flex transition-transform duration-500 ease-out"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {Array.from({ length: Math.ceil(hotOffers.length / 2) }).map((_, slideIndex) => (
+                <div key={slideIndex} className="w-full flex-shrink-0">
+                  <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+                    {hotOffers.slice(slideIndex * 2, slideIndex * 2 + 2).map((offer, index) => (
+                      <div
+                        key={offer.id}
+                        className="bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2 relative group"
+                      >
+                        {/* Flash Deal Badge */}
+                        {offer.isFlashDeal && (
+                          <div className="absolute top-3 left-3 z-20">
+                            <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold animate-pulse shadow-lg flex items-center">
+                              <Zap className="w-3 h-3 mr-1" />
+                              FLASH DEAL
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Like Button */}
+                        <button
+                          onClick={() => toggleLike(offer.id)}
+                          className="absolute top-3 right-3 z-20 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all duration-300 hover:scale-110"
+                        >
+                          <Heart 
+                            className={`w-5 h-5 transition-colors ${
+                              likedOffers.has(offer.id) 
+                                ? 'text-red-500 fill-current' 
+                                : 'text-gray-600 hover:text-red-500'
+                            }`} 
+                          />
+                        </button>
+
+                        {/* Offer Header */}
+                        <div className={`bg-gradient-to-r ${offer.gradient} p-4 sm:p-6 text-white relative overflow-hidden`}>
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 animate-shimmer"></div>
+                          
+                          <div className="flex items-center justify-between mb-3 relative z-10">
+                            <div className="flex items-center space-x-3">
+                              <div className="text-2xl sm:text-3xl animate-bounce">
+                                {offer.storeImage}
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-lg sm:text-xl">{offer.storeName}</h3>
+                                <div className="flex items-center space-x-2 text-sm opacity-90">
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{offer.distance}</span>
+                                  <Star className="w-3 h-3 fill-current" />
+                                  <span>{offer.rating}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className={`${offer.tagColor} px-3 py-1 rounded-full text-xs font-bold`}>
+                              {offer.category}
+                            </div>
+                          </div>
+
+                          <div className="relative z-10">
+                            <h4 className="font-bold text-xl sm:text-2xl mb-2">{offer.offer}</h4>
+                            <p className="text-sm sm:text-base opacity-90">{offer.description}</p>
+                          </div>
+                        </div>
+
+                        {/* Offer Details */}
+                        <div className="p-4 sm:p-6">
+                          {/* Price Section */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="text-3xl sm:text-4xl font-black text-green-600">
+                                {offer.offerPrice}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-gray-400 line-through text-sm">{offer.originalPrice}</span>
+                                <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded text-xs font-bold">
+                                  {offer.discount}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <div className="text-xs text-gray-500 mb-1">
+                                {offer.soldCount} sold today
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <TrendingUp className="w-4 h-4 text-green-500" />
+                                <span className="text-sm font-medium text-green-600">Popular</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Timer */}
+                          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-3 mb-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2 text-red-600">
+                                <Timer className="w-4 h-4 animate-pulse" />
+                                <span className="text-sm font-semibold">Offer Ends In:</span>
+                              </div>
+                              <div className="text-red-700 font-bold text-sm">
+                                {formatTimeLeft(timeLeft[offer.id])}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex space-x-3">
+                            <button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center group">
+                              <ShoppingBag className="w-4 h-4 mr-2 group-hover:animate-pulse" />
+                              Buy Now
+                            </button>
+                            <button className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center">
+                              <MessageCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Hover Effect Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Slide Indicators */}
+          <div className="flex justify-center mt-6 space-x-2">
+            {Array.from({ length: Math.ceil(hotOffers.length / 2) }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`transition-all duration-300 ${
+                  currentSlide === index 
+                    ? 'w-8 h-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-full' 
+                    : 'w-3 h-3 bg-gray-300 hover:bg-gray-400 rounded-full'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-12 sm:mt-16">
+          <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl max-w-2xl mx-auto">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <Gift className="w-6 h-6 sm:w-8 sm:h-8 animate-bounce" />
+              <h3 className="text-xl sm:text-2xl font-bold">Want to Create Your Own Offers?</h3>
+            </div>
+            <p className="text-base sm:text-lg mb-6 opacity-90">
+              Join hundreds of local businesses already boosting sales with our platform!
+            </p>
+            <button className="bg-white text-gray-900 font-bold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center mx-auto">
+              Start Selling Today
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) skewX(-12deg); }
+          100% { transform: translateX(200%) skewX(-12deg); }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(3deg); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(-2deg); }
+        }
+        
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(1deg); }
+        }
+        
+        .animate-shimmer {
+          animation: shimmer 2s infinite;
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+        }
+        
+        .animate-float-slow {
+          animation: float-slow 10s ease-in-out infinite;
+        }
+      `}</style>
+    </section>
+  );
+};
+
+
 // CTA Section Component
 const CTASection = () => {
   const{user}=useAuth()
@@ -1269,6 +1692,7 @@ const App = () => {
       `}</style>
       <Header/>
       <HeroSection/>
+      {/* <HotOffersSection/> */}
       <ValueProposition/>
       <Features/>
       <Stats/>
