@@ -79,6 +79,196 @@ const createOffer = async (req, res) => {
 };
 
 // Get Nearby Offers (Updated for better category handling)
+// const getNearbyOffers = async (req, res) => {
+//   try {
+//     const { 
+//       lat, 
+//       lng, 
+//       category, 
+//       storeName, 
+//       lastDistance = 0, 
+//       lastOfferId,
+//       userId,
+//       tempUserId ,
+ 
+//       batchSize = 20 // Fetch 20 offers at once
+//     } = req.query;
+    
+//     const UserId = req.user?._id ||userId|| tempUserId;
+
+//     if (!UserId) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: "User ID or temp ID is required" 
+//       });
+//     }
+    
+//     // Then based on type, fetch seen offers
+//     let seenOfferRecord = await UserSeenOffer.findOne({ UserId });
+//     // Location is essential - always required
+//     if (!lat || !lng) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: "Latitude and longitude are required" 
+//       });
+//     }
+    
+
+//     const seenOfferIds = seenOfferRecord ? seenOfferRecord.seenOffers : [];
+    
+//     // Build base query
+//     let matchQuery = {
+//       isActive: true,
+//       validTo: { $gte: new Date() },
+//       _id: { $nin: seenOfferIds }
+//     };
+    
+//     // Add category filter only if specified (optional)
+//     if (category && category.trim() !== '') {
+//       matchQuery.category = category;
+//     }
+    
+//     // Add store filter if provided
+//     if (storeName && storeName.trim() !== '') {
+//       const storeMatches = await Store.find({ 
+//         storeName: new RegExp(storeName, "i") 
+//       }).select("_id");
+      
+//       if (storeMatches.length > 0) {
+//         matchQuery.storeId = { $in: storeMatches.map(s => s._id) };
+//       } else {
+//         return res.json({
+//           success: true,
+//           data: [],
+//           hasMore: false,
+//           message: "No stores found with that name"
+//         });
+//       }
+//     }
+    
+//     // Exclude last fetched offer to avoid duplicates
+//     if (lastOfferId) {
+//       matchQuery._id = { 
+//         $nin: [...seenOfferIds, lastOfferId] 
+//       };
+//     }
+    
+//     // Optimized batch fetching pipeline
+//     const pipeline = [
+//       {
+//         $geoNear: {
+//           near: { 
+//             type: "Point", 
+//             coordinates: [parseFloat(lng), parseFloat(lat)] 
+//           },
+//           distanceField: "distance",
+//           spherical: true,
+//           query: matchQuery
+//         }
+//       },
+//       {
+//         // Progressive distance filter
+//         $match: {
+//           distance: { $gte: parseFloat(lastDistance) }
+//         }
+//       },
+//       {
+//         // Sort: Premium first, then closest distance
+//         $sort: { 
+//           isPremium: -1, 
+//           distance: 1,
+//           createdAt: -1
+//         }
+//       },
+//       {
+//         // Fetch batch of offers (20 by default)
+//         $limit: parseInt(batchSize)
+//       },
+//       {
+//         // Add formatted distances
+//         $addFields: {
+//           distanceKm: { $round: [{ $divide: ["$distance", 1000] }, 2] },
+//           distanceM: { $round: ["$distance", 0] }
+//         }
+//       }
+//     ];
+    
+//     const offers = await Offer.aggregate(pipeline);
+    
+//     if (offers.length === 0) {
+//       return res.json({
+//         success: true,
+//         data: [],
+//         hasMore: false,
+//         message: parseFloat(lastDistance) === 0 ? 
+//           "No offers available in your area" : 
+//           "No more offers available"
+//       });
+//     }
+    
+//     // Bulk populate for better performance
+//     await Offer.populate(offers, {
+//       path: 'storeId',
+//       select: 'storeName profileImage averageRating place phone'
+//     });
+    
+//     // Get the farthest distance from current batch for next API call
+//     const lastOfferInBatch = offers[offers.length - 1];
+//     const maxDistance = Math.max(...offers.map(offer => offer.distance));
+    
+//     // Quick check if more offers exist beyond this batch
+//     const hasMoreCheck = await Offer.aggregate([
+//       {
+//         $geoNear: {
+//           near: { 
+//             type: "Point", 
+//             coordinates: [parseFloat(lng), parseFloat(lat)] 
+//           },
+//           distanceField: "distance",
+//           spherical: true,
+//           query: {
+//             ...matchQuery,
+//             _id: { 
+//               $nin: [
+//                 ...seenOfferIds, 
+//                 ...offers.map(o => o._id)
+//               ] 
+//             }
+//           }
+//         }
+//       },
+//       {
+//         $match: {
+//           distance: { $gte: maxDistance }
+//         }
+//       },
+//       {
+//         $limit: 1
+//       }
+//     ]);
+    
+//     // Response optimized for batch handling
+//     res.json({
+//       success: true,
+//       data: offers,
+//       batchInfo: {
+//         size: offers.length,
+//         hasMore: hasMoreCheck.length > 0,
+//         nextParams: {
+//           lastDistance: maxDistance,
+//           lastOfferId: lastOfferInBatch._id.toString()
+//         }
+//       }
+//     });
+    
+//   } catch (error) {
+//     console.error("Get nearby offers error:", error);
+//     res.status(500).json({ 
+//       success: false, 
+//       message: "Failed to fetch offers" 
+//     });
+//   }
+// };
 const getNearbyOffers = async (req, res) => {
   try {
     const { 
@@ -86,15 +276,13 @@ const getNearbyOffers = async (req, res) => {
       lng, 
       category, 
       storeName, 
-      lastDistance = 0, 
-      lastOfferId,
+      skip = 0,  // Simple pagination - how many offers to skip
       userId,
-      tempUserId ,
- 
-      batchSize = 20 // Fetch 20 offers at once
+      tempUserId,
+      batchSize = 20
     } = req.query;
     
-    const UserId = req.user?._id ||userId|| tempUserId;
+    const UserId = req.user?._id || userId || tempUserId;
 
     if (!UserId) {
       return res.status(400).json({ 
@@ -103,9 +291,7 @@ const getNearbyOffers = async (req, res) => {
       });
     }
     
-    // Then based on type, fetch seen offers
-    let seenOfferRecord = await UserSeenOffer.findOne({ UserId });
-    // Location is essential - always required
+    // Location is required
     if (!lat || !lng) {
       return res.status(400).json({ 
         success: false, 
@@ -113,22 +299,22 @@ const getNearbyOffers = async (req, res) => {
       });
     }
     
-
+    // Get seen offers to exclude them
+    let seenOfferRecord = await UserSeenOffer.findOne({ UserId });
     const seenOfferIds = seenOfferRecord ? seenOfferRecord.seenOffers : [];
     
     // Build base query
     let matchQuery = {
       isActive: true,
       validTo: { $gte: new Date() },
-      _id: { $nin: seenOfferIds }
+      _id: { $nin: seenOfferIds }  // Exclude seen offers
     };
     
-    // Add category filter only if specified (optional)
+    // Add optional filters
     if (category && category.trim() !== '') {
       matchQuery.category = category;
     }
     
-    // Add store filter if provided
     if (storeName && storeName.trim() !== '') {
       const storeMatches = await Store.find({ 
         storeName: new RegExp(storeName, "i") 
@@ -146,14 +332,7 @@ const getNearbyOffers = async (req, res) => {
       }
     }
     
-    // Exclude last fetched offer to avoid duplicates
-    if (lastOfferId) {
-      matchQuery._id = { 
-        $nin: [...seenOfferIds, lastOfferId] 
-      };
-    }
-    
-    // Optimized batch fetching pipeline
+    // SIMPLE PIPELINE - Just get nearest offers
     const pipeline = [
       {
         $geoNear: {
@@ -167,25 +346,22 @@ const getNearbyOffers = async (req, res) => {
         }
       },
       {
-        // Progressive distance filter
-        $match: {
-          distance: { $gte: parseFloat(lastDistance) }
-        }
-      },
-      {
-        // Sort: Premium first, then closest distance
+        // Sort by: Premium first, then distance (nearest first)
         $sort: { 
           isPremium: -1, 
-          distance: 1,
-          createdAt: -1
+          distance: 1
         }
       },
       {
-        // Fetch batch of offers (20 by default)
+        // Skip offers from previous batches
+        $skip: parseInt(skip)
+      },
+      {
+        // Get batch of offers
         $limit: parseInt(batchSize)
       },
       {
-        // Add formatted distances
+        // Add readable distance
         $addFields: {
           distanceKm: { $round: [{ $divide: ["$distance", 1000] }, 2] },
           distanceM: { $round: ["$distance", 0] }
@@ -195,29 +371,14 @@ const getNearbyOffers = async (req, res) => {
     
     const offers = await Offer.aggregate(pipeline);
     
-    if (offers.length === 0) {
-      return res.json({
-        success: true,
-        data: [],
-        hasMore: false,
-        message: parseFloat(lastDistance) === 0 ? 
-          "No offers available in your area" : 
-          "No more offers available"
-      });
-    }
-    
-    // Bulk populate for better performance
+    // Populate store details
     await Offer.populate(offers, {
       path: 'storeId',
       select: 'storeName profileImage averageRating place phone'
     });
     
-    // Get the farthest distance from current batch for next API call
-    const lastOfferInBatch = offers[offers.length - 1];
-    const maxDistance = Math.max(...offers.map(offer => offer.distance));
-    
-    // Quick check if more offers exist beyond this batch
-    const hasMoreCheck = await Offer.aggregate([
+    // Check if more offers exist
+    const totalOffers = await Offer.aggregate([
       {
         $geoNear: {
           near: { 
@@ -226,39 +387,27 @@ const getNearbyOffers = async (req, res) => {
           },
           distanceField: "distance",
           spherical: true,
-          query: {
-            ...matchQuery,
-            _id: { 
-              $nin: [
-                ...seenOfferIds, 
-                ...offers.map(o => o._id)
-              ] 
-            }
-          }
+          query: matchQuery
         }
       },
       {
-        $match: {
-          distance: { $gte: maxDistance }
-        }
-      },
-      {
-        $limit: 1
+        $count: "total"
       }
     ]);
     
-    // Response optimized for batch handling
+    const totalCount = totalOffers[0]?.total || 0;
+    const hasMore = (parseInt(skip) + offers.length) < totalCount;
+    
     res.json({
       success: true,
       data: offers,
-      batchInfo: {
-        size: offers.length,
-        hasMore: hasMoreCheck.length > 0,
-        nextParams: {
-          lastDistance: maxDistance,
-          lastOfferId: lastOfferInBatch._id.toString()
-        }
-      }
+      pagination: {
+        currentBatch: offers.length,
+        skip: parseInt(skip),
+        hasMore: hasMore,
+        nextSkip: hasMore ? parseInt(skip) + offers.length : null
+      },
+      message: offers.length === 0 ? "No more offers available" : undefined
     });
     
   } catch (error) {

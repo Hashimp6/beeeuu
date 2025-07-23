@@ -11,7 +11,9 @@ const OfferReelPage = () => {
   // Add null checks for location
   const coords = location?.location?.coordinates || null;
   console.log("loc", coords);
-  
+  const [allOffers, setAllOffers] = useState([]); // Store all loaded offers
+const [hasMore, setHasMore] = useState(true);
+const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentOffer, setCurrentOffer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -63,7 +65,7 @@ const OfferReelPage = () => {
   const [filteredOffers, setFilteredOffers] = useState(offers);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const fetchNearbyOffers = async (lat, lng, category = '') => {
+  const fetchNearbyOffers = async (lat, lng, category = '', skip = 0) => {
     const { type, id } = getUserIdentifier();
     try {
       const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
@@ -71,20 +73,21 @@ const OfferReelPage = () => {
           lat,
           lng,
           category,
+          skip, // Add this line
           [type === 'temp' ? 'tempUserId' : 'userId']: id
         },
       });
   
       if (response.data.success && response.data.data) {
         console.log("offers array:", response.data.data);
-        return response.data.data;
+        return response.data; // Return full response to get pagination info
       } else {
         console.warn('No offers found:', response.data.message);
-        return [];
+        return { data: [], pagination: { hasMore: false } };
       }
     } catch (err) {
       console.error('Error fetching nearby offers:', err);
-      return [];
+      return { data: [], pagination: { hasMore: false } };
     }
   };
 
@@ -130,33 +133,45 @@ const OfferReelPage = () => {
     }
   };
 
-  const fetchOffersWithCoords = async (lat, lng) => {
-    const nearbyOffers = await fetchNearbyOffers(lat, lng, selectedCategory !== 'all' ? selectedCategory : '');
+  const fetchOffersWithCoords = async (lat, lng, reset = false) => {
+    const skip = reset ? 0 : allOffers.length;
+    const categoryFilter = selectedCategory !== 'all' ? selectedCategory : '';
     
-    if (nearbyOffers && nearbyOffers.length > 0) {
-      setOffers(nearbyOffers);
-      setFilteredOffers(nearbyOffers);
-      setCurrentIndex(0);
-    } else {
+    const response = await fetchNearbyOffers(lat, lng, categoryFilter, skip);
+    
+    if (response.data && response.data.length > 0) {
+      if (reset) {
+        setAllOffers(response.data);
+        setOffers(response.data);
+        setFilteredOffers(response.data);
+        setCurrentIndex(0);
+      } else {
+        const newOffers = [...allOffers, ...response.data];
+        setAllOffers(newOffers);
+        setOffers(newOffers);
+        setFilteredOffers(newOffers);
+      }
+      setHasMore(response.pagination?.hasMore || false);
+    } else if (reset) {
+      setAllOffers([]);
       setOffers([]);
       setFilteredOffers([]);
+      setHasMore(false);
     }
   };
 
   useEffect(() => {
     const fetchOffers = async () => {
-      // Check if we have coordinates from the auth context
       if (coords && coords.length === 2) {
         const [lng, lat] = coords;
-        await fetchOffersWithCoords(lat, lng);
+        await fetchOffersWithCoords(lat, lng, true); // true = reset
       } else {
-        // For guest users or when location is not available, request permission
         requestLocationPermission();
       }
     };
-
+  
     fetchOffers();
-  }, [coords, selectedCategory]);
+  }, [coords, selectedCategory]); // This will trigger when category changes
 
   const categories = [
     { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },
@@ -184,6 +199,8 @@ const OfferReelPage = () => {
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
+    setAllOffers([]); // Clear existing offers
+    setHasMore(true); // Reset pagination
     console.log('Selected category for API:', categoryId);
   };
 
@@ -343,6 +360,18 @@ const OfferReelPage = () => {
 
   const loadNextOffer = () => {
     if (loading || filteredOffers.length === 0) return;
+    
+    // Check if we're near the end and need to load more
+    const isNearEnd = currentIndex >= filteredOffers.length - 3; // Load when 3 items left
+    
+    if (isNearEnd && hasMore && !isLoadingMore && coords) {
+      setIsLoadingMore(true);
+      const [lng, lat] = coords;
+      fetchOffersWithCoords(lat, lng, false).finally(() => {
+        setIsLoadingMore(false);
+      });
+    }
+    
     setLoading(true);
     setTimeout(() => {
       const nextIndex = (currentIndex + 1) % filteredOffers.length;
@@ -395,11 +424,20 @@ const OfferReelPage = () => {
   if (loading) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-          <Zap className="absolute inset-0 m-auto w-6 h-6 text-teal-400 animate-pulse" />
-        </div>
+      <div className="relative w-20 h-20 flex items-center justify-center">
+        {/* Spinning border ring */}
+        <div className="absolute inset-0 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+    
+        {/* Icon image in center */}
+        <img
+          src="/icon.png" // Replace with your actual path
+          alt="loading icon"
+          className="w-10 h-10 rounded-full object-cover border-2 border-black"
+        />
       </div>
+    </div>
+    
+
     );
   }
 
