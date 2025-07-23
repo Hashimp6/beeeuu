@@ -23,6 +23,8 @@ import ShippingPolicy from "./pages/policies/ShippingPolicy";
 import TermsAndConditions from "./pages/policies/Terms";
 import OfferReelPage from "./pages/user/Offers";
 import PaymentStatus from "./components/Store/PaymentStatus";
+import PaymentSuccess from "./pages/seller/payment/Success";
+import PaymentFailed from "./pages/seller/payment/Failed";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -164,6 +166,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <UserAppointmentsOrders/>
+              </ProtectedRoute>
+            } 
+          />
+            <Route 
+            path="/payment-success" 
+            element={
+              <ProtectedRoute>
+                <PaymentSuccess/>
+              </ProtectedRoute>
+            } 
+          />
+            <Route 
+            path="/payment-failed" 
+            element={
+              <ProtectedRoute>
+                <PaymentFailed/>
               </ProtectedRoute>
             } 
           />
