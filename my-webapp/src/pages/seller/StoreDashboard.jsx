@@ -8,7 +8,8 @@ import {
   StoreIcon,
   MessageCircle,
   LogOut,
-  Tag
+  Tag,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
@@ -20,6 +21,7 @@ import ProductManagement from '../../components/Store/ProductManagement';
 import GalleryManagement from '../../components/Store/GalleryManagement';
 import { useNavigate } from 'react-router-dom';
 import OfferManagement from '../../components/Store/OfferManagement';
+import SubscriptionController from '../../components/Store/Subscription';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -329,7 +331,8 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
     { id: 'orders', label: 'Orders', icon: Package },
     { id: 'product', label: 'Product / Service', icon: StoreIcon },
     { id: 'gallery', label: 'gallery', icon: Image },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   if (loading) {
@@ -577,6 +580,9 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
             )}
                {activeTab === 'gallery' && (
             <GalleryManagement storeId={store._id}/>
+            )}
+               {activeTab === 'subscription' && (
+            <SubscriptionController store={store}/>
             )}
 
 

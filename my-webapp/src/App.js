@@ -22,6 +22,7 @@ import ReturnRefundPolicy from "./pages/policies/ReturnPolicy";
 import ShippingPolicy from "./pages/policies/ShippingPolicy";
 import TermsAndConditions from "./pages/policies/Terms";
 import OfferReelPage from "./pages/user/Offers";
+import PaymentStatus from "./components/Store/PaymentStatus";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -139,6 +140,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetails />
+              </ProtectedRoute>
+            } 
+          />
+           <Route 
+            path="/payment-success" 
+            element={
+              <ProtectedRoute>
+                <PaymentStatus />
               </ProtectedRoute>
             } 
           />
