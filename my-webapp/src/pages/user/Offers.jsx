@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SERVER_URL } from '../../Config';
 
 const OfferReelPage = () => {
-  const { location, user } = useAuth();
+  const { location, user,setLocation } = useAuth();
   
   // Add null checks for location
   const coords = location?.location?.coordinates || null;
@@ -106,32 +106,75 @@ const [isLoadingMore, setIsLoadingMore] = useState(false);
   };
 
   // Function to request location permission for guest users
-  const requestLocationPermission = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          // Create a mock location object similar to what useAuth provides
-          const mockLocation = {
-            location: {
-              coordinates: [longitude, latitude]
-            }
-          };
-          // You might want to update this in your context or handle it locally
-          fetchOffersWithCoords(latitude, longitude);
-          setLocationError(false);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setLocationError(true);
-          // Use default location or show error
+ // Replace your existing requestLocationPermission function with this:
+
+const requestLocationPermission = async () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Get place name via reverse geocoding (optional but recommended)
+        let placeName = 'Current Location';
+        
+        // If you want to get the actual place name:
+        if (window.google && window.google.maps) {
+          try {
+            const geocoder = new window.google.maps.Geocoder();
+            const latlng = new window.google.maps.LatLng(latitude, longitude);
+            
+            const result = await new Promise((resolve, reject) => {
+              geocoder.geocode({ location: latlng }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                  resolve(results[0].formatted_address);
+                } else {
+                  reject(new Error('Geocoder failed'));
+                }
+              });
+            });
+            
+            placeName = result || 'Current Location';
+          } catch (geocodeErr) {
+            console.error('Reverse geocoding failed:', geocodeErr);
+            // Continue with default location name
+          }
         }
-      );
-    } else {
-      setLocationError(true);
-      console.error('Geolocation is not supported by this browser.');
-    }
-  };
+        
+        // Create the SAME location structure as LocationSelectionModal
+        const locationData = {
+          location: {
+            type: 'Point',
+            coordinates: [longitude, latitude] // [lng, lat] format
+          },
+          place: placeName
+        };
+        
+        // Update the auth context (this was missing!)
+        setLocation(locationData);
+        
+        // Save to localStorage for persistence
+        localStorage.setItem('location', JSON.stringify(locationData));
+        
+        // Now fetch offers with the coordinates
+        await fetchOffersWithCoords(latitude, longitude, true);
+        setLocationError(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setLocationError(true);
+        // Use default location or show error
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  } else {
+    setLocationError(true);
+    console.error('Geolocation is not supported by this browser.');
+  }
+};
 
   const fetchOffersWithCoords = async (lat, lng, reset = false) => {
     const skip = reset ? 0 : allOffers.length;

@@ -98,7 +98,7 @@ const Header = () => {
         Login
       </button>
             <button  onClick={() => navigate("/home")} className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-xl text-sm sm:text-base font-bold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-2xl">
-              Get Started
+              Explore
             </button>
           </div>
 
@@ -142,7 +142,7 @@ const HeroSection = () => {
   const [currentCard, setCurrentCard] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [particles, setParticles] = useState([]);
-const {user}=useAuth()
+const {user,isA}=useAuth()
   // Auto-flip cards every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -156,7 +156,7 @@ const {user}=useAuth()
     if (user) {
       navigate('/newStore');
     } else {
-      navigate('/login');
+      navigate('/register');
     }
   };
 
@@ -373,7 +373,7 @@ const {user}=useAuth()
       </span>
     </button>
               <button onClick={() => navigate("/home")}  className="border-2 sm:border-3 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg lg:text-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Explore Marketplace
+                Explore Offers
               </button>
             </div>
             
