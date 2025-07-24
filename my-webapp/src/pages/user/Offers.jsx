@@ -766,45 +766,45 @@ const categories = [
             )}
 
             {/* Bottom Content */}
-         {/* Bottom Content */}
-<div className="flex-1 flex items-end pb-14 px-4">
-  <div className="w-full">
-    {/* Store Info */}
-    <div  className="flex items-center space-x-3 mb-4">
-      <img 
-        src={currentOffer.storeId.profileImage} 
-        alt={currentOffer.storeId.storeName}
-        className="w-12 h-12 rounded-full border-2 border-teal-400"
-        onClick={() => {
-          const storeSlug = currentOffer.storeId.storeName
-            .toLowerCase()
-            .replace(/\s+/g, '-');
-          navigate(`/storeprofile/${storeSlug}`);
-        }}
-      />
-      <div className="flex-1">
-        <h3  onClick={() => {
-          const storeSlug = currentOffer.storeId.storeName
-            .toLowerCase()
-            .replace(/\s+/g, '-');
-          navigate(`/storeprofile/${storeSlug}`);
-        }} className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1">
-            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-            <span className="text-white text-sm">{currentOffer.storeId.rating}</span>
-          </div>
-          <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
-        </div>
-      </div>
-      {/* Add share button here */}
-      <button
-  onClick={handleShareOffer}
-  className="p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all border border-white/20"
->
-  <Send className="w-5 h-5 text-gray-800" />
-</button>
-    </div>
+            <div className="flex-1 flex items-end pb-14 px-4">
+              {/* Content Card with Black Transparent Background */}
+              <div className="w-full bg-black/40 backdrop-blur-sm rounded-3xl p-6">
+                {/* Store Info */}
+                <div className="flex items-center space-x-3 mb-4">
+                  <img 
+                    src={currentOffer.storeId.profileImage} 
+                    alt={currentOffer.storeId.storeName}
+                    className="w-12 h-12 rounded-full border-2 border-teal-400"
+                    onClick={() => {
+                      const storeSlug = currentOffer.storeId.storeName
+                        .toLowerCase()
+                        .replace(/\s+/g, '-');
+                      navigate(`/storeprofile/${storeSlug}`);
+                    }}
+                  />
+                  <div className="flex-1">
+                    <h3 onClick={() => {
+                      const storeSlug = currentOffer.storeId.storeName
+                        .toLowerCase()
+                        .replace(/\s+/g, '-');
+                      navigate(`/storeprofile/${storeSlug}`);
+                    }} className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-white text-sm">{currentOffer.storeId.averageRating}</span>
+                      </div>
+                      <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
+                    </div>
+                  </div>
+                  {/* Add share button here */}
+                  <button
+                    onClick={handleShareOffer}
+                    className="p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all border border-white/20"
+                  >
+                    <Send className="w-5 h-5 text-gray-800" />
+                  </button>
+                </div>
 
                 {/* Offer Title */}
                 <h1 className="text-white text-3xl font-bold mb-4 leading-tight">
