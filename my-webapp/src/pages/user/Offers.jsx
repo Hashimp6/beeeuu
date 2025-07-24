@@ -770,14 +770,25 @@ const categories = [
 <div className="flex-1 flex items-end pb-14 px-4">
   <div className="w-full">
     {/* Store Info */}
-    <div className="flex items-center space-x-3 mb-4">
+    <div  className="flex items-center space-x-3 mb-4">
       <img 
         src={currentOffer.storeId.profileImage} 
         alt={currentOffer.storeId.storeName}
         className="w-12 h-12 rounded-full border-2 border-teal-400"
+        onClick={() => {
+          const storeSlug = currentOffer.storeId.storeName
+            .toLowerCase()
+            .replace(/\s+/g, '-');
+          navigate(`/storeprofile/${storeSlug}`);
+        }}
       />
       <div className="flex-1">
-        <h3 className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
+        <h3  onClick={() => {
+          const storeSlug = currentOffer.storeId.storeName
+            .toLowerCase()
+            .replace(/\s+/g, '-');
+          navigate(`/storeprofile/${storeSlug}`);
+        }} className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1">
             <Star className="w-4 h-4 text-yellow-400 fill-current" />
