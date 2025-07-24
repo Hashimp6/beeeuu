@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search } from 'lucide-react';
+import { Heart, MapPin, Clock, Share2, Bookmark, ChevronUp, ChevronDown, Star, Phone, Eye, Zap, X, Tag, Search, Share, Send, Forward } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { SERVER_URL } from '../../Config';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const OfferReelPage = () => {
+  const { offerId } = useParams();
   const { location, user,setLocation } = useAuth();
-  
+  const navigate = useNavigate();
   // Add null checks for location
   const coords = location?.location?.coordinates || null;
   console.log("loc", coords);
@@ -16,7 +18,7 @@ const [hasMore, setHasMore] = useState(true);
 const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentOffer, setCurrentOffer] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [sharedOffer, setSharedOffer] = useState(null);
   const [saved, setSaved] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
@@ -25,46 +27,27 @@ const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [locationError, setLocationError] = useState(false);
   const containerRef = useRef(null);
-  
-  const [offers, setOffers] = useState([{
-    "location": {
-        "type": "Point",
-        "coordinates": [76.8604367, 8.8977417]
-    },
-    "_id": "687caa0a4efb59579514dad1",
-    "storeId": {
-        "_id": "682cdf764acd2732dbbe90d7",
-        "storeName": "Dianaas Henna",
-        "profileImage": "https://res.cloudinary.com/dhed9kuow/image/upload/v1752042211/store_profiles/xthuo1cbj2vi0sq9jmd2.png",
-        "place": "Ayoor, Kerala, India",
-        "phone": "6485970539",
-        "averageRating": 4.2,
-        "rating": 4.2,
-        "address": "123 Main Street, Ayoor"
-    },
-    "title": "Big Sale on Burger",
-    "description": "Up to 50% off branded shoes and delicious burgers",
-    "image": "https://d1csarkz8obe9u.cloudfront.net/posterpreviews/chicken-food-ads-design-template-41c5a162667a95621944cc49edf5c058_screen.jpg?ts=1695355301",
-    "discountType": "percent",
-    "discountValue": "50",
-    "validFrom": "2025-07-19T00:00:00.000Z",
-    "validTo": "2025-07-30T00:00:00.000Z",
-    "category": "Food",
-    "tags": ["food", "burger", "offer"],
-    "isPremium": false,
-    "isActive": true,
-    "originalPrice": 2000,
-    "offerPrice": 1000,
-    "place": "Ayoor, Kerala, India",
-    "distance": 250,
-    "createdAt": "2025-07-20T08:34:18.916Z",
-    "updatedAt": "2025-07-20T08:34:18.916Z",
-    "__v": 0
-  }]);
-  
+  const [offers, setOffers] = useState([]);
   const [filteredOffers, setFilteredOffers] = useState(offers);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  useEffect(() => {
+    const fetchSharedOffer = async () => {
+      if (!offerId) return;
+      try {
+        const res = await axios.get(`${SERVER_URL}/offers/${offerId}`);
+        if (res.data?.data) {
+          setSharedOffer(res.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch shared offer", error);
+      }
+    };
+  
+    fetchSharedOffer();
+  }, [offerId]);
+  
+  
   const fetchNearbyOffers = async (lat, lng, category = '', skip = 0) => {
     const { type, id } = getUserIdentifier();
     try {
@@ -105,9 +88,7 @@ const [isLoadingMore, setIsLoadingMore] = useState(false);
     return { type: 'temp', id: tempId };
   };
 
-  // Function to request location permission for guest users
- // Replace your existing requestLocationPermission function with this:
-
+ 
 const requestLocationPermission = async () => {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
@@ -176,47 +157,75 @@ const requestLocationPermission = async () => {
   }
 };
 
-  const fetchOffersWithCoords = async (lat, lng, reset = false) => {
-    const skip = reset ? 0 : allOffers.length;
-    const categoryFilter = selectedCategory !== 'all' ? selectedCategory : '';
+const fetchOffersWithCoords = async (lat, lng, reset = false) => {
+  const skip = reset ? 0 : allOffers.length;
+  const categoryFilter = selectedCategory !== 'all' ? selectedCategory : '';
+  
+  const response = await fetchNearbyOffers(lat, lng, categoryFilter, skip);
+  
+  if (response.data && response.data.length > 0) {
+    let newOffers = response.data;
     
-    const response = await fetchNearbyOffers(lat, lng, categoryFilter, skip);
-    
-    if (response.data && response.data.length > 0) {
+    // If we have a shared offer (offerId), make sure it's prioritized
+    if (offerId && sharedOffer) { // Change: use sharedOffer instead of currentOffer
+      // Remove the shared offer from the response if it exists
+      newOffers = newOffers.filter(offer => offer._id !== offerId);
+      
       if (reset) {
-        setAllOffers(response.data);
-        setOffers(response.data);
-        setFilteredOffers(response.data);
-        setCurrentIndex(0);
-      } else {
-        const newOffers = [...allOffers, ...response.data];
+        // Put shared offer first
+        newOffers = [sharedOffer, ...newOffers]; // Change: use sharedOffer
         setAllOffers(newOffers);
         setOffers(newOffers);
         setFilteredOffers(newOffers);
+        setCurrentIndex(0);
+      } else {
+        // For pagination, add to existing offers but keep shared offer at top
+        const updatedOffers = [sharedOffer, ...allOffers.slice(1), ...newOffers]; // Change: use sharedOffer
+        setAllOffers(updatedOffers);
+        setOffers(updatedOffers);
+        setFilteredOffers(updatedOffers);
       }
-      setHasMore(response.pagination?.hasMore || false);
-    } else if (reset) {
+    } else {
+      // Normal flow without shared offer
+      if (reset) {
+        setAllOffers(newOffers);
+        setOffers(newOffers);
+        setFilteredOffers(newOffers);
+        setCurrentIndex(0);
+      } else {
+        const updatedOffers = [...allOffers, ...newOffers];
+        setAllOffers(updatedOffers);
+        setOffers(updatedOffers);
+        setFilteredOffers(updatedOffers);
+      }
+    }
+    
+    setHasMore(response.pagination?.hasMore || false);
+  } else if (reset) {
+    // If no offers found but we have a shared offer, keep it
+    if (offerId && sharedOffer) { // Change: use sharedOffer instead of currentOffer
+      setAllOffers([sharedOffer]);
+      setOffers([sharedOffer]);
+      setFilteredOffers([sharedOffer]);
+    } else {
       setAllOffers([]);
       setOffers([]);
       setFilteredOffers([]);
-      setHasMore(false);
     }
-  };
+    setHasMore(false);
+  }
+};
 
-  useEffect(() => {
-    const fetchOffers = async () => {
-      if (coords && coords.length === 2) {
-        const [lng, lat] = coords;
-        await fetchOffersWithCoords(lat, lng, true); // true = reset
-      } else {
-        requestLocationPermission();
-      }
-    };
-  
-    fetchOffers();
-  }, [coords, selectedCategory]); // This will trigger when category changes
+useEffect(() => {
+  if (coords && coords.length === 2) {
+    // Only fetch if we don't have an offerId, or if we have offerId and sharedOffer is ready
+    if (!offerId || (offerId && sharedOffer)) {
+      fetchOffersWithCoords(coords[1], coords[0], true);
+    }
+  }
+}, [coords, selectedCategory, sharedOffer]);
 
-  const categories = [
+const categories = [
     { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },
     { id: 'Food', name: 'Food & Dining', color: 'from-yellow-500 to-orange-500' },
     { id: 'Fashion', name: 'Fashion', color: 'from-purple-500 to-pink-500' },
@@ -231,11 +240,12 @@ const requestLocationPermission = async () => {
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      setCurrentOffer(filteredOffers[currentIndex]);
+      if (filteredOffers.length > 0) {
+        setCurrentOffer(filteredOffers[currentIndex]);
+      }
       setLoading(false);
     }, 200);
   }, [currentIndex, filteredOffers]);
-
   useEffect(() => {
     setFilteredOffers(offers);
   }, [offers]);
@@ -433,6 +443,39 @@ const requestLocationPermission = async () => {
     }, 300);
   };
 
+
+  const handleShareOffer = async () => {
+    if (!currentOffer) return;
+    
+    const shareUrl = `${window.location.origin}/offers/${currentOffer._id}`;
+    const shareData = {
+      title: currentOffer.title,
+      text: `Check out this amazing offer: ${currentOffer.title} at ${currentOffer.storeId.storeName}`,
+      url: shareUrl
+    };
+  
+    try {
+      // Try native sharing first (mobile devices)
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareUrl);
+        // You might want to show a toast notification here
+        alert('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Link copied to clipboard!');
+      } catch (clipboardError) {
+        console.error('Clipboard error:', clipboardError);
+      }
+    }
+  };
+
   const formatTimeLeft = (validTo) => {
     const now = new Date();
     const endDate = new Date(validTo);
@@ -532,16 +575,24 @@ const requestLocationPermission = async () => {
   if (showDetails) {
     return (
       <div className="h-screen bg-gradient-to-b from-gray-900 to-black relative overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
-        <div className="relative z-10 h-full flex flex-col">
-          <div className="p-4 pt-6 flex items-center justify-between">
-            <h2 className="text-white text-xl font-bold">Offer Details</h2>
-            <button 
-              onClick={() => setShowDetails(false)}
-              className="p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
+      <div className="relative z-10 h-full flex flex-col max-w-3xl mx-auto w-full"> {/* <== Add this wrapper */}
+      <div className="p-4 pt-6 flex items-center justify-between">
+  <h2 className="text-white text-xl font-bold">Offer Details</h2>
+  <div className="flex items-center space-x-2">
+    <button 
+      onClick={handleShareOffer}
+      className="p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all"
+    >
+      <Send className="w-5 h-5 text-white" />
+    </button>
+    <button 
+      onClick={() => setShowDetails(false)}
+      className="p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all"
+    >
+      <X className="w-5 h-5 text-white" />
+    </button>
+  </div>
+</div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-6">
             <div className="relative mb-6">
@@ -619,7 +670,7 @@ const requestLocationPermission = async () => {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <MapPin className="w-5 h-5 text-teal-400 mt-0.5" />
-                  <span className="text-gray-200 flex-1">{currentOffer.storeId.address}</span>
+                  <span className="text-gray-200 flex-1">{currentOffer.storeId.place}</span>
                 </div>
                 
                 <div className="flex items-center space-x-3">
@@ -634,29 +685,20 @@ const requestLocationPermission = async () => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 mb-6">
-              <button 
-                onClick={() => setLiked(!liked)}
-                className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
-              >
-                <Heart className={`w-6 h-6 ${liked ? 'text-red-500 fill-current' : 'text-white'}`} />
-              </button>
-              
-              <button className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20">
-                <Share2 className="w-6 h-6 text-white" />
-              </button>
-              
-              <button 
-                onClick={() => setSaved(!saved)}
-                className="flex items-center space-x-2 p-3 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
-              >
-                <Bookmark className={`w-6 h-6 ${saved ? 'text-teal-400 fill-current' : 'text-white'}`} />
-              </button>
-            </div>
+          
 
-            <button className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform active:scale-95 shadow-lg shadow-teal-500/25">
-              <span className="text-lg">Claim This Offer</span>
-            </button>
+            <button
+  className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-2xl transition-all transform active:scale-95 shadow-lg shadow-teal-500/25"
+  onClick={() => {
+    const storeSlug = currentOffer.storeId.storeName
+      .toLowerCase()
+      .replace(/\s+/g, '-');
+    navigate(`/storeprofile/${storeSlug}`);
+  }}
+>
+  <span className="text-lg">View Shop Profile</span>
+</button>
+
           </div>
         </div>
       </div>
@@ -724,26 +766,34 @@ const requestLocationPermission = async () => {
             )}
 
             {/* Bottom Content */}
-            <div className="flex-1 flex items-end pb-14 px-4">
-              <div className="w-full">
-                {/* Store Info */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <img 
-                    src={currentOffer.storeId.profileImage} 
-                    alt={currentOffer.storeId.storeName}
-                    className="w-12 h-12 rounded-full border-2 border-teal-400"
-                  />
-                  <div className="flex-1">
-                    <h3 className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-white text-sm">{currentOffer.storeId.rating}</span>
-                      </div>
-                      <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
-                    </div>
-                  </div>
-                </div>
+         {/* Bottom Content */}
+<div className="flex-1 flex items-end pb-14 px-4">
+  <div className="w-full">
+    {/* Store Info */}
+    <div className="flex items-center space-x-3 mb-4">
+      <img 
+        src={currentOffer.storeId.profileImage} 
+        alt={currentOffer.storeId.storeName}
+        className="w-12 h-12 rounded-full border-2 border-teal-400"
+      />
+      <div className="flex-1">
+        <h3 className="text-white font-bold text-lg">{currentOffer.storeId.storeName}</h3>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+            <span className="text-white text-sm">{currentOffer.storeId.rating}</span>
+          </div>
+          <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
+        </div>
+      </div>
+      {/* Add share button here */}
+      <button
+  onClick={handleShareOffer}
+  className="p-3 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all border border-white/20"
+>
+  <Send className="w-5 h-5 text-gray-800" />
+</button>
+    </div>
 
                 {/* Offer Title */}
                 <h1 className="text-white text-3xl font-bold mb-4 leading-tight">

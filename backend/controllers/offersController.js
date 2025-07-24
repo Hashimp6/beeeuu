@@ -481,9 +481,9 @@ const getOfferDetails = async (req, res) => {
     .populate("storeId", "storeName profileImage averageRating place phone")
 
     if (!offer) {
-      return res.status(404).json({
-        success: false,
-        message: "Offer not found"
+      return res.status(200).json({
+        success: true,
+        data: null // or data: [] if using arrays
       });
     }
 

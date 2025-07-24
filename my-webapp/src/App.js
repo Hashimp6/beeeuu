@@ -66,6 +66,7 @@ function App() {
           <Route path="/storeprofile/:storeName" element={<StoreProfile />} />
           <Route path="/store/:storeName" element={<StoreProfile />} />
           <Route path="/offers" element={<HomeLayout />} />
+          <Route path="/offers/:offerId" element={<HomeLayout />} />
           
           {/* Public Home Route - accessible to everyone */}
           <Route
