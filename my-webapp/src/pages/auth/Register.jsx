@@ -54,25 +54,6 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
       errors.push('at least 6 characters');
     }
     
-    // Contains uppercase letter
-    if (!/[A-Z]/.test(password)) {
-      errors.push('one uppercase letter');
-    }
-    
-    // Contains lowercase letter
-    if (!/[a-z]/.test(password)) {
-      errors.push('one lowercase letter');
-    }
-    
-    // Contains number
-    if (!/[0-9]/.test(password)) {
-      errors.push('one number');
-    }
-    
-    // Contains special character
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('one special character (!@#$%^&*(),.?":{}|<>)');
-    }
     
     return {
       isValid: errors.length === 0,

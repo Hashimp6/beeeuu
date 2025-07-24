@@ -494,16 +494,16 @@ const categories = [
 
   const getDiscountDisplay = (discountType, discountValue) => {
     switch(discountType) {
-      case 'percent':
+      case 'Percentage':
         return `${discountValue}% OFF`;
-      case 'flat':
+      case 'fixed':
         return `₹${discountValue} OFF`;
       case 'freebie':
         return discountValue === "100" ? "BOGO" : `${discountValue}% OFF`;
       case 'cashback':
         return `₹${discountValue} CASHBACK`;
       default:
-        return `${discountValue}% OFF`;
+        return `${discountValue}-Rs OFF`;
     }
   };
 
