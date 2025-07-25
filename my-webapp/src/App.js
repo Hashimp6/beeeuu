@@ -25,6 +25,8 @@ import OfferReelPage from "./pages/user/Offers";
 import PaymentStatus from "./components/Store/PaymentStatus";
 import PaymentSuccess from "./pages/seller/payment/Success";
 import PaymentFailed from "./pages/seller/payment/Failed";
+import NotFound from "./pages/Error404";
+import SerchByLandingPage from "./pages/Home";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -58,7 +60,7 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes - Anyone can access */}
-          <Route path="/" element={<Welcome />} />
+          <Route path="/" element={<SerchByLandingPage/>} />
           <Route path="/shipping-policy" element={<ShippingPolicy/>} />
           <Route path="/privacy-policy" element={<PrivacyPolicy/>} />
           <Route path="/terms" element={<TermsAndConditions/>} />
@@ -194,6 +196,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </>

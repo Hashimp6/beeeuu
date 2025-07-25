@@ -1692,7 +1692,6 @@ const App = () => {
       `}</style>
       <Header/>
       <HeroSection/>
-      {/* <HotOffersSection/> */}
       <ValueProposition/>
       <Features/>
       <Stats/>

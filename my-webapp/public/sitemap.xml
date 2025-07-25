@@ -1,0 +1,166 @@
+# SITEMAP.XML
+# Save this as: /public/sitemap.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main Pages -->
+  <url>
+    <loc>https://serchby.com/</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Location Pages -->
+  <url>
+    <loc>https://serchby.com/kochi</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/trikkakara</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/edappally</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/kakkanad</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/palarivattom</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Category Pages -->
+  <url>
+    <loc>https://serchby.com/restaurants</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/grocery</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/beauty</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/shopping</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Category + Location Combo Pages -->
+  <url>
+    <loc>https://serchby.com/restaurants-kochi</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/grocery-kakkanad</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/beauty-edappally</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Blog/Content Pages -->
+  <url>
+    <loc>https://serchby.com/blog</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Static Pages -->
+  <url>
+    <loc>https://serchby.com/about</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/contact</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/privacy-policy</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://serchby.com/terms-of-service</loc>
+    <lastmod>2025-01-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>
+
+---
+
+# ROBOTS.TXT
+# Save this as: /public/robots.txt
+
+User-agent: *
+Allow: /
+
+# Important pages to crawl
+Allow: /kochi
+Allow: /trikkakara  
+Allow: /edappally
+Allow: /kakkanad
+Allow: /restaurants
+Allow: /grocery
+Allow: /beauty
+Allow: /shopping
+Allow: /blog
+
+# Block admin/private areas (if any)
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /_next/
+Disallow: /static/
+
+# Block search parameters to avoid duplicate content
+Disallow: /*?search=
+Disallow: /*?filter=
+Disallow: /*?page=
+
+# Allow all images
+Allow: /images/
+Allow: /assets/
+
+# Sitemap location
+Sitemap: https://serchby.com/sitemap.xml
+
+# Crawl delay (optional - remove if not needed)
+Crawl-delay: 1

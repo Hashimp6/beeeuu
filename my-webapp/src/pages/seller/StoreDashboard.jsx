@@ -621,7 +621,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
   </div>
 </div>
 
-                    {[
+                    {/* {[
                       { title: 'Products', description: 'Manage your store products', icon: ShoppingBag, color: 'teal' },
                       { title: 'Gallery', description: 'Upload and manage store images', icon: Camera, color: 'purple' },
                       { title: 'Business Hours', description: 'Set your operating hours', icon: Clock, color: 'green' },
@@ -641,7 +641,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
                         </div>
                       </div>
                       
-                    ))}
+                    ))} */}
                   </div>
                 </div>
                 <div className="pt-6 border-t mt-6 ml-6">
