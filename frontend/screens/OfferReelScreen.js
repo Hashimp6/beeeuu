@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,128 +10,34 @@ import {
   StatusBar,
   Platform,
   Animated,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import axios from 'axios';
 import OfferDetailsModal from '../components/OfferDetailedModel';
-
+import { useAuth } from '../context/AuthContext';
+import { SERVER_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
-// Your existing sampleOffers data...
-const sampleOffers = [
-    {
-        "_id": "687ce0956161a65cf9efc548",
-        "storeId": {
-          "_id": "682cdf764acd2732dbbe90d7",
-          "storeName": "Diana's Henna Studio",
-          "profileImage": "https://res.cloudinary.com/dhed9kuow/image/upload/v1752042211/store_profiles/xthuo1cbj2vi0sq9jmd2.png",
-          "place": "Ayoor, Kerala, India",
-          "phone": "6485970539",
-          "averageRating": 4.2
-        },
-        "title": "Mega Beauty Sale",
-        "description": "Get stunning henna designs at unbeatable prices. Traditional and modern patterns available.",
-        "image": "https://d1csarkz8obe9u.cloudfront.net/posterpreviews/chicken-food-ads-design-template-41c5a162667a95621944cc49edf5c058_screen.jpg?ts=1695355301",
-        "discountType": "fixed",
-        "discountValue": "50",
-        "originalPrice": 100,
-        "offerPrice": 50,
-        "validFrom": "2025-07-19T00:00:00.000Z",
-        "validTo": "2025-07-30T00:00:00.000Z",
-        "place": "Ayoor, Kerala, India",
-        "distance": "2.5 km",
-        "category": "Beauty & Wellness",
-        "tags": ["beauty", "henna", "traditional"],
-        "isPremium": true
-      },
-      
-      {
-        "_id": "687ce0956161a65cf9efc549",
-        "storeId": {
-          "_id": "682cdf764acd2732dbbe90d8",
-          "storeName": "Royal Spa & Salon",
-          "profileImage": "https://via.placeholder.com/60x60/008080/white?text=RS",
-          "place": "Kochi, Kerala, India",
-          "phone": "9876543210",
-          "averageRating": 4.5
-        },
-        "title": "Weekend Spa Special",
-        "description": "Relax and rejuvenate with our premium spa treatments at amazing discounts.",
-        "image": "https://www.dochipo.com/wp-content/uploads/2023/08/traditional-food-poster-design.png",
-        "discountType": "percentage",
-        "discountValue": "40",
-        "originalPrice": 200,
-        "offerPrice": 120,
-        "validFrom": "2025-07-19T00:00:00.000Z",
-        "validTo": "2025-07-30T00:00:00.000Z",
-        "place": "Kochi, Kerala, India",
-        "distance": "5.2 km",
-        "category": "Beauty & Wellness",
-        "tags": ["spa", "massage", "wellness"],
-        "isPremium": false
-      }
-];
-
-// Your existing AnimatedDiscountBadge component...
-const AnimatedDiscountBadge = ({ discountPercent }) => {
-    const scaleAnim = useRef(new Animated.Value(0.8)).current;
-    const pulseAnim = useRef(new Animated.Value(1)).current;
-  
-    useEffect(() => {
-      // Initial scale-in animation
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 6,
-        useNativeDriver: true,
-      }).start();
-  
-      // Continuous pulse animation
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-  
-      pulseAnimation.start();
-  
-      return () => {
-        pulseAnimation.stop();
-      };
-    }, []);
-  
-    return (
-      <Animated.View
-        style={[
-          styles.discountBadge,
-          {
-            transform: [
-              { scale: scaleAnim },
-              { scale: pulseAnim },
-            ],
-          },
-        ]}
-      >
-        <Text style={styles.discountText}>{discountPercent}% OFF</Text>
-      </Animated.View>
-    );
-  };
-
-const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
+const OffersReelsFeed = ({ onOfferPress }) => {
+  const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
   const [screenHeight, setScreenHeight] = useState(height);
-  
-  // Add state for modal
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
+  const scrollViewRef = useRef(null);
+  const { user } = useAuth();
+
+  const BATCH_SIZE = 20;
+  const PREFETCH_THRESHOLD = 15;
+
+  // Calculate exact screen height for proper snapping
   useEffect(() => {
     const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
     const headerHeight = 40;
@@ -139,6 +45,115 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
     const availableHeight = height - statusBarHeight - headerHeight - bottomNavHeight;
     
     setScreenHeight(availableHeight);
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    if (user && user.location?.coordinates?.length === 2) {
+      fetchNearbyOffers(true);
+    }
+  }, [user]);
+
+  // Fetch nearby offers function
+  const fetchNearbyOffers = async (isInitial = false) => {
+    if (loading || (!isInitial && !hasMore)) return;
+
+    try {
+      setLoading(true);
+      if (isInitial) {
+        setRefreshing(true);
+      }
+
+      const [lng, lat] = user.location.coordinates;
+      const skip = isInitial ? 0 : currentPage * BATCH_SIZE;
+
+      const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
+        params: {
+          lat,
+          lng,
+          userId: user._id,
+          skip,
+          batchSize: BATCH_SIZE,
+        },
+      });
+
+      if (response.data.success) {
+        const newOffers = response.data.data;
+        console.log(response.data.data);
+        
+        if (isInitial) {
+          setOffers(newOffers);
+          setCurrentPage(1);
+          setCurrentIndex(0); // Reset to first offer
+        } else {
+          setOffers(prevOffers => [...prevOffers, ...newOffers]);
+          setCurrentPage(prevPage => prevPage + 1);
+        }
+
+        setHasMore(newOffers.length === BATCH_SIZE);
+      } else {
+        console.warn("No offers found:", response.data.message);
+        if (isInitial) {
+          setOffers([]);
+        }
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to fetch nearby offers:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load offers. Please check your internet connection and try again.",
+        [{ text: "OK" }]
+      );
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Enhanced scroll handler with better snap detection
+  const handleScroll = useCallback((event) => {
+    const { contentOffset } = event.nativeEvent;
+    const currentScrollIndex = Math.round(contentOffset.y / screenHeight);
+    
+    // Only update if the index actually changed
+    if (currentScrollIndex !== currentIndex && currentScrollIndex >= 0) {
+      setCurrentIndex(currentScrollIndex);
+    }
+
+    // Load more when reaching the prefetch threshold
+    if (
+      currentScrollIndex >= offers.length - PREFETCH_THRESHOLD &&
+      hasMore &&
+      !loading
+    ) {
+      fetchNearbyOffers(false);
+    }
+  }, [offers.length, hasMore, loading, screenHeight, currentIndex]);
+
+  // Handle scroll end to ensure proper snapping
+  const handleScrollEnd = useCallback((event) => {
+    const { contentOffset } = event.nativeEvent;
+    const targetIndex = Math.round(contentOffset.y / screenHeight);
+    
+    // Force snap to the correct position if needed
+    if (Math.abs(contentOffset.y - (targetIndex * screenHeight)) > 1) {
+      scrollViewRef.current?.scrollTo({
+        y: targetIndex * screenHeight,
+        animated: true,
+      });
+    }
+    
+    setCurrentIndex(targetIndex);
+  }, [screenHeight]);
+
+  // Pull to refresh
+  const handleRefresh = useCallback(() => {
+    setCurrentPage(0);
+    setHasMore(true);
+    setCurrentIndex(0);
+    fetchNearbyOffers(true);
   }, []);
 
   // Modal handlers
@@ -154,12 +169,10 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
 
   const handleCallStore = () => {
     console.log('Calling store:', selectedOffer?.storeId?.phone);
-    // You can add actual calling logic here
   };
 
   const handleGetDirections = () => {
     console.log('Getting directions to:', selectedOffer?.place);
-    // You can add actual directions logic here (Google Maps, etc.)
   };
 
   // Format date for display
@@ -182,6 +195,59 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
     return daysDiff > 0 ? daysDiff : 0;
   };
 
+  // Animated Discount Badge Component
+  const AnimatedDiscountBadge = ({ discountPercent }) => {
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 6,
+        useNativeDriver: true,
+      }).start();
+
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      pulseAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+      };
+    }, []);
+
+    return (
+      <Animated.View
+        style={[
+          styles.discountBadge,
+          {
+            transform: [
+              { scale: scaleAnim },
+              { scale: pulseAnim },
+            ],
+          },
+        ]}
+      >
+        <Text style={styles.discountText}>{discountPercent}% OFF</Text>
+      </Animated.View>
+    );
+  };
+
+  // Offer Card Component
   const OfferCard = ({ offer }) => {
     const discountPercent = Math.round(((offer.originalPrice - offer.offerPrice) / offer.originalPrice) * 100);
     const daysRemaining = getDaysRemaining(offer.validTo);
@@ -199,10 +265,9 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
             resizeMode="cover"
           />
           
-          {/* Enhanced gradient overlay */}
           <View style={styles.overlayGradient} />
 
-          {/* Top Section - Premium Badge & Distance */}
+          {/* Top Section */}
           <View style={styles.topSection}>
             {offer.isPremium && (
               <View style={styles.premiumBadge}>
@@ -210,31 +275,31 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
               </View>
             )}
             <View style={styles.distanceContainer}>
-              <Text style={styles.distance}>📍 {offer.distance || 'Nearby'}</Text>
+              <Text style={styles.distance}>📍 {offer.distanceKm} km</Text>
             </View>
           </View>
 
-          {/* Bottom Section - Store & Offer Details */}
+          {/* Bottom Content */}
           <View style={styles.bottomContent}>
-            {/* Store Profile Row */}
+            {/* Store Row */}
             <View style={styles.storeRow}>
               <Image 
-                source={{ uri: offer.storeId.profileImage }} 
+                source={{ uri: offer.storeId?.profileImage }} 
                 style={styles.storeAvatar}
                 resizeMode="cover"
               />
               <View style={styles.storeDetails}>
-                <Text style={styles.storeName}>{offer.storeId.storeName}</Text>
-                <Text style={styles.rating}>⭐ {offer.storeId.averageRating}</Text>
+                <Text style={styles.storeName}>{offer.storeId?.storeName}</Text>
+                <Text style={styles.rating}>⭐ {offer.storeId?.averageRating || '0'}</Text>
               </View>
             </View>
 
-            {/* Offer Title - Compact */}
-            <Text style={styles.offerTitle} numberOfLines={1}>
+            {/* Offer Title */}
+            <Text style={styles.offerTitle} numberOfLines={2}>
               {offer.title}
             </Text>
 
-            {/* Price Display with Animated Discount Badge */}
+            {/* Price Section */}
             <View style={styles.priceSection}>
               <View style={styles.priceDisplay}>
                 <Text style={styles.rupeeSymbol}>₹</Text>
@@ -258,7 +323,7 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
               )}
             </View>
 
-            {/* Action Button - Updated to use modal handler */}
+            {/* Action Button */}
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={(e) => {
@@ -266,7 +331,7 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
                 handleMoreDetailsPress(offer);
               }}
             >
-              <Text style={styles.actionButtonText}>View More</Text>
+              <Text style={styles.actionButtonText}> More</Text>
               <Text style={styles.actionArrow}>→</Text>
             </TouchableOpacity>
           </View>
@@ -275,23 +340,57 @@ const OffersReelsFeed = ({ offers = sampleOffers, onOfferPress }) => {
     );
   };
 
+  // Loading Component
+  const LoadingIndicator = () => (
+    <View style={[styles.loadingContainer, { height: screenHeight }]}>
+      <ActivityIndicator size="large" color="#20B2AA" />
+      <Text style={styles.loadingText}>Loading more offers...</Text>
+    </View>
+  );
+
+  // Empty State Component
+  const EmptyState = () => (
+    <View style={[styles.emptyContainer, { height: screenHeight }]}>
+      <Text style={styles.emptyTitle}>No Offers Found</Text>
+      <Text style={styles.emptySubtitle}>Check back later for new deals!</Text>
+      <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+        <Text style={styles.refreshButtonText}>Refresh</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Show empty state if no offers and not loading
+  if (offers.length === 0 && !loading && !refreshing) {
+    return <EmptyState />;
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
-        pagingEnabled
+        pagingEnabled={true}
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
         snapToInterval={screenHeight}
         snapToAlignment="start"
         contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={handleScrollEnd}
+        scrollEventThrottle={16}
+        bounces={false}
+        alwaysBounceVertical={false}
+        overScrollMode="never"
       >
-        {offers.map((offer) => (
-          <OfferCard key={offer._id} offer={offer} />
+        {offers.map((offer, index) => (
+          <OfferCard key={`${offer._id}-${index}`} offer={offer} />
         ))}
+        {loading && hasMore && <LoadingIndicator />}
       </ScrollView>
 
-      {/* Add the Modal Component */}
+  
+
+      {/* Modal Component */}
       <OfferDetailsModal
         visible={showModal}
         offer={selectedOffer}
@@ -384,7 +483,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   
-  // Store Row - Compact
+  // Store Row
   storeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -413,7 +512,7 @@ const styles = StyleSheet.create({
     color: '#FFD700',
   },
 
-  // Offer Title - Streamlined
+  // Offer Title
   offerTitle: {
     fontSize: 22,
     fontWeight: '900',
@@ -424,7 +523,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
 
-  // Price Section - Hero Display with Animated Discount Badge
+  // Price Section
   priceSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -489,7 +588,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
 
-  // Valid Till Section - Simple and Clean
+  // Valid Till Section
   validitySection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -525,7 +624,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  // Action Button - Eye-catching
+  // Action Button
   actionButton: {
     backgroundColor: '#20B2AA',
     flexDirection: 'row',
@@ -553,7 +652,72 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#ffffff',
   },
+
+  // Loading Indicator
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  loadingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
+  },
+
+  // Empty State
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+    padding: 20,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  refreshButton: {
+    backgroundColor: '#20B2AA',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  refreshButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+
+  // Position Indicator
+  positionIndicator: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    zIndex: 10,
+  },
+  positionText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });
 
-
-export default OffersReelsFeed
+export default OffersReelsFeed;
