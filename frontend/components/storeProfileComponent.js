@@ -468,7 +468,7 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
 
 <TouchableOpacity
   style={styles.settingOption}
-  onPress={() => navigation.navigate("Subscription", { store})}
+  onPress={() => navigation.navigate("SubscriptionPlans", { store})}
 >
   <View style={styles.settingOptionLeft}>
     <Icon name="autorenew" size={22} color="#27ae60" />

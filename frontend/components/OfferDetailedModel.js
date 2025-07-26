@@ -50,6 +50,7 @@
 Note: Make sure to pass userLocation prop with lat/lng coordinates for distance calculation
 */
 
+import { useNavigation } from '@react-navigation/native';
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
@@ -79,6 +80,7 @@ const OfferDetailsModal = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [timeRemaining, setTimeRemaining] = useState({});
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (visible) {
@@ -130,6 +132,10 @@ const OfferDetailsModal = ({
         return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
       }
     };
+
+
+  
+    
 
     const updateTimer = () => {
       setTimeRemaining(calculateTimeRemaining());
@@ -208,6 +214,15 @@ const OfferDetailsModal = ({
     if (offer.storeId?.phone) {
       Linking.openURL(`tel:${offer.storeId.phone}`);
     }
+  };
+
+  const formatStoreNameForURL = (name) => {
+    return name?.toLowerCase().replace(/\s+/g, '-');
+  };
+
+  const goToSellerProfile = () => {
+    const formattedName = formatStoreNameForURL(offer.storeId?.storeName);
+    navigation.navigate('SellerProfile', { name: formattedName });
   };
 
   const openImageViewer = () => {
@@ -424,6 +439,11 @@ const OfferDetailsModal = ({
                   <Text style={styles.modalCategoryTag}>{offer.category}</Text>
                 </View>
               </View>
+<View style={styles.modalStoreButtonWrapper}>
+  <TouchableOpacity onPress={goToSellerProfile} style={styles.modalStoreButton}>
+    <Text style={styles.modalStoreButtonText}>Visit Store Profile</Text>
+  </TouchableOpacity>
+</View>
 
             </ScrollView>
           </Animated.View>
@@ -452,6 +472,31 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.9,
     minHeight: height * 0.6,
   },
+  modalStoreButtonWrapper: {
+    marginTop: 25,
+    alignItems: 'center',
+    marginBottom: 30, // spacing before bottom
+  },
+  
+  modalStoreButton: {
+    backgroundColor: '#008080', // Teal color
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5, // Android shadow
+  },
+  
+  modalStoreButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

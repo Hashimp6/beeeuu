@@ -31,7 +31,8 @@ import StoreAdminScreen from '../screens/store/StoreHome';
 import SettingsScreen from '../screens/SettingsScreen';
 import StoreOffers from '../screens/store/ManageOfferScreen';
 import AddOfferComponent from '../screens/store/AddOfferScreen';
-import SubscriptionController from '../components/Subscribtion';
+import SubscriptionPlansScreen from '../components/Subscribtion';
+import RazorpayCheckout from '../screens/store/RazorpayCheckout';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -171,11 +172,8 @@ const AppNavigator = () => {
             component={AddOfferComponent}
             options={{ headerShown: false }}
           />
-           <Stack.Screen
-            name="Subscription"
-            component={SubscriptionController}
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlansScreen} />
+          <Stack.Screen name="RazorpayCheckout" component={RazorpayCheckout} />
           <Stack.Screen
             name="NewChat"
             component={NewChatScreen}
