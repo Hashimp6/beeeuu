@@ -49,7 +49,7 @@ const [newUpi, setNewUpi] = useState("");
         
         if (user !== null) {
           const response = await axios.get(`${SERVER_URL}/stores/user/${user._id}`);
-          console.log("storeee", response.data);
+        
           setStore(response.data);
         }
       } catch (error) {

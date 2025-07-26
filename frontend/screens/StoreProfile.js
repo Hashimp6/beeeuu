@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileShareHandler from '../components/ProfileShare';
 import { useCart } from '../context/CartContext';
 import ProductDetailModal from '../components/ProductDetailModal';
+import OffersStories from '../components/OffersStories';
 
 const SellerProfile = () => {
    const { addToCart,cart  } = useCart();
@@ -153,7 +154,6 @@ const handleShare = async () => {
   
       if (tab === 'gallery') {
         try {
-          console.log("ddd",store._id);
           const sellerId=store._id
           const res = await axios.get(`${SERVER_URL}/gallery/${sellerId}`, {
             headers: {
@@ -161,7 +161,7 @@ const handleShare = async () => {
               'Authorization': `Bearer ${token}`,
             },
           });
-           console.log("resdta",res.data.data.images);
+
           
           setGallery(res.data.data.images); // Assuming `images` is the array
         } catch (err) {
@@ -188,7 +188,6 @@ const handleShare = async () => {
     const fetchStore = async () => {
       setLoading(true);
       try {
-        console.log("soo",name);
         const response = await axios.get(`${SERVER_URL}/stores/storeprofile/${name}`);
        
        
@@ -287,6 +286,10 @@ const handleShare = async () => {
           <Text style={styles.location}>{store.place || 'Location'}</Text>
         </View>
 
+        {store.description && (
+          <Text style={styles.description}>{store.description}</Text>
+        )}
+
         {/* Contact Icons */}
         <View style={styles.iconRow}>
           <TouchableOpacity 
@@ -318,10 +321,11 @@ const handleShare = async () => {
           </TouchableOpacity>
         </View>
 
-        {/* Description
-        {store.description && (
-          <Text style={styles.description}>{store.description}</Text>
-        )} */}
+        <View style={{ height: 140,paddingTop:6 }}>
+
+      <OffersStories storeId={store._id} />
+   
+  </View>
 
         {/* Buttons */}
         <View style={styles.buttonRow}>
@@ -688,7 +692,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    marginTop: 24,
+    marginTop: 4,
     width: '100%',
     justifyContent: 'space-between',
   },

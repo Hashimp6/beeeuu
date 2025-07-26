@@ -8,6 +8,7 @@ import ProductsGrid from '../../components/user/ProductGrid';
 import ProductDetailModal from '../../components/user/ProductDetails';
 import { useCart } from '../../context/CartContext';
 import toast from 'react-hot-toast';
+import OffersStories from '../../components/user/ProfileOffice';
 
 const StoreProfile = () => {
   console.log("prms", useParams());
@@ -719,7 +720,9 @@ const handleTouchEnd = () => {
         </div>
       </section>
 
-      
+      <div className="flex justify-center">
+  <OffersStories storeId={store._id} />
+</div>
 
       {/* Navigation Tabs */}
       <section className="bg-white border-b border-gray-100 sticky top-16 z-40">

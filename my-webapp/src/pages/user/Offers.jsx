@@ -62,7 +62,7 @@ const [isLoadingMore, setIsLoadingMore] = useState(false);
       });
   
       if (response.data.success && response.data.data) {
-        console.log("offers array:", response.data.data);
+   
         return response.data; // Return full response to get pagination info
       } else {
         console.warn('No offers found:', response.data.message);
@@ -254,7 +254,7 @@ const categories = [
     setSelectedCategory(categoryId);
     setAllOffers([]); // Clear existing offers
     setHasMore(true); // Reset pagination
-    console.log('Selected category for API:', categoryId);
+   
   };
 
   // Location Permission Component for Guest Users

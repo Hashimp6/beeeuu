@@ -31,6 +31,7 @@ import StoreAdminScreen from '../screens/store/StoreHome';
 import SettingsScreen from '../screens/SettingsScreen';
 import StoreOffers from '../screens/store/ManageOfferScreen';
 import AddOfferComponent from '../screens/store/AddOfferScreen';
+import SubscriptionController from '../components/Subscribtion';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -168,6 +169,11 @@ const AppNavigator = () => {
            <Stack.Screen
             name="NewOffer"
             component={AddOfferComponent}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="Subscription"
+            component={SubscriptionController}
             options={{ headerShown: false }}
           />
           <Stack.Screen

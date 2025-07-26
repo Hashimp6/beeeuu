@@ -15,8 +15,8 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { SERVER_URL } from "../config";
 import { useAuth } from "../context/AuthContext";
+import { SERVER_URL } from "../config";
 
 const StoreProfileComponent = () => {
   const navigation = useNavigation();
@@ -367,18 +367,7 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
   </View>
   <Icon name="chevron-right" size={20} color="#888" />
 </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.settingOption}
-            onPress={() => navigation.navigate("StoreHours")}
-          >
-            <View style={styles.settingOptionLeft}>
-              <Icon name="access-time" size={20} color="#3498db" />
-              <Text style={styles.settingOptionText}>Business Hours</Text>
-            </View>
-            <Icon name="chevron-right" size={20} color="#888" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
+        
 
           <TouchableOpacity
             style={styles.settingOption}
@@ -474,6 +463,20 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
     </View>
   </View>
 </Modal>
+
+<View style={styles.divider} />
+
+<TouchableOpacity
+  style={styles.settingOption}
+  onPress={() => navigation.navigate("Subscription", { store})}
+>
+  <View style={styles.settingOptionLeft}>
+    <Icon name="autorenew" size={22} color="#27ae60" />
+    <Text style={styles.settingOptionText}>Subscription</Text>
+  </View>
+  <Icon name="chevron-right" size={22} color="#bdc3c7" />
+</TouchableOpacity>
+
           <View style={styles.divider} />
 
           <TouchableOpacity

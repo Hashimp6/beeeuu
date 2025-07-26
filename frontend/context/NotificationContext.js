@@ -12,8 +12,7 @@ import { useAuth } from './AuthContext';
 // Configure how notifications are handled when app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => {
-    console.log('🔔 [NOTIFICATION] Handler called - App is in foreground');
-    return {
+ return {
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
@@ -26,8 +25,7 @@ const NotificationContext = createContext({});
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    console.error('❌ [NOTIFICATION] useNotification called outside of NotificationProvider');
-    throw new Error('useNotification must be used within a NotificationProvider');
+  throw new Error('useNotification must be used within a NotificationProvider');
   }
   return context;
 };
@@ -41,9 +39,6 @@ export const NotificationProvider = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { user, token } = useAuth();
 
-  console.log('🚀 [NOTIFICATION] NotificationProvider initialized');
-  console.log('👤 [NOTIFICATION] User:', user ? `${user.username || user.email || 'Unknown'} (${user._id})` : 'Not authenticated');
-  console.log('🔑 [NOTIFICATION] Token:', token ? 'Present' : 'Not present');
 
   // Load notification settings from storage
   const loadNotificationSettings = async () => {
@@ -51,8 +46,7 @@ export const NotificationProvider = ({ children }) => {
       const enabled = await AsyncStorage.getItem('notificationsEnabled');
       if (enabled !== null) {
         setNotificationsEnabled(JSON.parse(enabled));
-        console.log('📱 [NOTIFICATION] Loaded settings - enabled:', JSON.parse(enabled));
-      }
+   }
     } catch (error) {
       console.error('❌ [NOTIFICATION] Error loading settings:', error);
     }
@@ -71,19 +65,14 @@ export const NotificationProvider = ({ children }) => {
 
   // Toggle notifications on/off
   const toggleNotifications = async (enabled) => {
-    console.log('🔄 [NOTIFICATION] Toggling notifications to:', enabled);
-    
     setNotificationsEnabled(enabled);
     await saveNotificationSettings(enabled);
 
     if (enabled) {
       // Re-register for notifications
-      console.log('🔛 [NOTIFICATION] Enabling notifications - registering...');
-      await registerForPushNotificationsAsync();
+   await registerForPushNotificationsAsync();
     } else {
-      // Disable notifications
-      console.log('🔕 [NOTIFICATION] Disabling notifications - clearing token...');
-      setExpoPushToken('');
+    setExpoPushToken('');
       await clearPushTokenFromServer();
       removeNotificationListeners();
     }
@@ -286,42 +275,21 @@ export const NotificationProvider = ({ children }) => {
 
   // Setup notification listeners
   const setupNotificationListeners = (navigation) => {
-    console.log('🎧 [NOTIFICATION] Setting up notification listeners...');
-    console.log('🧭 [NOTIFICATION] Navigation object:', navigation ? 'Present' : 'Not provided');
-    
     removeNotificationListeners();
 
     // Listener for notifications received while app is running
     const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📬 [NOTIFICATION] Notification received while app is running:');
-      console.log('📋 [NOTIFICATION] Notification details:', {
-        identifier: notification.request.identifier,
-        title: notification.request.content.title,
-        body: notification.request.content.body,
-        data: notification.request.content.data,
-        trigger: notification.request.trigger
-      });
       setNotification(notification);
     });
 
     // Listener for when user taps on notification
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('👆 [NOTIFICATION] Notification tapped by user:');
-      console.log('📋 [NOTIFICATION] Response details:', {
-        identifier: response.notification.request.identifier,
-        actionIdentifier: response.actionIdentifier,
-        userText: response.userText
-      });
-      
+
       const { data } = response.notification.request.content;
-      console.log('📊 [NOTIFICATION] Notification data:', data);
-      
+  
       // Handle different notification types
       if (data?.type === 'chat' && data?.conversationId) {
-        console.log('💬 [NOTIFICATION] Handling chat notification - navigating to chat');
-        console.log('🆔 [NOTIFICATION] Conversation ID:', data.conversationId);
-        console.log('👤 [NOTIFICATION] Sender name:', data.senderName);
-        
+  
         if (navigation) {
           navigation.navigate('ChatDetailScreen', {
             conversationId: data.conversationId,
@@ -335,10 +303,7 @@ export const NotificationProvider = ({ children }) => {
         }
       } 
       else if (data?.type === 'appointment' && data?.appointmentId) {
-        console.log('📅 [NOTIFICATION] Handling appointment notification');
-        console.log('🆔 [NOTIFICATION] Appointment ID:', data.appointmentId);
-        console.log('⚡ [NOTIFICATION] Action:', data.action);
-        
+     
         if (navigation) {
           navigation.navigate('AppointmentDetailScreen', {
             appointmentId: data.appointmentId
@@ -348,10 +313,7 @@ export const NotificationProvider = ({ children }) => {
           console.error('❌ [NOTIFICATION] Navigation not available for appointment');
         }
       }
-      else {
-        console.log('🤷 [NOTIFICATION] Unknown notification type or missing data');
-        console.log('📊 [NOTIFICATION] Data received:', data);
-      }
+     
     });
 
     const listeners = {
@@ -373,20 +335,14 @@ export const NotificationProvider = ({ children }) => {
       Notifications.removeNotificationSubscription(notificationListeners.notificationListener);
     }
     if (notificationListeners.responseListener) {
-      console.log('🗑️ [NOTIFICATION] Removing response listener');
-      Notifications.removeNotificationSubscription(notificationListeners.responseListener);
+     Notifications.removeNotificationSubscription(notificationListeners.responseListener);
     }
     setNotificationListeners({});
-    console.log('✅ [NOTIFICATION] Listeners removed');
-  };
+ };
 
   // Schedule local notification (for testing)
   const scheduleLocalNotification = async (title, body, data = {}) => {
-    console.log('⏰ [NOTIFICATION] Scheduling local notification:');
-    console.log('📝 [NOTIFICATION] Title:', title);
-    console.log('💬 [NOTIFICATION] Body:', body);
-    console.log('📊 [NOTIFICATION] Data:', data);
-    
+
     try {
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
@@ -406,8 +362,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Test appointment notification
   const testAppointmentNotification = async () => {
-    console.log('🧪 [NOTIFICATION] Testing appointment notification...');
-    try {
+  try {
       await scheduleLocalNotification(
         '🔔 New Appointment Request',
         'John Doe has requested an appointment for Hair Cut',
@@ -441,14 +396,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Initialize notifications when user is authenticated and settings are loaded
   useEffect(() => {
-    console.log('🔄 [NOTIFICATION] Auth state changed - checking if registration needed...');
-    console.log('👤 [NOTIFICATION] User present:', !!user);
-    console.log('🔑 [NOTIFICATION] Token present:', !!token);
-    console.log('🎫 [NOTIFICATION] Push token present:', !!expoPushToken);
-    console.log('⏳ [NOTIFICATION] Currently registering:', isRegistering);
-    console.log('🔔 [NOTIFICATION] Notifications enabled:', notificationsEnabled);
-    console.log('✅ [NOTIFICATION] Initialized:', isInitialized);
-    
+
     if (user && token && !expoPushToken && !isRegistering && notificationsEnabled && isInitialized) {
       console.log('🚀 [NOTIFICATION] Starting notification registration...');
       registerForPushNotificationsAsync();

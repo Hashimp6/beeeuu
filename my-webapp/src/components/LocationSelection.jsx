@@ -63,7 +63,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
 
   // Function to get location suggestions using Google Places API
   const fetchLocationSuggestions = useCallback(async (query) => {
-    console.log('🔍 Starting location search for:', query);
+  
     
     if (!query.trim()) {
       setSuggestions([]);
@@ -71,7 +71,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
     }
 
     if (!isGoogleMapsLoaded) {
-      console.log('Google Maps API not loaded yet');
+  
       return;
     }
 
@@ -219,7 +219,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         return guestLocationData;
       }
     } catch (err) {
-      console.error('❌ Location update failed:', err);
+     
       toast.error('❌ Failed to update location');
       throw new Error('Failed to update location data');
     }
@@ -306,7 +306,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           
           locationName = result || 'Current Location';
         } catch (geocodeErr) {
-          console.error('Reverse geocoding failed:', geocodeErr);
+     
           // Continue with default location name
         }
       }

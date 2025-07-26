@@ -79,7 +79,7 @@ const OffersReelsFeed = ({ onOfferPress }) => {
 
       if (response.data.success) {
         const newOffers = response.data.data;
-        console.log(response.data.data);
+      
         
         if (isInitial) {
           setOffers(newOffers);
