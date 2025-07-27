@@ -91,14 +91,18 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
     }
   }, [storeProducts]);
 
-  // Payment options
   const paymentOptions = [
     { id: 'cod', name: 'Cash on Delivery', icon: DollarSign },
-    { id: 'gpay', name: 'Google Pay', icon: Smartphone },
-    { id: 'phonepe', name: 'PhonePe', icon: CreditCard },
+    { id: 'upi', name: 'UPI', icon: Smartphone },
+    { id: 'phonepe', name: 'PhonePe PG', icon: CreditCard },
+    { id: 'razorpay', name: 'Razorpay PG', icon: CreditCard },
+    { id: 'card', name: 'Card', icon: CreditCard },
   ];
 
-  
+const allowedPayments = store?.paymentType
+  ? paymentOptions.filter(option => store.paymentType.includes(option.name))
+  : [];
+
 useEffect(() => {
   // Detect if user is on mobile
   const mobileCheck = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -683,7 +687,7 @@ useEffect(() => {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold mb-4 text-teal-700">Payment Method</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {paymentOptions.map((option) => {
+                {allowedPayments.map((option) => {
                   const IconComponent = option.icon;
                   return (
                     <button
@@ -712,7 +716,7 @@ useEffect(() => {
                   <div className="flex items-center bg-orange-50 p-4 rounded-lg mb-4">
                     <Info size={24} className="text-orange-500 mr-3 flex-shrink-0" />
                     <p className="text-sm text-orange-700">
-                      Complete payment using {paymentOptions.find(p => p.id === selectedPayment)?.name} and enter your transaction ID below.
+                      Complete payment using {allowedPayments.find(p => p.id === selectedPayment)?.name} and enter your transaction ID below.
                     </p>
                   </div>
                 )}
@@ -760,7 +764,7 @@ useEffect(() => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Payment Method:</span>
                   <span className="font-medium text-gray-900">
-                    {paymentOptions.find(p => p.id === selectedPayment)?.name}
+                    {allowedPayments.find(p => p.id === selectedPayment)?.name}
                   </span>
                 </div>
                 
@@ -834,7 +838,7 @@ useEffect(() => {
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-teal-700">
-                Pay via {paymentOptions.find(p => p.id === selectedPayment)?.name}
+                Pay via {allowedPayments.find(p => p.id === selectedPayment)?.name}
               </h3>
               <button
                 onClick={() => setShowPaymentModal(false)}
@@ -859,13 +863,13 @@ useEffect(() => {
                 className="w-full bg-teal-700 text-white py-4 rounded-xl font-semibold mb-6 flex items-center justify-center hover:bg-teal-800 transition-colors"
               >
                 <CreditCard size={24} className="mr-2" />
-                Open {paymentOptions.find(p => p.id === selectedPayment)?.name}
+                Open {allowedPayments.find(p => p.id === selectedPayment)?.name}
               </button>
 
               <div className="mb-6">
                 <h4 className="font-semibold text-teal-700 mb-3">Instructions:</h4>
                 <div className="space-y-2 text-sm text-gray-700">
-                  <p>1. Click "Open {paymentOptions.find(p => p.id === selectedPayment)?.name}" button above</p>
+                  <p>1. Click "Open {allowedPayments.find(p => p.id === selectedPayment)?.name}" button above</p>
                   <p>2. Complete the payment in the app</p>
                   <p>3. Copy the transaction ID/reference number</p>
                   <p>4. Enter it below and click "Confirm Payment"</p>

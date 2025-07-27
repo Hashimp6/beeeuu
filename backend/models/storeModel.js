@@ -32,6 +32,16 @@ const storeSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  razorpay: {
+    key_id: {
+      type: String,
+      default: ''
+    },
+    key_secret: {
+      type: String,
+      default: ''
+    }
+  },
   numberOfRatings: {
     type: Number,
     default: 0

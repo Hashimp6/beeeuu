@@ -7,7 +7,7 @@ const paymentOptions = ['Cash on Delivery', 'UPI', 'Card', 'Net Banking','Razorp
 const serviceOptions = ['Eat In', 'Take Away / Parcel', 'collection', 'Delivery'];
 
 const StoreSettings = ({ store, logout }) => {
-  const [newUpi, setNewUpi] = useState('');
+  const [newUpi, setNewUpi] = useState(store.upi);
   const [selectedPayments, setSelectedPayments] = useState(store.paymentType || []);
   const [selectedServices, setSelectedServices] = useState(store.serviceType || []);
   const [loading, setLoading] = useState(false);
