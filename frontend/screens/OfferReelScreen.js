@@ -63,8 +63,10 @@ const OffersReelsFeed = ({ onOfferPress }) => {
       if (isInitial) {
         setRefreshing(true);
       }
-
-      const [lng, lat] = user.location.coordinates;
+console.log("uddd",user);
+const lat=user.latitude;
+const lng=user.longitude;
+     
       const skip = isInitial ? 0 : currentPage * BATCH_SIZE;
 
       const response = await axios.get(`${SERVER_URL}/offers/nearby`, {
@@ -79,6 +81,7 @@ const OffersReelsFeed = ({ onOfferPress }) => {
 
       if (response.data.success) {
         const newOffers = response.data.data;
+      // console.log("off",response.data.data);
       
         
         if (isInitial) {
@@ -275,7 +278,7 @@ const OffersReelsFeed = ({ onOfferPress }) => {
               </View>
             )}
             <View style={styles.distanceContainer}>
-              <Text style={styles.distance}>📍 {offer.distanceKm} km</Text>
+              <Text style={styles.distance}>📍 {offer.distanceKm|| offer.distance} km</Text>
             </View>
           </View>
 
@@ -331,7 +334,7 @@ const OffersReelsFeed = ({ onOfferPress }) => {
                 handleMoreDetailsPress(offer);
               }}
             >
-              <Text style={styles.actionButtonText}> More</Text>
+              <Text style={styles.actionButtonText}> More Details</Text>
               <Text style={styles.actionArrow}>→</Text>
             </TouchableOpacity>
           </View>

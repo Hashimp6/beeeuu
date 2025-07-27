@@ -631,7 +631,7 @@ const categories = [
                 <div className="flex items-center space-x-2 mt-1">
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-white text-sm font-medium">{currentOffer.storeId.rating}</span>
+                    <span className="text-white text-sm font-medium">{currentOffer.storeId.rating||"0"}</span>
                   </div>
                   <span className="text-gray-300 text-sm">• {currentOffer.storeId.place}</span>
                 </div>

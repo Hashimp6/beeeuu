@@ -18,6 +18,7 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 import { SERVER_URL } from '../config';
 import Constants from 'expo-constants';
+import { useAuth } from '../context/AuthContext';
 
 // Get API key from environment variables
 const GOOGLE_MAPS_API_KEY = 
@@ -27,6 +28,7 @@ const GOOGLE_MAPS_API_KEY =
 
   
 const LocationSelectionModal = ({ visible, onClose }) => {
+  const { setUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -179,7 +181,9 @@ const LocationSelectionModal = ({ visible, onClose }) => {
       
       // Update local storage with new location data
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      console.log("Uppp",updatedUser);
       
+      setUser(updatedUser)
       // Try to update server if we have userId and token
       if (userData._id && userData.token) {
         try {
@@ -231,7 +235,9 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           coordinates, 
           item.description
         );
+        console.log("ggg",updatedUser);
         
+        setUser(updatedUser); 
         // Close the modal and pass back the selected location data
         onClose(updatedUser);
       } catch (updateError) {
@@ -301,7 +307,9 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           },
           locationName
         );
+        console.log("fss",updatedUser);
         
+        setUser(updatedUser); 
         // Close the modal and pass back the selected location data
         onClose(updatedUser);
       } catch (updateError) {

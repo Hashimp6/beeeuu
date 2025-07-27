@@ -281,6 +281,7 @@ const getNearbyOffers = async (req, res) => {
       tempUserId,
       batchSize = 20
     } = req.query;
+  
     
     const UserId = req.user?._id || userId || tempUserId;
 
@@ -397,6 +398,7 @@ const getNearbyOffers = async (req, res) => {
     
     const totalCount = totalOffers[0]?.total || 0;
     const hasMore = (parseInt(skip) + offers.length) < totalCount;
+    // console.log("ffrs",offers);
     
     res.json({
       success: true,
