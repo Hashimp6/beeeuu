@@ -41,7 +41,7 @@ const OrderDetails = () => {
   // Form states
   const [productQuantities, setProductQuantities] = useState({});
   const [customerName, setCustomerName] = useState(user?.username || '');
-  const [address, setAddress] = useState(user?.address || '');
+  const [address, setAddress] = useState('');  
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
   const [selectedPayment, setSelectedPayment] = useState('cod');
   const [transactionId, setTransactionId] = useState('');
@@ -50,7 +50,7 @@ const OrderDetails = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
 const [upiLinkToShow, setUpiLinkToShow] = useState('');
-  // Validation error states
+ const [selectedService, setSelectedService] = useState('');
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
@@ -139,9 +139,7 @@ useEffect(() => {
     if (trimmedAddress.length === 0) {
       return 'Address is required';
     }
-    if (trimmedAddress.length < 10) {
-      return 'Please enter a complete address (minimum 10 characters)';
-    }
+ 
     return '';
   };
 
@@ -544,54 +542,142 @@ useEffect(() => {
             </div>
 
             {/* Customer Details */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold mb-4 text-teal-700">Customer Details</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-teal-700 mb-2">Full Name</label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={handleNameChange}
-                    placeholder="Enter your full name"
-                    className={`w-full p-3 border rounded-lg text-base ${
-                      nameError ? 'border-red-500' : 'border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
-                  />
-                  {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
-                </div>
+            {store?.category?.toLowerCase().includes('hotel') ||
+ store?.category?.toLowerCase().includes('restaurant') ? (
+  <div className="bg-white rounded-xl shadow-sm p-6">
+    <h2 className="text-lg font-semibold mb-4 text-teal-700">Customer Details</h2>
 
-                <div>
-                  <label className="block text-sm font-medium text-teal-700 mb-2">Delivery Address</label>
-                  <textarea
-                    value={address}
-                    onChange={handleAddressChange}
-                    placeholder="Enter complete delivery address"
-                    rows="3"
-                    className={`w-full p-3 border rounded-lg text-base resize-none ${
-                      addressError ? 'border-red-500' : 'border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
-                  />
-                  {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
-                </div>
+    <div className="space-y-4">
+      {/* Name */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Full Name</label>
+        <input
+          type="text"
+          value={customerName}
+          onChange={handleNameChange}
+          placeholder="Enter your full name"
+          className={`w-full p-3 border rounded-lg text-base ${
+            nameError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
+      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-teal-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    placeholder="Enter 10-digit phone number"
-                    maxLength="10"
-                    className={`w-full p-3 border rounded-lg text-base ${
-                      phoneError ? 'border-red-500' : 'border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
-                  />
-                  {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
-                </div>
-              </div>
-            </div>
+      {/* Service Type (Radio buttons) */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Service Type</label>
+        <div className="flex gap-4 flex-wrap">
+          {store?.serviceType?.map((type) => (
+            <label key={type} className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="serviceType"
+                value={type}
+                checked={selectedService === type}
+                onChange={(e) => setSelectedService(e.target.value)}
+              />
+              <span className="text-sm text-gray-700">{type}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Address or Table Number */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">
+          {selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
+            ? 'Table Number'
+            : 'Address'}
+        </label>
+        <textarea
+          value={address}
+          onChange={handleAddressChange}
+          placeholder={
+            selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
+              ? 'Enter your table number'
+              : 'Enter complete delivery address'
+          }
+          rows="3"
+          className={`w-full p-3 border rounded-lg text-base resize-none ${
+            addressError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
+      </div>
+
+      {/* Phone Number */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Phone Number</label>
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={handlePhoneChange}
+          placeholder="Enter 10-digit phone number"
+          maxLength="10"
+          className={`w-full p-3 border rounded-lg text-base ${
+            phoneError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
+      </div>
+    </div>
+  </div>
+) : (
+  // Default layout for non-hotel categories
+  <div className="bg-white rounded-xl shadow-sm p-6">
+    <h2 className="text-lg font-semibold mb-4 text-teal-700">Customer Details</h2>
+
+    <div className="space-y-4">
+      {/* Same fields as above but without service type selection and always show address */}
+      {/* Full Name */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Full Name</label>
+        <input
+          type="text"
+          value={customerName}
+          onChange={handleNameChange}
+          placeholder="Enter your full name"
+          className={`w-full p-3 border rounded-lg text-base ${
+            nameError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
+      </div>
+
+      {/* Address */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Delivery Address</label>
+        <textarea
+          value={address}
+          onChange={handleAddressChange}
+          placeholder="Enter complete delivery address"
+          rows="3"
+          className={`w-full p-3 border rounded-lg text-base resize-none ${
+            addressError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
+      </div>
+
+      {/* Phone Number */}
+      <div>
+        <label className="block text-sm font-medium text-teal-700 mb-2">Phone Number</label>
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={handlePhoneChange}
+          placeholder="Enter 10-digit phone number"
+          maxLength="10"
+          className={`w-full p-3 border rounded-lg text-base ${
+            phoneError ? 'border-red-500' : 'border-gray-300'
+          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+        />
+        {phoneError && <p className="text-red-500 text-sm mt-1">{phoneError}</p>}
+      </div>
+    </div>
+  </div>
+)}
+
 
             {/* Payment Options */}
             <div className="bg-white rounded-xl shadow-sm p-6">

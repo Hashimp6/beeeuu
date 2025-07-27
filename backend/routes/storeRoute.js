@@ -12,7 +12,9 @@ const {
   getStoreUpi,
   getNearbyStores,
   findStoreByName,
-  updateUPI
+  updateUPI,
+  updateServiceType,
+  updatePaymentType
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -44,6 +46,12 @@ router.get("/", authorize("admin"), getAllStores);
 
 // Update store - use uploadStoreImage middleware
 router.put("/:storeId", uploadStoreImage.single("profileImage"), updateStore);
+//edit store types
+// PUT /stores/:storeId/service-type
+router.put('/:storeId/service-type', updateServiceType);
+
+// PUT /stores/:storeId/payment-type
+router.put('/:storeId/payment-type', updatePaymentType);
 
 // Delete store
 router.delete("/:storeId", authorize("seller", "admin"), deleteStore);

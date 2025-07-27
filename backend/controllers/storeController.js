@@ -847,8 +847,69 @@ const updateUPI = async (req, res) => {
   }
 };
 
+const updateServiceType = async (req, res) => {
+  const { storeId } = req.params;
+  const { serviceType } = req.body;
+
+  if (!Array.isArray(serviceType)) {
+    return res.status(400).json({ message: 'serviceType must be an array' });
+  }
+
+  try {
+    const updatedStore = await Store.findByIdAndUpdate(
+      storeId,
+      { $set: { serviceType } },
+      { new: true }
+    );
+
+    if (!updatedStore) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    res.status(200).json({
+      message: 'Service type updated successfully',
+      store: updatedStore,
+    });
+  } catch (err) {
+    console.error('Error updating serviceType:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ✅ 2. Update Payment Type
+const updatePaymentType = async (req, res) => {
+  const { storeId } = req.params;
+  const { paymentType } = req.body;
+
+  if (!Array.isArray(paymentType)) {
+    return res.status(400).json({ message: 'paymentType must be an array' });
+  }
+
+  try {
+    const updatedStore = await Store.findByIdAndUpdate(
+      storeId,
+      { $set: { paymentType } },
+      { new: true }
+    );
+
+    if (!updatedStore) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    res.status(200).json({
+      message: 'Payment type updated successfully',
+      store: updatedStore,
+    });
+  } catch (err) {
+    console.error('Error updating paymentType:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 
   module.exports = {
+    
     registerStore,
     getAllStores,
     getStoreById,
@@ -861,5 +922,7 @@ const updateUPI = async (req, res) => {
     getNearbyStores,
     getNearbyStoresSimple,
     findStoreByName,
-    updateUPI
+    updateUPI,
+    updateServiceType,
+  updatePaymentType,
   };

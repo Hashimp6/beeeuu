@@ -22,6 +22,7 @@ import GalleryManagement from '../../components/Store/GalleryManagement';
 import { useNavigate } from 'react-router-dom';
 import OfferManagement from '../../components/Store/OfferManagement';
 import SubscriptionController from '../../components/Store/Subscription';
+import StoreSettings from '../../components/Store/StoreSettings';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -586,75 +587,15 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
             )}
 
 
-            {activeTab === 'settings' && (
-              <div className="space-y-6">
-                
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6">Store Settings</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-  <h3 className="text-lg font-semibold text-gray-900 mb-4">Store UPI</h3>
-  {store.upi ? (
-    <div className="mb-4">
-      <p className="text-gray-700">
-        <span className="font-semibold">Current UPI:</span> {store.upi}
-      </p>
-    </div>
-  ) : (
-    <p className="text-gray-500 mb-4">No UPI ID set yet.</p>
-  )}
-
-  <div className="flex items-center space-x-4">
-    <input
-      type="text"
-      placeholder="Enter new UPI ID"
-      className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-      value={newUpi}
-      onChange={(e) => setNewUpi(e.target.value)}
-    />
-    <button
-      onClick={handleUpiUpdate}
-      className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
-    >
-      {store.upi ? "Update" : "Add"} UPI
-    </button>
-  </div>
-</div>
-
-                    {/* {[
-                      { title: 'Products', description: 'Manage your store products', icon: ShoppingBag, color: 'teal' },
-                      { title: 'Gallery', description: 'Upload and manage store images', icon: Camera, color: 'purple' },
-                      { title: 'Business Hours', description: 'Set your operating hours', icon: Clock, color: 'green' },
-                      { title: 'Services', description: 'Manage your services', icon: Settings, color: 'blue' },
-                      { title: 'Payment Settings', description: 'Configure payment methods', icon: DollarSign, color: 'orange' },
-                      { title: 'Analytics', description: 'View detailed reports', icon: TrendingUp, color: 'red' }
-                    ].map((item, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer hover:border-teal-300">
-                        <div className="flex items-start space-x-4">
-                          <div className={`p-3 rounded-full bg-${item.color}-100 flex-shrink-0`}>
-                            <item.icon className={`w-6 h-6 text-${item.color}-600`} />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
-                            <p className="text-sm text-gray-600">{item.description}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                    ))} */}
-                  </div>
-                </div>
-                <div className="pt-6 border-t mt-6 ml-6">
-  <button
-    onClick={logout}
-    className="flex items-center space-x-2 text-red-600 font-semibold hover:text-red-700 transition-colors"
-  >
-    <LogOut className="w-5 h-5" />
-    <span>Logout</span>
-  </button>
-</div>
-              </div>
-            )}
+{activeTab === 'settings' && (
+  <StoreSettings 
+    store={store}
+    handleUpiUpdate={handleUpiUpdate}
+    newUpi={newUpi}
+    setNewUpi={setNewUpi}
+    logout={logout}
+  />
+)}
           </div>
         </div>
       </div>

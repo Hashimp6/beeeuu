@@ -482,7 +482,29 @@ console.log("apps",appointments);
 };
 
 
+const updateAppointmentActiveStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
+  try {
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    res.status(200).json({
+      message: 'Appointment status updated successfully',
+      appointment
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating appointment status', error: error.message });
+  }
+};
 
 module.exports = {
   getUserAppointments,
@@ -495,5 +517,6 @@ module.exports = {
   updateAdvanceStatus ,
   manualUpdatePastAppointments,
   getAdvancePaymentAppointments,
-  handlePaymentUpdate // New function for payment notifications
+  handlePaymentUpdate ,
+  updateAppointmentActiveStatus
 };

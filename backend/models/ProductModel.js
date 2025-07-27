@@ -11,6 +11,10 @@ const productSchema = new mongoose.Schema({
     enum: ['product', 'service'],
     required: true
   },
+  active: {
+    type: Boolean,
+    default: true, // means product is active by default
+  },
   price: { type: Number, required: true },
   quantity: { type: Number},
   createdAt: { type: Date, default: Date.now }

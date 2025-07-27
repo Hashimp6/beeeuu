@@ -192,6 +192,27 @@ const getProductById = async (req, res) => {
 };
 
 
+const toggleProductStatus = async (req, res) => {
+  const { id } = req.params;
+  const { active } = req.body;
+
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { active },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ message: 'Product status updated', product: updatedProduct });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating status', error: error.message });
+  }
+};
+
 
 module.exports = {
   addProduct,
@@ -201,5 +222,6 @@ module.exports = {
   getProductsByStore,
   getProductsByCategory,
   getProductsByName,
-  getProductById
+  getProductById,
+  toggleProductStatus
 };

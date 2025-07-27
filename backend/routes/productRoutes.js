@@ -9,6 +9,7 @@ const {
   getProductsByCategory,
   getProductsByName,
   getProductById,
+  toggleProductStatus,
 } = require('../controllers/productController');
 const { uploadProductImage } = require('../config/multer');
 // Add Product - Changed to handle multiple images
@@ -22,7 +23,8 @@ router.get("/store/:storeId", getProductsByStore);
 router.get("/category/:category", getProductsByCategory);
 router.get("/search", getProductsByName); // ?name=milk
 router.get("/:productId", getProductById);
-
+// PATCH route to update active status
+router.patch('/:id/status', toggleProductStatus);
 // Delete Product
 router.delete('/:productId', deleteProduct);
 

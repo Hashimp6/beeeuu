@@ -24,6 +24,14 @@ const storeSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  serviceType: {
+    type: [String], 
+    default: []
+  },
+  paymentType: {
+    type: [String],
+    default: []
+  },
   numberOfRatings: {
     type: Number,
     default: 0

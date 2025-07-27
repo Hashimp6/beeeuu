@@ -16,6 +16,10 @@ const appointmentSchema = new mongoose.Schema({
     ref: "Product",
     required: true
   },
+  active: {
+    type: Boolean,
+    default: true,
+  },
   productName: {
     type: String,
     // required: true
