@@ -51,6 +51,7 @@ const OrderDetails = () => {
   const [showQRCode, setShowQRCode] = useState(false);
 const [upiLinkToShow, setUpiLinkToShow] = useState('');
  const [selectedService, setSelectedService] = useState('');
+ const [serviceError, setServiceError] = useState('');
   const [nameError, setNameError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
@@ -320,10 +321,18 @@ useEffect(() => {
     const nameValidationError = validateName(customerName);
     const phoneValidationError = validatePhone(phoneNumber);
     const addressValidationError = validateAddress(address);
-
+    const serviceValidationError =
+    store?.category?.toLowerCase().includes('hotel') ||
+    store?.category?.toLowerCase().includes('restaurant')
+      ? selectedService.trim() === ''
+        ? 'Please select a service type'
+        : ''
+      : '';
     setNameError(nameValidationError);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
+    setServiceError(serviceValidationError);
+
 
     let transactionValidationError = '';
     if (selectedPayment !== 'cod') {
@@ -331,7 +340,7 @@ useEffect(() => {
       setTransactionError(transactionValidationError);
     }
 
-    if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
+    if (nameValidationError || phoneValidationError ||     serviceValidationError ||addressValidationError || transactionValidationError) {
       toast.error('❌ Please fix the errors before placing the order');
       setIsPlacingOrder(false);
       return;
@@ -376,6 +385,7 @@ useEffect(() => {
       buyerId: user._id,
       totalAmount: parseFloat(calculateTotal()),
       totalItems: getTotalItems(),
+      orderType: selectedService,
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
       phoneNumber: phoneNumber,
@@ -568,23 +578,29 @@ useEffect(() => {
       </div>
 
       {/* Service Type (Radio buttons) */}
-      <div>
-        <label className="block text-sm font-medium text-teal-700 mb-2">Service Type</label>
-        <div className="flex gap-4 flex-wrap">
-          {store?.serviceType?.map((type) => (
-            <label key={type} className="inline-flex items-center gap-2">
-              <input
-                type="radio"
-                name="serviceType"
-                value={type}
-                checked={selectedService === type}
-                onChange={(e) => setSelectedService(e.target.value)}
-              />
-              <span className="text-sm text-gray-700">{type}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+     {/* Service Type (Radio buttons) */}
+<div>
+  <label className="block text-sm font-medium text-teal-700 mb-2">Service Type</label>
+  <div className="flex gap-4 flex-wrap">
+    {store?.serviceType?.map((type) => (
+      <label key={type} className="inline-flex items-center gap-2">
+        <input
+          type="radio"
+          name="serviceType"
+          value={type}
+          checked={selectedService === type}
+          onChange={(e) => {
+            setSelectedService(e.target.value);
+            setServiceError(''); // clear error on change
+          }}
+        />
+        <span className="text-sm text-gray-700">{type}</span>
+      </label>
+    ))}
+  </div>
+  {serviceError && <p className="text-red-500 text-sm mt-1">{serviceError}</p>}
+</div>
+
 
       {/* Address or Table Number */}
       <div>

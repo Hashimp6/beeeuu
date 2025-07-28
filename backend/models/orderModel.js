@@ -57,7 +57,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  typeOfOrder:{
+  orderType:{
     type: String,
   },
   // Order Details

@@ -7,11 +7,12 @@ import {
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 // Compact Order Card Component
-const OrderCard = ({ order, onStatusChange }) => {
+const OrderCard = ({ order, onStatusChange, storeCategory  }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-
+const{token}=useAuth()
   const getStatusConfig = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': 
@@ -92,25 +93,112 @@ const OrderCard = ({ order, onStatusChange }) => {
     }
   };
 
+  const handlePaymentStatusChange = async (orderId, newStatus) => {
+    toast((t) => (
+      <span className="flex flex-col gap-2">
+        <span className="text-sm font-medium">
+          Confirm marking payment as <b>{newStatus}</b>?
+        </span>
+        <div className="flex justify-end gap-2 mt-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await axios.patch(
+                  `${SERVER_URL}/orders/payment-status/${orderId}`,
+                  { paymentStatus: newStatus },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+                toast.success('Payment marked as paid');
+                onStatusChange(orderId, null, newStatus); // extra param for payment
+              } catch (error) {
+                toast.error('Failed to update payment status');
+              }
+            }}
+            className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2 py-1 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      </span>
+    ), { duration: Infinity });
+  };
+  
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
+    return new Date(dateString).toLocaleString('en-IN', {
       day: 'numeric',
-      year: 'numeric'
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true, // for AM/PM format
     });
   };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'RS'
-    }).format(amount || 0);
-  };
+  
 
   const getActionButtons = () => {
     const status = order.status?.toLowerCase();
     const buttons = [];
-
+  
+    const isHotel = storeCategory?.toLowerCase().includes('hotel') || 
+                    storeCategory?.toLowerCase().includes('restaurant');
+  
+    if (isHotel) {
+      switch (status) {
+        case 'pending':
+          buttons.push(
+            <button
+              key="process"
+              onClick={() => handleStatusUpdate('processing')}
+              disabled={isUpdating}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-purple-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-md"
+            >
+              {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Package className="w-4 h-4" /><span>Process</span></>}
+            </button>
+          );
+          break;
+        case 'processing':
+          buttons.push(
+            <button
+              key="deliver"
+              onClick={() => handleStatusUpdate('delivered')}
+              disabled={isUpdating}
+              className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-teal-600 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-md"
+            >
+              {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4" /><span>Deliver</span></>}
+            </button>
+          );
+          break;
+      }
+  
+      // Cancel option (optional)
+      if (!['delivered', 'cancelled'].includes(status)) {
+        buttons.push(
+          <button
+            key="cancel"
+            onClick={() => handleStatusUpdate('cancelled')}
+            disabled={isUpdating}
+            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-md"
+          >
+            {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><X className="w-4 h-4" /><span>Cancel</span></>}
+          </button>
+        );
+      }
+  
+      return buttons;
+    }
     switch (status) {
       case 'pending':
         buttons.push(
@@ -272,7 +360,34 @@ const OrderCard = ({ order, onStatusChange }) => {
               <p className="text-sm font-medium text-black capitalize">{order.paymentMethod}</p>
             </div>
           </div>
-  
+  {/* Payment Status */}
+{/* Show Payment Status only for COD */}
+{order.paymentMethod === 'cod' && (
+  <div className="flex items-center justify-between px-2.5 py-2 bg-white/70 rounded-lg border border-white/50">
+    <div className="flex items-center space-x-2">
+      <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
+      <span className="text-sm text-black font-medium capitalize">
+        Payment Status: 
+        <span className={`ml-2 font-semibold ${
+          order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
+        }`}>
+          {order.paymentStatus}
+        </span>
+      </span>
+    </div>
+
+    {order.paymentStatus !== 'paid' && (
+      <button
+        onClick={() => handlePaymentStatusChange(order._id, 'paid')}
+        className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200 shadow-sm"
+      >
+        Mark as Paid
+      </button>
+    )}
+  </div>
+)}
+
+
           {/* Transaction ID for GPay/PhonePe */}
           {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && order.transactionId && (
             <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
@@ -306,7 +421,8 @@ const OrderCard = ({ order, onStatusChange }) => {
 };
 
 // Main Order Management Component
-const OrderManagement = ({ storeId }) => {
+const OrderManagement = ({ store }) => {
+  const storeId=store._id
   const { user, token } = useAuth() || {};
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -359,30 +475,55 @@ const OrderManagement = ({ storeId }) => {
     }
   };
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      await axios.patch(
-        `${SERVER_URL}/orders/status/${orderId}`,
-        { status: newStatus },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          timeout: 10000
-        }
-      );
-      
-      setOrders(prev => 
-        prev.map(order => 
-          order._id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      throw error;
-    }
+  const handleStatusChange = (orderId, newStatus) => {
+    toast((t) => (
+      <span className="flex flex-col gap-2">
+        <span className="text-sm font-medium">Are you sure you want to change status to <b>{newStatus}</b>?</span>
+        <div className="flex justify-end gap-2 mt-2">
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await axios.patch(
+                  `${SERVER_URL}/orders/status/${orderId}`,
+                  { status: newStatus },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`,
+                    },
+                    timeout: 10000
+                  }
+                );
+                setOrders(prev =>
+                  prev.map(order =>
+                    order._id === orderId ? { ...order, status: newStatus } : order
+                  )
+                );
+                toast.success(`Status updated to ${newStatus}`);
+              } catch (error) {
+                console.error('Error updating order status:', error);
+                toast.error('Failed to update status');
+              }
+            }}
+            className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-2 py-1 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
+          >
+            No
+          </button>
+        </div>
+      </span>
+    ), {
+      duration: Infinity,
+      position: 'top-center',
+    });
   };
+  
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -395,9 +536,16 @@ const OrderManagement = ({ storeId }) => {
   const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
   useEffect(() => {
-    fetchOrders(selectedStatus);
+    fetchOrders(selectedStatus); // initial fetch on mount or status change
+  
+    const interval = setInterval(() => {
+      fetchOrders(selectedStatus); // fetch every 30 seconds
+    }, 30000); // 30 seconds = 30000 ms
+  
+    return () => clearInterval(interval); // clean up on unmount
   }, [selectedStatus]);
 
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -428,7 +576,7 @@ const OrderManagement = ({ storeId }) => {
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-white" />
+                      <IndianRupee className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <p className="text-white font-bold text-2xl">
@@ -524,6 +672,7 @@ const OrderManagement = ({ storeId }) => {
                   key={order._id}
                   order={order}
                   onStatusChange={handleStatusChange}
+                  storeCategory={store.category} 
                 />
               ))}
             </div>

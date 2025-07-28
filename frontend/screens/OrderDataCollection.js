@@ -19,7 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { SERVER_URL } from '../config';
 import { useCart } from '../context/CartContext';
-import Toast from 'react-native-toast-message';
+import toast from 'react-hot-toast';
 
 const OrderDetails = () => {
   const navigation = useNavigation();
@@ -296,42 +296,51 @@ const generatePaymentDeepLink = (paymentMethod) => {
     if (!error) {
       setPaymentCompleted(true);
       setShowPaymentModal(false);
-      Alert.alert('Payment Confirmed', 'Payment details saved. You can now place your order.');
+      toast.success('✅ Payment Confirmed! Placing your order...', {
+        style: {
+          background: '#4ade80', // green
+          color: '#fff',
+          fontWeight: 'bold',
+        },
+        iconTheme: {
+          primary: '#fff',
+          secondary: '#22c55e', // Tailwind green-500
+        },
+      });
+    
+      handlePlaceOrder(); // call order placement
     }
   };
 
   // Handle order placement
   const handlePlaceOrder = async () => {
-    // Validate all fields
     const nameValidationError = validateName(customerName);
     const phoneValidationError = validatePhone(phoneNumber);
     const addressValidationError = validateAddress(address);
-
+  
     setNameError(nameValidationError);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
-
-    // For digital payments, validate transaction ID
+  
     let transactionValidationError = '';
     if (selectedPayment !== 'cod') {
       transactionValidationError = validateTransactionId(transactionId);
       setTransactionError(transactionValidationError);
     }
-
-    // Check if any validation errors exist
+  
     if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
-      Alert.alert('Validation Error', 'Please fix the errors before placing the order');
+      toast.error('❌ Please fix validation errors before placing the order');
       return;
     }
-
+  
     const orderData = {
       buyerId: user._id,
       customerName: customerName.trim(),
       deliveryAddress: address.trim(),
-      phoneNumber: phoneNumber,
+      phoneNumber,
       paymentMethod: selectedPayment,
       transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
-      storeId: storeId,
+      storeId,
       sellerId: store._id,
       status: 'pending',
       products: products.map((item) => {
@@ -346,47 +355,27 @@ const generatePaymentDeepLink = (paymentMethod) => {
       totalAmount: calculateTotal(),
       totalItems: products.reduce((sum, item) => sum + (item.quantity || 1), 0)
     };
-    
-
+  
     try {
-      console.log("order data ", orderData);
       setIsLoading(true);
-      // Send order to server
       const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (response.data) {
         setOrderPlaced(true);
-Toast.show({
-  type: 'success',
-  text1: 'Order Placed',
-  text2: `Order ID: ${response.data.orderId || 'N/A'}`,
-});
-navigation.goBack();
-        console.log("✅ Order placed successfully", response.data);
+        toast.success(`✅ Order Placed! ID: ${response.data.orderId || 'N/A'}`);
         clearStoreCart(storeId);
-        // Show success message
-        Alert.alert(
-          'Order Placed Successfully!',
-          `Your order  has been placed. Order ID: ${response.data.orderId || 'N/A'}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack()
-            }
-          ]
-        );
+        navigation.goBack();
       }
-
     } catch (error) {
-      console.error("❌ Failed to place order:", error.response?.data || error.message);
-      Alert.alert("Error", "Failed to place order. Please try again.");
-    }finally {
-      setIsLoading(false); // Add this line
+      console.error("❌ Order error:", error.response?.data || error.message);
+      toast.error('❌ Failed to place order. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
