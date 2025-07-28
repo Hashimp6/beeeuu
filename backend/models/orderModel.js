@@ -57,7 +57,9 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
+  typeOfOrder:{
+    type: String,
+  },
   // Order Details
   totalAmount: {
     type: Number,
@@ -81,7 +83,7 @@ const orderSchema = new mongoose.Schema({
   // Payment Information
   paymentMethod: {
     type: String,
-    enum: ['cod', 'gpay', 'phonepe', 'paytm', 'upi'],
+    enum: ['cod', 'gpay', 'phonepe', 'paytm', 'upi','razorpay'],
     default: 'cod'
   },
   paymentStatus: {

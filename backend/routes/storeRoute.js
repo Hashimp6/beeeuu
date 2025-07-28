@@ -33,6 +33,13 @@ router.get("/store-analetics/:storeId", getStoreAnalytics);
 //for revenue
 router.get('/revenue/:storeId', getStoreRevenue);
 // Apply authentication middleware to all routes
+// PUT /stores/:storeId/service-type
+router.put('/:storeId/service-type', updateServiceType);
+
+// PUT /stores/:storeId/payment-type
+router.put('/:storeId/payment-type', updatePaymentType);
+
+
 router.use(protect);
 
 // Register a new store - use uploadStoreImage middleware
@@ -47,11 +54,6 @@ router.get("/", authorize("admin"), getAllStores);
 // Update store - use uploadStoreImage middleware
 router.put("/:storeId", uploadStoreImage.single("profileImage"), updateStore);
 //edit store types
-// PUT /stores/:storeId/service-type
-router.put('/:storeId/service-type', updateServiceType);
-
-// PUT /stores/:storeId/payment-type
-router.put('/:storeId/payment-type', updatePaymentType);
 
 // Delete store
 router.delete("/:storeId", authorize("seller", "admin"), deleteStore);

@@ -880,6 +880,8 @@ const updateServiceType = async (req, res) => {
 const updatePaymentType = async (req, res) => {
   const { storeId } = req.params;
   const { paymentType } = req.body;
+  console.log("bs",req.body);
+  
 
   if (!Array.isArray(paymentType)) {
     return res.status(400).json({ message: 'paymentType must be an array' });
