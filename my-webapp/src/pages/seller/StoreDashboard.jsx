@@ -546,24 +546,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
 </div>
 
-                {/* Quick Actions */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button className="flex items-center space-x-3 p-4 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors">
-                      <Plus className="w-5 h-5 text-teal-600" />
-                      <span className="font-medium text-teal-700">Add New Product/Service</span>
-                    </button>
-                    <button className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                      <Plus className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium text-blue-700">Post Image or Vedio</span>
-                    </button>
-                    <button className="flex items-center space-x-3 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                      <Plus className="w-5 h-5 text-purple-600" />
-                      <span className="font-medium text-purple-700">Add Offer</span>
-                    </button>
-                  </div>
-                </div>
+             
               </div>
             )}
  {activeTab === 'Offers' && (

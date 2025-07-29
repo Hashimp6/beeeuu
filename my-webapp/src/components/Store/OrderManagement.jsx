@@ -1,18 +1,303 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, Clock, CheckCircle, XCircle, AlertCircle, User, Phone, MapPin, 
   Check, X, RefreshCw, Package, Filter, Truck, DollarSign, RotateCcw, Eye,
-  IndianRupee
+  IndianRupee, Printer, Volume2, VolumeX
 } from 'lucide-react';
+
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+const PrintReceipt = ({ order, store, onClose }) => {
+  const printRef = useRef();
+
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Order Receipt - ${order.orderId}</title>
+          <style>
+            body { 
+              font-family: 'Courier New', monospace; 
+              margin: 0; 
+              padding: 15px; 
+              line-height: 1.3; 
+              font-size: 12px;
+            }
+            .receipt { 
+              max-width: 300px; 
+              margin: 0 auto; 
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 2px solid #000; 
+              padding-bottom: 8px; 
+              margin-bottom: 8px; 
+            }
+            .order-id-highlight {
+              background: #000;
+              color: #fff;
+              padding: 6px 8px;
+              margin: 8px 0;
+              text-align: center;
+              font-weight: bold;
+              font-size: 14px;
+              letter-spacing: 1px;
+            }
+            .section { 
+              margin: 8px 0; 
+              padding: 5px 0;
+            }
+            .section-title {
+              font-weight: bold;
+              font-size: 11px;
+              margin-bottom: 5px;
+              text-transform: uppercase;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 2px;
+            }
+            .items-table { 
+              width: 100%;
+              border-collapse: collapse;
+              margin: 8px 0;
+            }
+            .items-header {
+              border-bottom: 1px solid #000;
+              font-weight: bold;
+              font-size: 10px;
+              text-transform: uppercase;
+            }
+            .items-header td {
+              padding: 3px 2px;
+              text-align: center;
+            }
+            .item-row {
+              border-bottom: 1px dashed #ccc;
+            }
+            .item-row td {
+              padding: 4px 2px;
+              vertical-align: top;
+            }
+            .item-name {
+              text-align: left;
+              font-weight: bold;
+            }
+            .item-qty, .item-price, .item-total {
+              text-align: center;
+              font-weight: bold;
+            }
+            .bill-summary {
+              border: 2px solid #000;
+              margin: 10px 0;
+              padding: 8px;
+            }
+            .bill-row {
+              display: flex;
+              justify-content: space-between;
+              margin: 3px 0;
+              font-size: 11px;
+            }
+            .bill-total {
+              border-top: 2px solid #000;
+              padding-top: 5px;
+              margin-top: 5px;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .customer-info {
+              font-size: 10px;
+              line-height: 1.2;
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 15px; 
+              font-size: 9px; 
+              border-top: 1px dashed #000;
+              padding-top: 8px;
+            }
+            .dashed { 
+              border-bottom: 1px dashed #000; 
+              margin: 5px 0; 
+            }
+            @media print {
+              body { print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Print Receipt</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Receipt Preview */}
+          <div ref={printRef} className="receipt border p-4 bg-gray-50">
+            {/* Header */}
+            <div className="header">
+              <h1 style={{margin: '0', fontSize: '16px', fontWeight: 'bold'}}>
+                {store?.storeName || 'RESTAURANT NAME'}
+              </h1>
+              <p style={{margin: '3px 0', fontSize: '10px'}}>
+                {store?.place || 'Store Address Here'}
+              </p>
+              <p style={{margin: '3px 0', fontSize: '10px'}}>
+                Tel: {store?.phone || '+91 XXXXXXXXXX'}
+              </p>
+            </div>
+
+            {/* Order ID Highlight */}
+            <div className="order-id-highlight">
+              ORDER #{order.orderId}
+            </div>
+
+            {/* Order Info */}
+            <div className="section">
+              <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '10px'}}>
+                <span>Date: {formatDate(order.orderDate)}</span>
+                <span>Status: {order.status.toUpperCase()}</span>
+              </div>
+            </div>
+
+            {/* Customer Details */}
+            <div className="section">
+              <div className="section-title">Delivery Details</div>
+              <div className="customer-info">
+                <div><strong>{order.customerName}</strong></div>
+                <div>{order.phoneNumber}</div>
+                <div>{order.deliveryAddress}</div>
+              </div>
+            </div>
+
+            {/* Items Table */}
+            <div className="section">
+              <div className="section-title">Order Items</div>
+              <table className="items-table">
+                <tr className="items-header">
+                  <td style={{width: '45%'}}>Item</td>
+                  <td style={{width: '15%'}}>Qty</td>
+                  <td style={{width: '20%'}}>Rate</td>
+                  <td style={{width: '20%'}}>Amount</td>
+                </tr>
+                {order.products?.map((product, index) => (
+                  <tr key={index} className="item-row">
+                    <td className="item-name">{product.productName}</td>
+                    <td className="item-qty">{product.quantity}</td>
+                    <td className="item-price">₹{product.unitPrice}</td>
+                    <td className="item-total">₹{product.totalPrice}</td>
+                  </tr>
+                ))}
+              </table>
+            </div>
+
+            {/* Bill Summary */}
+            <div className="bill-summary">
+              <div className="section-title" style={{border: 'none', marginBottom: '5px'}}>Bill Summary</div>
+              <div className="bill-row">
+                <span>Subtotal:</span>
+                <span>₹{order.totalAmount}</span>
+              </div>
+              <div className="bill-row">
+                <span>Delivery Fee:</span>
+                <span>₹0</span>
+              </div>
+              <div className="bill-row">
+                <span>Tax & Charges:</span>
+                <span>₹0</span>
+              </div>
+              <div className="bill-row bill-total">
+                <span>TOTAL PAID:</span>
+                <span>₹{order.totalAmount}</span>
+              </div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="section">
+              <div className="section-title">Payment Info</div>
+              <div style={{fontSize: '10px'}}>
+                <div>Method: {order.paymentMethod.toUpperCase()}</div>
+                <div>Status: {order.paymentStatus.toUpperCase()}</div>
+                {order.transactionId && (
+                  <div style={{wordBreak: 'break-all'}}>
+                    TXN ID: {order.transactionId}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="footer">
+              <p style={{margin: '5px 0', fontWeight: 'bold'}}>Thank you for your order!</p>
+              <p style={{margin: '3px 0'}}>
+                Support: {store?.email || 'support@restaurant.com'}
+              </p>
+              <p style={{margin: '3px 0'}}>
+                Printed: {formatDate(new Date().toISOString())}
+              </p>
+            </div>
+          </div>
+
+          {/* Print Buttons */}
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={handlePrint}
+              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              Print Receipt
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // Compact Order Card Component
-const OrderCard = ({ order, onStatusChange, storeCategory  }) => {
+const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
   const [isUpdating, setIsUpdating] = useState(false);
-const{token}=useAuth()
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const { token } = useAuth();
+
   const getStatusConfig = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': 
@@ -134,7 +419,6 @@ const{token}=useAuth()
       </span>
     ), { duration: Infinity });
   };
-  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('en-IN', {
@@ -143,10 +427,9 @@ const{token}=useAuth()
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true, // for AM/PM format
+      hour12: true,
     });
   };
-  
 
   const getActionButtons = () => {
     const status = order.status?.toLowerCase();
@@ -183,7 +466,6 @@ const{token}=useAuth()
           break;
       }
   
-      // Cancel option (optional)
       if (!['delivered', 'cancelled'].includes(status)) {
         buttons.push(
           <button
@@ -199,6 +481,7 @@ const{token}=useAuth()
   
       return buttons;
     }
+
     switch (status) {
       case 'pending':
         buttons.push(
@@ -266,7 +549,6 @@ const{token}=useAuth()
         break;
     }
 
-    // Add cancel button for non-final states
     if (!['delivered', 'cancelled', 'returned'].includes(status)) {
       buttons.push(
         <button
@@ -286,149 +568,203 @@ const{token}=useAuth()
   const statusConfig = getStatusConfig(order.status);
 
   return (
-    <div className={`${statusConfig.bg} rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/50 overflow-hidden backdrop-blur-sm transform hover:scale-102`}>
-      {/* Status Indicator */}
-      <div className={`h-1.5 ${statusConfig.dot} shadow-inner`}></div>
-      
-      <div className="p-4">
-        {/* Header with Order ID and Status */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md">
-              <ShoppingCart className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-black text-base">{order.orderId}</h3>
-              <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.badge}`}>
-                {statusConfig.icon}
-                <span className="capitalize">{order.status}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-  
-      {/* Products List */}
-<div className="mb-3 space-y-2">
-  {order.products?.map((product, index) => (
-    <div
-      key={product.productId || index}
-      className="p-2.5 bg-white/70 rounded-lg border border-white/50 shadow-sm"
-    >
-      <h4 className="font-semibold text-black text-sm mb-0.5">{product.productName}</h4>
-      <p className="text-gray-600 text-xs">Qty: {product.quantity}</p>
-      <p className="text-gray-600 text-xs">
-        Unit Price: ₹{product.unitPrice} &nbsp;|&nbsp; Total: ₹{product.totalPrice}
-      </p>
-    </div>
-  ))}
-</div>
-
-  
-        {/* Customer Info */}
-        <div className="mb-3">
-          <div className="flex items-center space-x-2 text-sm">
-            <User className="w-3.5 h-3.5 text-teal-600" />
-            <span className="text-black font-medium">{order.customerName}</span>
-          </div>
-        </div>
-  
-        {/* Order Details */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center space-x-2 text-sm">
-            <Clock className="w-3.5 h-3.5 text-teal-600" />
-            <span className="text-gray-700 text-xs">{formatDate(order.orderDate)}</span>
-          </div>
-          
-          <div className="flex items-center space-x-2 text-sm">
-            <Phone className="w-3.5 h-3.5 text-teal-600" />
-            <span className="text-gray-700 text-xs">{order.phoneNumber}</span>
-          </div>
-          
-          <div className="flex items-center space-x-2 text-sm">
-            <MapPin className="w-3.5 h-3.5 text-teal-600" />
-            <span className="text-gray-700 text-xs truncate">{order.deliveryAddress}</span>
-          </div>
-          
-          {/* Payment Details */}
-          <div className="flex items-center justify-between p-2.5 bg-white/70 rounded-lg border border-white/50">
+    <>
+      <div className={`${statusConfig.bg} rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-white/50 overflow-hidden backdrop-blur-sm transform hover:scale-102`}>
+        <div className={`h-1.5 ${statusConfig.dot} shadow-inner`}></div>
+        
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
-              <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
-              <span className="text-black font-bold text-base">{(order.totalAmount)}</span>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-600">Payment</p>
-              <p className="text-sm font-medium text-black capitalize">{order.paymentMethod}</p>
-            </div>
-          </div>
-  {/* Payment Status */}
-{/* Show Payment Status only for COD */}
-{order.paymentMethod === 'cod' && (
-  <div className="flex items-center justify-between px-2.5 py-2 bg-white/70 rounded-lg border border-white/50">
-    <div className="flex items-center space-x-2">
-      <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
-      <span className="text-sm text-black font-medium capitalize">
-        Payment Status: 
-        <span className={`ml-2 font-semibold ${
-          order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
-        }`}>
-          {order.paymentStatus}
-        </span>
-      </span>
-    </div>
-
-    {order.paymentStatus !== 'paid' && (
-      <button
-        onClick={() => handlePaymentStatusChange(order._id, 'paid')}
-        className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200 shadow-sm"
-      >
-        Mark as Paid
-      </button>
-    )}
-  </div>
-)}
-
-
-          {/* Transaction ID for GPay/PhonePe */}
-          {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && order.transactionId && (
-            <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-2">
-                <div className="w-3.5 h-3.5 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">T</span>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Transaction ID</p>
-                  <p className="text-sm font-mono text-black">{order.transactionId}</p>
-                </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-md">
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-black text-base">{order.orderId}</h3>
+                <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.badge}`}>
+                  {statusConfig.icon}
+                  <span className="capitalize">{order.status}</span>
+                </span>
               </div>
             </div>
-          )}
-        </div>
-  
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          {getActionButtons()}
-          {/* Verify Button for GPay/PhonePe with Pending Status */}
-          {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && 
-           order.paymentStatus === 'pending' && (
-            <button className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-              Verify Payment
+            
+            {/* Print Button */}
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg transition-colors shadow-md"
+              title="Print Receipt"
+            >
+              <Printer className="w-4 h-4" />
             </button>
-          )}
+          </div>
+    
+          <div className="mb-3 space-y-2">
+            {order.products?.map((product, index) => (
+              <div
+                key={product.productId || index}
+                className="p-2.5 bg-white/70 rounded-lg border border-white/50 shadow-sm"
+              >
+                <h4 className="font-semibold text-black text-sm mb-0.5">{product.productName}</h4>
+                <p className="text-gray-600 text-xs">Qty: {product.quantity}</p>
+                <p className="text-gray-600 text-xs">
+                  Unit Price: ₹{product.unitPrice} &nbsp;|&nbsp; Total: ₹{product.totalPrice}
+                </p>
+              </div>
+            ))}
+          </div>
+    
+          <div className="mb-3">
+            <div className="flex items-center space-x-2 text-sm">
+              <User className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-black font-medium">{order.customerName}</span>
+            </div>
+          </div>
+    
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center space-x-2 text-sm">
+              <Clock className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-gray-700 text-xs">{formatDate(order.orderDate)}</span>
+            </div>
+            
+            <div className="flex items-center space-x-2 text-sm">
+              <Phone className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-gray-700 text-xs">{order.phoneNumber}</span>
+            </div>
+            
+            <div className="flex items-center space-x-2 text-sm">
+              <MapPin className="w-3.5 h-3.5 text-teal-600" />
+              <span className="text-gray-700 text-xs truncate">{order.deliveryAddress}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-2.5 bg-white/70 rounded-lg border border-white/50">
+              <div className="flex items-center space-x-2">
+                <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
+                <span className="text-black font-bold text-base">{order.totalAmount}</span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-600">Payment</p>
+                <p className="text-sm font-medium text-black capitalize">{order.paymentMethod}</p>
+              </div>
+            </div>
+
+            {order.paymentMethod === 'cod' && (
+              <div className="flex items-center justify-between px-2.5 py-2 bg-white/70 rounded-lg border border-white/50">
+                <div className="flex items-center space-x-2">
+                  <IndianRupee className="w-3.5 h-3.5 text-teal-600" />
+                  <span className="text-sm text-black font-medium capitalize">
+                    Payment Status: 
+                    <span className={`ml-2 font-semibold ${
+                      order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                      {order.paymentStatus}
+                    </span>
+                  </span>
+                </div>
+
+                {order.paymentStatus !== 'paid' && (
+                  <button
+                    onClick={() => handlePaymentStatusChange(order._id, 'paid')}
+                    className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200 shadow-sm"
+                  >
+                    Mark as Paid
+                  </button>
+                )}
+              </div>
+            )}
+
+            {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && order.transactionId && (
+              <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3.5 h-3.5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">T</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Transaction ID</p>
+                    <p className="text-sm font-mono text-black">{order.transactionId}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+    
+          <div className="flex gap-2">
+            {getActionButtons()}
+            {(order.paymentMethod === 'gpay' || order.paymentMethod === 'phonepe') && 
+             order.paymentStatus === 'pending' && (
+              <button className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                Verify Payment
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Print Modal */}
+      {showPrintModal && (
+        <PrintReceipt
+          order={order}
+          store={store}
+          onClose={() => setShowPrintModal(false)}
+        />
+      )}
+    </>
   );
 };
 
 // Main Order Management Component
 const OrderManagement = ({ store }) => {
-  const storeId=store._id
+  const storeId = store._id;
   const { user, token } = useAuth() || {};
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [previousPendingCount, setPreviousPendingCount] = useState(0);
+  
+  // Audio ref for notification sound
+  const audioRef = useRef(null);
+
+  // Create notification sound
+  useEffect(() => {
+    // Create audio context and generate beep sound
+    if (soundEnabled && typeof window !== 'undefined') {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const createBeepSound = () => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz frequency
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        };
+        
+        audioRef.current = createBeepSound;
+      } catch (error) {
+        console.log('Audio context not supported');
+      }
+    }
+  }, [soundEnabled]);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    if (soundEnabled && audioRef.current) {
+      try {
+        audioRef.current();
+      } catch (error) {
+        console.log('Error playing sound:', error);
+      }
+    }
+  };
 
   const statusOptions = [
     { value: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length, color: 'bg-yellow-500' },
@@ -466,7 +802,20 @@ const OrderManagement = ({ store }) => {
         timeout: 10000
       });
       
-      setOrders(response.data.orders || response.data || []);
+      const newOrders = response.data.orders || response.data || [];
+      
+      // Check for new pending orders and play sound
+      if (status === 'pending' || selectedStatus === 'pending') {
+        const currentPendingCount = newOrders.filter(o => o.status === 'pending').length;
+        if (currentPendingCount > previousPendingCount && previousPendingCount > 0) {
+          playNotificationSound();
+          // Show a toast notification (you can replace this with your toast implementation)
+          console.log('🔔 New order received!');
+        }
+        setPreviousPendingCount(currentPendingCount);
+      }
+      
+      setOrders(newOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Failed to fetch orders. Please try again.');
@@ -523,7 +872,6 @@ const OrderManagement = ({ store }) => {
       position: 'top-center',
     });
   };
-  
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -537,15 +885,18 @@ const OrderManagement = ({ store }) => {
 
   useEffect(() => {
     fetchOrders(selectedStatus); // initial fetch on mount or status change
-  
+    
+    // Set initial pending count
+    const initialPendingCount = orders.filter(o => o.status === 'pending').length;
+    setPreviousPendingCount(initialPendingCount);
+
     const interval = setInterval(() => {
       fetchOrders(selectedStatus); // fetch every 30 seconds
     }, 30000); // 30 seconds = 30000 ms
-  
+
     return () => clearInterval(interval); // clean up on unmount
   }, [selectedStatus]);
 
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -579,15 +930,28 @@ const OrderManagement = ({ store }) => {
                       <IndianRupee className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-white font-bold text-2xl">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency: 'USD'
-                        }).format(totalRevenue)}
-                      </p>
+                      <p className="text-white font-bold text-2xl">₹{totalRevenue}</p>
                       <p className="text-gray-300 text-sm">Total Revenue</p>
                     </div>
                   </div>
+                </div>
+
+                {/* Sound Toggle */}
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className="flex items-center space-x-2 text-white hover:text-teal-300 transition-colors"
+                    title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
+                  >
+                    {soundEnabled ? (
+                      <Volume2 className="w-6 h-6" />
+                    ) : (
+                      <VolumeX className="w-6 h-6" />
+                    )}
+                    <span className="text-sm">
+                      {soundEnabled ? 'Sound On' : 'Sound Off'}
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -672,7 +1036,8 @@ const OrderManagement = ({ store }) => {
                   key={order._id}
                   order={order}
                   onStatusChange={handleStatusChange}
-                  storeCategory={store.category} 
+                  storeCategory={store.category}
+                  store={store}
                 />
               ))}
             </div>

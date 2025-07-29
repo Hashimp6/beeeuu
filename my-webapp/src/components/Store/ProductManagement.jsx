@@ -617,6 +617,44 @@ const ProductManagement = ({ storeId }) => {
     }
   };
 
+  // Add this function inside your ProductManagement component
+const handleToggleActive = async (productId, newActiveStatus) => {
+  try {
+    setLoading(true);
+    
+    const response = await axios.patch(
+      `${SERVER_URL}/products/${productId}/status`,
+      { active: newActiveStatus },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    // Update the product in your local state
+    setProducts(prevProducts => 
+      prevProducts.map(product => 
+        product._id === productId 
+          ? { ...product, active: newActiveStatus }
+          : product
+      )
+    );
+
+    // Show success message using toast (since you're already using it)
+    toast.success(response.data.message || 'Product status updated successfully!');
+    
+  } catch (error) {
+    console.error('Error toggling product status:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to update product status. Please try again.';
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   const handleSubmitProduct = async (productData) => {
     setLoading(true);
     
@@ -758,6 +796,7 @@ const ProductManagement = ({ storeId }) => {
     onEdit={handleEditProduct}
     onDelete={handleDeleteProduct}
     onView={handleViewProduct}
+    onToggleActive={handleToggleActive}
   />
 ))}
         </div>

@@ -15,6 +15,9 @@ const ProductsGrid = ({
 }) => {
   const { addToCart } = useCart();
 
+  // Filter only active products
+  const activeProducts = products.filter(product => product.active !== false);
+
   // Check if this is a Hotel/Restaurant store
   const isRestaurant = store?.category === 'Hotel / Restaurent';
 
@@ -27,10 +30,10 @@ const ProductsGrid = ({
     { key: 'combo-meal', label: 'Combo Meal', icon: Package }
   ];
 
-  // Group products by category for restaurants
+  // Group products by category for restaurants (using filtered active products)
   const groupedProducts = isRestaurant ? 
     restaurantCategories.reduce((acc, category) => {
-      acc[category.key] = products.filter(product => 
+      acc[category.key] = activeProducts.filter(product => 
         product.category === category.key || product.category === category.label
       );
       return acc;
@@ -191,7 +194,7 @@ const ProductsGrid = ({
       </div>
 
       {/* Products Display */}
-      {products && products.length > 0 ? (
+      {activeProducts && activeProducts.length > 0 ? (
         isRestaurant ? (
           // Restaurant view with categorized sections
           <div className="space-y-8 sm:space-y-12">
@@ -205,7 +208,7 @@ const ProductsGrid = ({
               Object.values(groupedProducts).forEach(categoryProducts => 
                 categoryProducts.forEach(product => categorizedProductIds.add(product._id))
               );
-              const uncategorizedProducts = products.filter(product => 
+              const uncategorizedProducts = activeProducts.filter(product => 
                 !categorizedProductIds.has(product._id)
               );
               
@@ -233,7 +236,7 @@ const ProductsGrid = ({
         ) : (
           // Regular store view - all products in one grid
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-            {products.map(renderProductCard)}
+            {activeProducts.map(renderProductCard)}
           </div>
         )
       ) : (
