@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingCart, Clock, CheckCircle, XCircle, AlertCircle, User, Phone, MapPin, 
   Check, X, RefreshCw, Package, Filter, Truck, DollarSign, RotateCcw, Eye,
-  IndianRupee, Printer, Volume2, VolumeX
+  IndianRupee, Printer, Volume2, VolumeX,
+  RefreshCcw
 } from 'lucide-react';
 
 import { SERVER_URL } from '../../Config';
@@ -382,16 +383,18 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
     toast((t) => (
       <span className="flex flex-col gap-2">
         <span className="text-sm font-medium">
-          Confirm marking payment as <b>{newStatus}</b>?
+          Confirm marking payment as <b>completed</b>?
         </span>
         <div className="flex justify-end gap-2 mt-2">
           <button
             onClick={async () => {
               toast.dismiss(t.id);
               try {
+                console.log("hg", `${SERVER_URL}/orders/payment/${orderId}`);
+                
                 await axios.patch(
-                  `${SERVER_URL}/orders/payment-status/${orderId}`,
-                  { paymentStatus: newStatus },
+                  `${SERVER_URL}/orders/payment/${orderId}`,
+                  { paymentStatus: 'completed' },
                   {
                     headers: {
                       'Content-Type': 'application/json',
@@ -399,9 +402,12 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
                     },
                   }
                 );
-                toast.success('Payment marked as paid');
-                onStatusChange(orderId, null, newStatus); // extra param for payment
+                
+                toast.success('Payment marked as completed');
+                // Refresh the orders by calling the parent's status change handler
+                onStatusChange(orderId, null, 'completed');
               } catch (error) {
+                console.error('Error updating payment status:', error);
                 toast.error('Failed to update payment status');
               }
             }}
@@ -419,6 +425,7 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
       </span>
     ), { duration: Infinity });
   };
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('en-IN', {
@@ -653,16 +660,16 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
                   <span className="text-sm text-black font-medium capitalize">
                     Payment Status: 
                     <span className={`ml-2 font-semibold ${
-                      order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
-                      {order.paymentStatus}
-                    </span>
+  order.paymentStatus === 'completed' ? 'text-green-600' : 'text-yellow-600'
+}`}>
+  {order.paymentStatus === 'completed' ? 'paid' : order.paymentStatus}
+</span>
                   </span>
                 </div>
 
-                {order.paymentStatus !== 'paid' && (
+                {order.paymentStatus !== 'completed' && (
                   <button
-                    onClick={() => handlePaymentStatusChange(order._id, 'paid')}
+                  onClick={() => handlePaymentStatusChange(order._id, 'completed')}
                     className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-green-600 transition-all duration-200 shadow-sm"
                   >
                     Mark as Paid
@@ -824,54 +831,68 @@ const OrderManagement = ({ store }) => {
     }
   };
 
-  const handleStatusChange = (orderId, newStatus) => {
-    toast((t) => (
-      <span className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Are you sure you want to change status to <b>{newStatus}</b>?</span>
-        <div className="flex justify-end gap-2 mt-2">
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              try {
-                await axios.patch(
-                  `${SERVER_URL}/orders/status/${orderId}`,
-                  { status: newStatus },
-                  {
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`,
-                    },
-                    timeout: 10000
-                  }
-                );
-                setOrders(prev =>
-                  prev.map(order =>
-                    order._id === orderId ? { ...order, status: newStatus } : order
-                  )
-                );
-                toast.success(`Status updated to ${newStatus}`);
-              } catch (error) {
-                console.error('Error updating order status:', error);
-                toast.error('Failed to update status');
-              }
-            }}
-            className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-2 py-1 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
-          >
-            No
-          </button>
-        </div>
-      </span>
-    ), {
-      duration: Infinity,
-      position: 'top-center',
-    });
-  };
+// 1. Fix the handleStatusChange function in OrderManagement component
+const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
+  if (paymentStatus) {
+    // Handle payment status update
+    setOrders(prev =>
+      prev.map(order =>
+        order._id === orderId 
+          ? { ...order, paymentStatus: paymentStatus } 
+          : order
+      )
+    );
+    return;
+  }
+
+  // Handle order status update (existing logic)
+  toast((t) => (
+    <span className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Are you sure you want to change status to <b>{newStatus}</b>?</span>
+      <div className="flex justify-end gap-2 mt-2">
+        <button
+          onClick={async () => {
+            toast.dismiss(t.id);
+            try {
+              await axios.patch(
+                `${SERVER_URL}/orders/status/${orderId}`,
+                { status: newStatus },
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  timeout: 10000
+                }
+              );
+              setOrders(prev =>
+                prev.map(order =>
+                  order._id === orderId ? { ...order, status: newStatus } : order
+                )
+              );
+              toast.success(`Status updated to ${newStatus}`);
+            } catch (error) {
+              console.error('Error updating order status:', error);
+              toast.error('Failed to update status');
+            }
+          }}
+          className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+        >
+          Yes
+        </button>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="px-2 py-1 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
+        >
+          No
+        </button>
+      </div>
+    </span>
+  ), {
+    duration: Infinity,
+    position: 'top-center',
+  });
+};
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -889,13 +910,13 @@ const OrderManagement = ({ store }) => {
     // Set initial pending count
     const initialPendingCount = orders.filter(o => o.status === 'pending').length;
     setPreviousPendingCount(initialPendingCount);
-
+  
     const interval = setInterval(() => {
       fetchOrders(selectedStatus); // fetch every 30 seconds
     }, 30000); // 30 seconds = 30000 ms
-
+  
     return () => clearInterval(interval); // clean up on unmount
-  }, [selectedStatus]);
+  }, [selectedStatus, storeId, token]); // Add missing dependencies
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 p-6">
@@ -936,23 +957,29 @@ const OrderManagement = ({ store }) => {
                   </div>
                 </div>
 
-                {/* Sound Toggle */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                  <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="flex items-center space-x-2 text-white hover:text-teal-300 transition-colors"
-                    title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
-                  >
-                    {soundEnabled ? (
-                      <Volume2 className="w-6 h-6" />
-                    ) : (
-                      <VolumeX className="w-6 h-6" />
-                    )}
-                    <span className="text-sm">
-                      {soundEnabled ? 'Sound On' : 'Sound Off'}
-                    </span>
-                  </button>
-                </div>
+             
+             
+                <div className="fixed top-4 right-24 z-50 flex flex-row space-x-3 ">
+  {/* Sound Toggle */}
+  <button
+    onClick={() => setSoundEnabled(!soundEnabled)}
+    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
+    title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
+  >
+    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+  </button>
+
+  {/* Refresh Button */}
+  <button
+    onClick={() => fetchOrders(selectedStatus)}
+    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
+    title="Refresh Orders"
+  >
+    <RefreshCcw className="w-5 h-5" />
+  </button>
+</div>
+
+
               </div>
             </div>
           </div>

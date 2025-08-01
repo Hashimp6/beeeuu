@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("../models/userModel");
 const Store = require("../models/storeModel");
+const crypto = require("crypto");
+const Razorpay = require("razorpay");
 const upload = require("../config/multer");
 const cloudinary = require("../config/cloudinary"); 
 require('dotenv').config();
@@ -9,6 +11,7 @@ require('dotenv').config();
 const { Client } = require("@googlemaps/google-maps-services-js");
 const Product = require("../models/ProductModel");
 const Gallery = require("../models/galleryModel");
+const { decrypt, encrypt } = require("../utils/encription");
 
 // Initialize Google Maps client
 const googleMapsClient = new Client({});
@@ -909,6 +912,132 @@ const updatePaymentType = async (req, res) => {
 };
 
 
+const updateRazorpayCredentials = async (req, res) => {
+  const { id } = req.params;
+  const { key_id, key_secret } = req.body;
+
+  if (!key_id || !key_secret) {
+    return res.status(400).json({ message: 'Both Razorpay Key ID and Secret are required.' });
+  }
+
+  try {
+    const encryptedKeyId = encrypt(key_id);
+    const encryptedSecret = encrypt(key_secret);
+
+    const store = await Store.findByIdAndUpdate(
+      id,
+      {
+        razorpay: {
+          key_id: encryptedKeyId,
+          key_secret: encryptedSecret
+        }
+      },
+      { new: true }
+    );
+
+    if (!store) return res.status(404).json({ message: 'Store not found.' });
+
+    res.status(200).json({ message: 'Razorpay credentials updated securely.' });
+  } catch (error) {
+    console.error('Error updating Razorpay credentials:', error);
+    res.status(500).json({ message: 'Server error while updating Razorpay credentials.' });
+  }
+};
+
+const getRazorpayCredentials = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const store = await Store.findById(id);
+    if (!store) return res.status(404).json({ message: 'Store not found.' });
+
+    const decryptedKeyId = decrypt(store.razorpay.key_id || '');
+    const decryptedSecret = decrypt(store.razorpay.key_secret || '');
+
+    res.status(200).json({
+      key_id: decryptedKeyId,
+      key_secret: decryptedSecret
+    });
+  } catch (error) {
+    console.error('Error fetching Razorpay credentials:', error);
+    res.status(500).json({ message: 'Server error while retrieving Razorpay credentials.' });
+  }
+};
+
+const createRazorpayOrder = async (req, res) => {
+  
+  const { amount, currency, receipt, notes } = req.body;
+  const storeId = notes.storeId;
+
+  try {
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: 'Store not found.' });
+
+    const key_id = decrypt(store.razorpay.key_id || '');
+    const key_secret = decrypt(store.razorpay.key_secret || '');
+console.log("jeee",key_id,key_secret);
+
+    const razorpayInstance = new Razorpay({
+      key_id,
+      key_secret,
+    });
+
+    const options = {
+      amount,
+      currency,
+      receipt,
+      notes,
+    };
+
+    const order = await razorpayInstance.orders.create(options);
+
+    res.status(200).json({
+      order: {
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        receipt: order.receipt,
+        key_id // Send only public key to frontend
+      }
+    });
+  } catch (error) {
+    console.error("Error creating Razorpay order:", error);
+    res.status(500).json({ message: "Server error while creating Razorpay order." });
+  }
+};
+
+const verifyRazorpayPayment = async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+  } = req.body;
+
+  try {
+    // Optional: You may need to fetch store based on notes or metadata
+    // For demo, assume storeId is embedded somewhere or passed
+
+    const store = await Store.findOne({ 'razorpay.key_id': { $exists: true } }); // Replace this with correct store lookup
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    const key_secret = decrypt(store.razorpay.key_secret || '');
+
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac("sha256", key_secret)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature === razorpay_signature) {
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid payment signature" });
+    }
+  } catch (error) {
+    console.error("Payment verification error:", error);
+    res.status(500).json({ message: "Server error while verifying payment" });
+  }
+};
 
   module.exports = {
     
@@ -927,4 +1056,8 @@ const updatePaymentType = async (req, res) => {
     updateUPI,
     updateServiceType,
   updatePaymentType,
+  updateRazorpayCredentials,
+  getRazorpayCredentials,
+  verifyRazorpayPayment ,
+  createRazorpayOrder
   };

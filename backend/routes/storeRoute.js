@@ -14,7 +14,11 @@ const {
   findStoreByName,
   updateUPI,
   updateServiceType,
-  updatePaymentType
+  updatePaymentType,
+  updateRazorpayCredentials,
+  getRazorpayCredentials,
+  createRazorpayOrder,
+  verifyRazorpayPayment
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -39,7 +43,10 @@ router.put('/:storeId/service-type', updateServiceType);
 // PUT /stores/:storeId/payment-type
 router.put('/:storeId/payment-type', updatePaymentType);
 
-
+router.put('/:id/razorpay', updateRazorpayCredentials);       // 🔐 Save encrypted
+router.get('/:id/razorpay', getRazorpayCredentials); 
+router.post('/razorpay/create-order', createRazorpayOrder);
+router.post('/razorpay/verify-payment', verifyRazorpayPayment);
 router.use(protect);
 
 // Register a new store - use uploadStoreImage middleware

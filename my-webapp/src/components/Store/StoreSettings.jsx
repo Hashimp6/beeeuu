@@ -11,7 +11,10 @@ const StoreSettings = ({ store, logout }) => {
   const [selectedPayments, setSelectedPayments] = useState(store.paymentType || []);
   const [selectedServices, setSelectedServices] = useState(store.serviceType || []);
   const [loading, setLoading] = useState(false);
-
+  const [showKeys, setShowKeys] = useState(false);
+const [isFetchingKeys, setIsFetchingKeys] = useState(false);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
   const toggleItem = (list, setList, item) => {
     if (list.includes(item)) {
       setList(list.filter(i => i !== item));
@@ -19,7 +22,44 @@ const StoreSettings = ({ store, logout }) => {
       setList([...list, item]);
     }
   };
-
+  const handleViewRazorpay = async () => {
+    if (showKeys) {
+      setShowKeys(false);
+      return;
+    }
+  
+    setIsFetchingKeys(true);
+    try {
+      const res = await axios.get(`${SERVER_URL}/stores/${store._id}/razorpay`);
+      setRazorpayKeyId(res.data.key_id || '');
+      setRazorpayKeySecret(res.data.key_secret || '');
+      setShowKeys(true);
+    } catch (err) {
+      console.error('Failed to fetch Razorpay credentials:', err);
+      alert('Could not retrieve Razorpay credentials');
+    } finally {
+      setIsFetchingKeys(false);
+    }
+  };
+  const handleRazorpaySave = async () => {
+    if (!razorpayKeyId.trim() || !razorpayKeySecret.trim()) {
+      alert("Both Key ID and Secret are required.");
+      return;
+    }
+  
+    try {
+      await axios.put(`${SERVER_URL}/stores/${store._id}/razorpay`, {
+        key_id: razorpayKeyId,
+        key_secret: razorpayKeySecret
+      });
+      alert("Razorpay credentials saved securely!");
+    } catch (err) {
+      console.error("Error saving Razorpay credentials:", err);
+      alert("Failed to save Razorpay credentials.");
+    }
+  };
+  
+  
   const handleUpiUpdate = async () => {
     if (!newUpi.trim()) return;
     try {
@@ -91,6 +131,54 @@ const StoreSettings = ({ store, logout }) => {
               </button>
             </div>
           </div>
+          {selectedPayments.includes('Razorpay') && (
+  <div className="bg-white rounded-xl shadow-lg p-6 col-span-1">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4">Razorpay Credentials</h3>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Key ID</label>
+        <input
+  type="text"
+  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+  placeholder="Enter Razorpay Key ID"
+  value={showKeys ? razorpayKeyId : '••••••••'}
+  onChange={(e) => showKeys && setRazorpayKeyId(e.target.value)}
+  disabled={!showKeys}
+/>
+
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Key Secret</label>
+        <input
+  type="text"
+  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+  placeholder="Enter Razorpay Secret"
+  value={showKeys ? razorpayKeySecret : '••••••••'}
+  onChange={(e) => showKeys && setRazorpayKeySecret(e.target.value)}
+  disabled={!showKeys}
+/>
+
+      </div>
+      <div className="flex space-x-4">
+        <button
+          onClick={handleRazorpaySave}
+          className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+        >
+          Save Razorpay Credentials
+        </button>
+        <button
+          onClick={handleViewRazorpay}
+          disabled={isFetchingKeys}
+          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          {showKeys ? 'Hide' : isFetchingKeys ? 'Loading...' : 'View'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
           {/* Payment Options Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
