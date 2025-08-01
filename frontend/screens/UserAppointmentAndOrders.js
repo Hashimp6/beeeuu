@@ -574,7 +574,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
         {/* Header with Order ID and Price */}
         <View style={styles.cardHeader}>
           <View style={styles.dateTimeContainer}>
-            <Text style={styles.orderIdText}>Order #{item._id?.slice(-6)}</Text>
+            <Text style={styles.orderIdText}> Order #{item.orderId || item._id?.slice(-6)}</Text>
             <Text style={[
               styles.dateText,
               dateTime.isToday && styles.todayText,
@@ -644,6 +644,16 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             <Text style={styles.shopText}>{storeName}</Text>
           </View>
   
+          {item.orderType && (
+  <View style={styles.locationRow}>
+    <Icon name="restaurant-menu" size={16} color="#666" />
+    <Text style={styles.locationText}>
+      {item.orderType}
+    </Text>
+  </View>
+)}
+
+
           {/* Delivery Address */}
           {item.deliveryAddress && (
             <View style={styles.locationRow}>
@@ -668,7 +678,6 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
               <Icon name="payment" size={16} color="#666" />
               <Text style={styles.paymentText}>
                 Payment: {item.paymentMethod.toUpperCase()}
-                {item.paymentStatus && ` (${item.paymentStatus})`}
               </Text>
             </View>
           )}

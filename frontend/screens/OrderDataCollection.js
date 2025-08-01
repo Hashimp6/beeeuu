@@ -19,7 +19,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { SERVER_URL } from '../config';
 import { useCart } from '../context/CartContext';
-import toast from 'react-hot-toast';
+import Toast from 'react-native-toast-message';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const OrderDetails = () => {
   const navigation = useNavigation();
@@ -35,13 +36,18 @@ console.log("authuser",user);
   const [isLoading, setIsLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [customerName, setCustomerName] = useState(user?.username || '');
-  const [address, setAddress] = useState(user?.address ||'');
+  const [address, setAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
-  const [selectedPayment, setSelectedPayment] = useState('cod');
+  const [selectedPayment, setSelectedPayment] = useState('razorpay'||UPI);
   const [transactionId, setTransactionId] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderType, setOrderType] = useState('Dine In');
+  const [selectedService, setSelectedService] = useState('Dine In'); // You're using orderType but referencing selectedService
+const [serviceError, setServiceError] = useState('');
+const [productQuantities, setProductQuantities] = useState({});
+const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // Validation error states
   const [nameError, setNameError] = useState('');
@@ -56,11 +62,64 @@ console.log("authuser",user);
   }, [cart, storeId, orderPlaced]);
 
   // Payment options
-  const paymentOptions = [
-    { id: 'cod', name: 'Cash on Delivery', icon: 'cash-outline' },
-    { id: 'gpay', name: 'Google Pay', icon: 'logo-google' },
-    { id: 'phonepe', name: 'PhonePe', icon: 'card-outline' },
-  ];
+  const availablePaymentOptions = store?.paymentType || [];
+
+// Check if Razorpay is enabled
+const hasRazorpay = availablePaymentOptions.includes('Razorpay');
+
+// Filter out UPI if Razorpay is present
+const filteredPaymentOptions = availablePaymentOptions.filter(type => {
+  if (type === 'UPI' && hasRazorpay) return false; // skip UPI if Razorpay exists
+  return true;
+});
+
+const paymentOptions = filteredPaymentOptions.map((type) => {
+  if (type === 'Cash on Delivery') {
+    return { id: 'cod', name: 'Cash on Delivery', icon: 'cash-outline' };
+  } else if (type === 'UPI') {
+    return {
+      id: 'upi',
+      name: 'UPI',
+      icon: 'logo-google',
+      upi: store?.upi || '',
+    };
+  } else if (type === 'Razorpay') {
+    return {
+      id: 'razorpay',
+      name: 'Razorpay',
+      icon: 'card-outline',
+    };
+  } else {
+    return null;
+  }
+}).filter(Boolean);
+
+const validateService = () => {
+  const isRestaurantOrHotel = 
+    store?.category?.toLowerCase().includes('hotel') ||
+    store?.category?.toLowerCase().includes('restaurant');
+    
+  if (isRestaurantOrHotel && selectedService.trim() === '') {
+    return 'Please select a service type';
+  }
+  return '';
+};
+const getTotalItems = () => {
+  return products.reduce((sum, item) => sum + (item.quantity || 1), 0);
+};
+
+useEffect(() => {
+  if (products && products.length > 0) {
+    const initialQuantities = {};
+    products.forEach(product => {
+      const prod = product.productId || product;
+      initialQuantities[prod._id] = product.quantity || 1;
+    });
+    setProductQuantities(initialQuantities);
+  }
+}, [products]);
+
+
 
   // Validation functions
   const validateName = (name) => {
@@ -97,9 +156,7 @@ console.log("authuser",user);
     if (trimmedAddress.length === 0) {
       return 'Address is required';
     }
-    if (trimmedAddress.length < 10) {
-      return 'Please enter a complete address (minimum 10 characters)';
-    }
+   
     return '';
   };
 
@@ -149,7 +206,7 @@ console.log("authuser",user);
     const addressValid = validateAddress(address) === '';
     
     // For digital payments, also check transaction ID
-    if (selectedPayment !== 'cod') {
+    if (selectedPayment === 'UPI') {
       const transactionValid = validateTransactionId(transactionId) === '';
       return nameValid && phoneValid && addressValid && transactionValid && paymentCompleted;
     }
@@ -176,7 +233,7 @@ console.log("authuser",user);
     setPaymentCompleted(false);
     
     // If selecting digital payment, show payment modal
-    if (paymentId !== 'cod') {
+    if (paymentId === 'UPI') {
       setShowPaymentModal(true);
     }
   };
@@ -296,17 +353,14 @@ const generatePaymentDeepLink = (paymentMethod) => {
     if (!error) {
       setPaymentCompleted(true);
       setShowPaymentModal(false);
-      toast.success('✅ Payment Confirmed! Placing your order...', {
-        style: {
-          background: '#4ade80', // green
-          color: '#fff',
-          fontWeight: 'bold',
-        },
-        iconTheme: {
-          primary: '#fff',
-          secondary: '#22c55e', // Tailwind green-500
-        },
+      Toast.show({
+        type: 'success',
+        text1: '✅ Payment Confirmed!',
+        text2: 'Placing your order...',
+        position: 'top',
+        visibilityTime: 3000,
       });
+      
     
       handlePlaceOrder(); // call order placement
     }
@@ -314,70 +368,232 @@ const generatePaymentDeepLink = (paymentMethod) => {
 
   // Handle order placement
   const handlePlaceOrder = async () => {
+    console.log("Order placement started", selectedPayment);
+    
+    setIsPlacingOrder(true);
+    
+    // Step 1: Validate all inputs
     const nameValidationError = validateName(customerName);
     const phoneValidationError = validatePhone(phoneNumber);
     const addressValidationError = validateAddress(address);
-  
+    const serviceValidationError = validateService();
+    
     setNameError(nameValidationError);
     setPhoneError(phoneValidationError);
     setAddressError(addressValidationError);
-  
-    let transactionValidationError = '';
-    if (selectedPayment !== 'cod') {
-      transactionValidationError = validateTransactionId(transactionId);
-      setTransactionError(transactionValidationError);
-    }
-  
-    if (nameValidationError || phoneValidationError || addressValidationError || transactionValidationError) {
-      toast.error('❌ Please fix validation errors before placing the order');
+    setServiceError(serviceValidationError);
+    
+    if (nameValidationError || phoneValidationError || addressValidationError || serviceValidationError) {
+      Toast.show({
+        type: 'error',
+        text1: '❌ Validation Error',
+        text2: 'Please fix the errors before placing the order',
+      });
+      setIsPlacingOrder(false);
       return;
     }
-  
-    const orderData = {
-      buyerId: user._id,
-      customerName: customerName.trim(),
-      deliveryAddress: address.trim(),
-      phoneNumber,
-      paymentMethod: selectedPayment,
-      transactionId: selectedPayment !== 'cod' ? transactionId.trim() : null,
-      storeId,
-      sellerId: store._id,
-      status: 'pending',
-      products: products.map((item) => {
-        const product = item.productId || item;
-        return {
-          productId: product._id,
-          productName: product.name || product.productName,
-          unitPrice: parseFloat(product.price) || 0,
-          quantity: item.quantity || 1
+    
+    // Razorpay Payment Flow
+    if (selectedPayment === "razorpay") {
+      try {
+        console.log("Starting Razorpay payment");
+        const totalAmount = parseFloat(calculateTotal());
+        console.log("Total amount:", totalAmount);
+        
+        // Step 1: Create Razorpay order
+        const res = await axios.post(`${SERVER_URL}/stores/razorpay/create-order`, {
+          amount: totalAmount * 100, // Convert to paise
+          currency: "INR",
+          receipt: `receipt_${Date.now()}`,
+          notes: {
+            storeId: store._id,
+            customer: user.username || user.name,
+          },
+        });
+        
+        const { order } = res.data;
+        
+        // Step 2: Configure Razorpay options
+        const options = {
+          description: 'Order Payment',
+          image: store.profileImage || 'https://via.placeholder.com/100',
+          currency: order.currency,
+          key: order.key_id,
+          amount: order.amount,
+          name: store.storeName,
+          order_id: order.id,
+          prefill: {
+            email: user.email || '',
+            contact: user.phone || phoneNumber,
+            name: user.username || user.name || customerName,
+          },
+          theme: { color: '#3399cc' }
         };
-      }),
-      totalAmount: calculateTotal(),
-      totalItems: products.reduce((sum, item) => sum + (item.quantity || 1), 0)
-    };
-  
-    try {
-      setIsLoading(true);
-      const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      if (response.data) {
-        setOrderPlaced(true);
-        toast.success(`✅ Order Placed! ID: ${response.data.orderId || 'N/A'}`);
-        clearStoreCart(storeId);
-        navigation.goBack();
+        
+        console.log("✅ Opening Razorpay checkout");
+        
+        // Step 3: Open Razorpay checkout
+        RazorpayCheckout.open(options)
+          .then(async (data) => {
+            // Payment successful
+            console.log("✅ Razorpay payment successful:", data);
+            
+            try {
+              // Step 4: Verify payment
+              const verifyRes = await axios.post(`${SERVER_URL}/stores/razorpay/verify-payment`, {
+                razorpay_order_id: data.razorpay_order_id,
+                razorpay_payment_id: data.razorpay_payment_id,
+                razorpay_signature: data.razorpay_signature,
+              });
+              
+              if (verifyRes.data.success) {
+                // Step 5: Create order after successful payment
+                const orderProducts = products.map(item => {
+                  const product = item.productId || item;
+                  return {
+                    productId: product._id,
+                    productName: product.name || product.productName,
+                    quantity: productQuantities[product._id] || item.quantity || 1,
+                    unitPrice: parseFloat(product.price) || 0,
+                  };
+                });
+                
+                const orderData = {
+                  products: orderProducts,
+                  sellerId: store._id,
+                  buyerId: user._id,
+                  totalAmount: parseFloat(calculateTotal()),
+                  totalItems: getTotalItems(),
+                  orderType: selectedService,
+                  customerName: customerName.trim(),
+                  deliveryAddress: address.trim(),
+                  phoneNumber: phoneNumber,
+                  paymentMethod: selectedPayment,
+                  transactionId: data.razorpay_payment_id,
+                  status: 'pending',
+                };
+                
+                const finalRes = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                });
+                
+                Toast.show({
+                  type: 'success',
+                  text1: '✅ Order Placed!',
+                  text2: `Order ID: ${finalRes.data.orderId}`,
+                });
+                
+                setOrderPlaced(true);
+                clearStoreCart(storeId);
+                navigation.goBack();
+                
+              } else {
+                Toast.show({
+                  type: 'error',
+                  text1: '❌ Payment Verification Failed',
+                  text2: 'Please contact support',
+                });
+                setIsPlacingOrder(false);
+              }
+              
+            } catch (err) {
+              console.error("❌ Payment verification error:", err);
+              Toast.show({
+                type: 'error',
+                text1: '❌ Payment Verification Failed',
+                text2: 'Please try again',
+              });
+              setIsPlacingOrder(false);
+            }
+          })
+          .catch((error) => {
+            // Payment failed or cancelled
+            console.log("❌ Razorpay payment error:", error);
+            Toast.show({
+              type: 'error',
+              text1: '❌ Payment Failed',
+              text2: error.description || 'Payment was cancelled',
+            });
+            setIsPlacingOrder(false);
+          });
+          
+        return; // Exit here for Razorpay flow
+        
+      } catch (err) {
+        console.error("❌ Razorpay initialization error:", err);
+        Toast.show({
+          type: 'error',
+          text1: '❌ Payment Setup Failed',
+          text2: 'Please try again',
+        });
+        setIsPlacingOrder(false);
+        return;
       }
-    } catch (error) {
-      console.error("❌ Order error:", error.response?.data || error.message);
-      toast.error('❌ Failed to place order. Please try again.');
-    } finally {
-      setIsLoading(false);
+    }
+    
+    // COD and UPI Payment Flow
+    if (selectedPayment === 'cod' || (selectedPayment === 'upi' && paymentCompleted)) {
+      try {
+        const orderProducts = products.map(item => {
+          const product = item.productId || item;
+          return {
+            productId: product._id,
+            productName: product.name || product.productName,
+            quantity: productQuantities[product._id] || item.quantity || 1,
+            unitPrice: parseFloat(product.price) || 0,
+          };
+        });
+        
+        const orderData = {
+          products: orderProducts,
+          sellerId: store._id,
+          buyerId: user._id,
+          totalAmount: parseFloat(calculateTotal()),
+          totalItems: getTotalItems(),
+          orderType: selectedService,
+          customerName: customerName.trim(),
+          deliveryAddress: address.trim(),
+          phoneNumber: phoneNumber,
+          paymentMethod: selectedPayment,
+          transactionId: selectedPayment === 'cod' ? null : transactionId.trim(),
+          status: 'pending',
+        };
+        
+        const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.data) {
+          setOrderPlaced(true);
+          Toast.show({
+            type: 'success',
+            text1: '✅ Order Placed!',
+            text2: `Order ID: ${response.data.orderId || 'N/A'}`,
+          });
+          
+          clearStoreCart(storeId);
+          navigation.goBack();
+        }
+        
+      } catch (err) {
+        console.error("❌ Order error:", err);
+        Toast.show({
+          type: 'error',
+          text1: '❌ Order Failed',
+          text2: 'Failed to place order. Please try again.',
+        });
+      } finally {
+        setIsPlacingOrder(false);
+      }
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -473,8 +689,43 @@ const generatePaymentDeepLink = (paymentMethod) => {
               ) : null}
             </View>
 
+
+            {store?.category === 'Hotel / Restaurent' && (
+  <View style={[styles.inputContainer, { marginBottom: 12 }]}>
+    <Text style={[styles.inputLabel, { color: '#00796B' }]}>Order Type</Text>
+    <View style={styles.radioGroup}>
+      {['Eat In', 'Parcel', 'Collection'].map((type) => (
+        <TouchableOpacity
+          key={type}
+          style={[
+            styles.radioOption,
+            orderType === type && styles.radioOptionActive
+          ]}
+          onPress={() => setOrderType(type)}
+        >
+          <Ionicons
+            name={orderType === type ? 'radio-button-on' : 'radio-button-off'}
+            size={18}
+            color={orderType === type ? '#004D40' : '#999'}
+          />
+          <Text
+            style={[
+              styles.radioLabel,
+              { color: orderType === type ? '#004D40' : '#666' }
+            ]}
+          >
+            {type}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+)}
+
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Delivery Address</Text>
+            {store?.category === 'Hotel / Restaurent' && (orderType === 'Dine In' || orderType === 'Parcel') 
+  ? <Text style={styles.inputLabel}>Table Number</Text> 
+  : <Text style={styles.inputLabel}>Delivery Address</Text>}
               <TextInput
                 style={[
                   styles.textInput, 
@@ -546,7 +797,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
           </View>
 
           {/* Transaction ID Input for Digital Payments */}
-          {selectedPayment !== 'cod' && (
+          {selectedPayment === 'UPI' && (
             <View style={styles.transactionContainer}>
               <Text style={styles.sectionTitle}>Transaction Details</Text>
               {!paymentCompleted && (
@@ -873,6 +1124,35 @@ const styles = StyleSheet.create({
     borderColor: '#FF6B6B',
     borderWidth: 1.5,
   },
+  radioGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    gap: 10,
+  },
+  
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#F0F0F0',
+  },
+  
+  radioOptionActive: {
+    backgroundColor: '#E0F2F1',
+    borderColor: '#00796B',
+  },
+  
+  radioLabel: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  
   addressInput: {
     height: 80,
     textAlignVertical: 'top',

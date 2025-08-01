@@ -15,7 +15,6 @@ import NewStore from "./pages/NewStore";
 import { useAuth } from "./context/UserContext";
 import UserAppointmentsOrders from "./pages/user/AppointmentsAndOrders";
 import ChatApp from "./components/NewChat";
-import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import PrivacyPolicy from "./pages/policies/Policy";
 import ReturnRefundPolicy from "./pages/policies/ReturnPolicy";

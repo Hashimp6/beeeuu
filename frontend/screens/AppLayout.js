@@ -89,6 +89,9 @@ const AppLayout = () => {
 
   // Function to render the content based on active tab
   const renderContent = () => {
+    if (user?.role === 'seller') {
+      return <ProfileScreen />;
+    }
     switch (activeTab) {
       case 'Offers':
         return <OffersReelsFeed/>;
@@ -170,55 +173,58 @@ const AppLayout = () => {
       </View>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'Home' && styles.activeNavItem]} 
-          onPress={() => handleTabPress('Home')}
-        >
-          <Ionicons 
-            name={activeTab === 'Home' ? 'home' : 'home-outline'} 
-            size={24} 
-            color={activeTab === 'Home' ? "#155366" : '#555'} 
-          />
-          <Text style={[styles.navText, activeTab === 'Home' && styles.activeNavText]}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-  style={[styles.navItem, activeTab === 'Offers' && styles.activeNavItem]} 
-  onPress={() => handleTabPress('Offers')}
->
-  <Ionicons 
-    name={activeTab === 'Offers' ? 'pricetags' : 'pricetags-outline'} 
-    size={24} 
-    color={activeTab === 'Offers' ? "#155366" : '#555'} 
-  />
-  <Text style={[styles.navText, activeTab === 'Offers' && styles.activeNavText]}>Offers</Text>
-</TouchableOpacity>
+      {user?.role !== 'seller' && (
+  <View style={styles.bottomNav}>
+    <TouchableOpacity 
+      style={[styles.navItem, activeTab === 'Home' && styles.activeNavItem]} 
+      onPress={() => handleTabPress('Home')}
+    >
+      <Ionicons 
+        name={activeTab === 'Home' ? 'home' : 'home-outline'} 
+        size={24} 
+        color={activeTab === 'Home' ? "#155366" : '#555'} 
+      />
+      <Text style={[styles.navText, activeTab === 'Home' && styles.activeNavText]}>Home</Text>
+    </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'Search' && styles.activeNavItem]} 
-          onPress={() => handleTabPress('Search')}
-        >
-          <Ionicons 
-            name={activeTab === 'Search' ? 'search' : 'search-outline'} 
-            size={24} 
-            color={activeTab === 'Search' ? "#155366": '#555'} 
-          />
-          <Text style={[styles.navText, activeTab === 'Search' && styles.activeNavText]}>Search</Text>
-        </TouchableOpacity>
+    <TouchableOpacity 
+      style={[styles.navItem, activeTab === 'Offers' && styles.activeNavItem]} 
+      onPress={() => handleTabPress('Offers')}
+    >
+      <Ionicons 
+        name={activeTab === 'Offers' ? 'pricetags' : 'pricetags-outline'} 
+        size={24} 
+        color={activeTab === 'Offers' ? "#155366" : '#555'} 
+      />
+      <Text style={[styles.navText, activeTab === 'Offers' && styles.activeNavText]}>Offers</Text>
+    </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'Profile' && styles.activeNavItem]} 
-          onPress={() => handleTabPress('Profile')}
-        >
-          <Ionicons 
-            name={activeTab === 'Profile' ? 'person' : 'person-outline'} 
-            size={24} 
-            color={activeTab === 'Profile' ? "#155366": '#555'} 
-          />
-          <Text style={[styles.navText, activeTab === 'Profile' && styles.activeNavText]}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+    <TouchableOpacity 
+      style={[styles.navItem, activeTab === 'Search' && styles.activeNavItem]} 
+      onPress={() => handleTabPress('Search')}
+    >
+      <Ionicons 
+        name={activeTab === 'Search' ? 'search' : 'search-outline'} 
+        size={24} 
+        color={activeTab === 'Search' ? "#155366": '#555'} 
+      />
+      <Text style={[styles.navText, activeTab === 'Search' && styles.activeNavText]}>Search</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity 
+      style={[styles.navItem, activeTab === 'Profile' && styles.activeNavItem]} 
+      onPress={() => handleTabPress('Profile')}
+    >
+      <Ionicons 
+        name={activeTab === 'Profile' ? 'person' : 'person-outline'} 
+        size={24} 
+        color={activeTab === 'Profile' ? "#155366": '#555'} 
+      />
+      <Text style={[styles.navText, activeTab === 'Profile' && styles.activeNavText]}>Profile</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
 
       {/* Location Selection Modal */}
       <LocationSelectionModal 

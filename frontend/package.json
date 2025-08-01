@@ -34,13 +34,14 @@
     "react-native-google-places-autocomplete": "^2.5.7",
     "react-native-image-picker": "^8.2.1",
     "react-native-picker-select": "^9.3.1",
+    "react-native-razorpay": "^2.3.0",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.12.0",
     "react-native-toast-message": "^2.1.5",
     "react-native-vector-icons": "^10.2.0",
-    "socket.io-client": "^4.8.1",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

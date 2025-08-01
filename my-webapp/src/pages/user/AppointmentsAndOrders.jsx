@@ -578,7 +578,26 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </div>
           )}
         </div>
-  
+  {/* Delivery Address */}
+  {item.deliveryAddress && (
+  <div className="flex items-start mb-1">
+    <MapPin className="w-4 h-4  mt-0.5 mr-2" />
+    <p className="text-gray-700 text-sm leading-tight">
+      {item.deliveryAddress}
+    </p>
+  </div>
+)}
+
+{/* Order Type */}
+{item.orderType && (
+  <div className="flex items-start mb-2">
+    <span className="text-gray-600 text-sm font-medium mr-2">🍽️</span>
+    <p className="text-gray-700 text-sm leading-tight">
+      {item.orderType}
+    </p>
+  </div>
+)}
+
         {/* Status */}
         <div className="mb-3">
           <div 
