@@ -31,8 +31,8 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
     setIsFetchingKeys(true);
     try {
       const res = await axios.get(`${SERVER_URL}/stores/${store._id}/razorpay`);
-      setRazorpayKeyId(res.data.key_id || '');
-      setRazorpayKeySecret(res.data.key_secret || '');
+      setRazorpayKeyId(res.data.key_id || ' ');
+      setRazorpayKeySecret(res.data.key_secret || ' ');
       setShowKeys(true);
     } catch (err) {
       console.error('Failed to fetch Razorpay credentials:', err);
@@ -108,6 +108,7 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Store Settings</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* UPI Section */}
+          {selectedPayments.includes('UPI') && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Store UPI</h3>
             {store.upi ? (
@@ -131,52 +132,57 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
               </button>
             </div>
           </div>
-          {selectedPayments.includes('Razorpay') && (
+          )}
+  {selectedPayments.includes('Razorpay') && (
   <div className="bg-white rounded-xl shadow-lg p-6 col-span-1">
     <h3 className="text-lg font-semibold text-gray-900 mb-4">Razorpay Credentials</h3>
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Key ID</label>
         <input
-  type="text"
-  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-  placeholder="Enter Razorpay Key ID"
-  value={showKeys ? razorpayKeyId : '••••••••'}
-  onChange={(e) => showKeys && setRazorpayKeyId(e.target.value)}
-  disabled={!showKeys}
-/>
-
+          type="text"
+          className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+          placeholder="Enter Razorpay Key ID"
+          value={showKeys || !store.razorpay?.key_id ? razorpayKeyId : '••••••••'}
+          onChange={(e) => setRazorpayKeyId(e.target.value)}
+          disabled={!showKeys && store.razorpay?.key_id}
+        />
       </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Key Secret</label>
         <input
-  type="text"
-  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-  placeholder="Enter Razorpay Secret"
-  value={showKeys ? razorpayKeySecret : '••••••••'}
-  onChange={(e) => showKeys && setRazorpayKeySecret(e.target.value)}
-  disabled={!showKeys}
-/>
-
+          type="text"
+          className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+          placeholder="Enter Razorpay Secret"
+          value={showKeys || !store.razorpay?.key_secret ? razorpayKeySecret : '••••••••'}
+          onChange={(e) => setRazorpayKeySecret(e.target.value)}
+          disabled={!showKeys && store.razorpay?.key_secret}
+        />
       </div>
+
       <div className="flex space-x-4">
         <button
           onClick={handleRazorpaySave}
           className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
         >
-          Save Razorpay Credentials
+          {store.razorpay?.key_id ? "Update" : "Add"} Razorpay Credentials
         </button>
-        <button
-          onClick={handleViewRazorpay}
-          disabled={isFetchingKeys}
-          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          {showKeys ? 'Hide' : isFetchingKeys ? 'Loading...' : 'View'}
-        </button>
+
+        {store.razorpay?.key_id && (
+          <button
+            onClick={handleViewRazorpay}
+            disabled={isFetchingKeys}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            {showKeys ? 'Hide' : isFetchingKeys ? 'Loading...' : 'View'}
+          </button>
+        )}
       </div>
     </div>
   </div>
 )}
+
 
 
 

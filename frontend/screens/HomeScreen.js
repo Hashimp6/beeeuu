@@ -14,6 +14,8 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,6 +36,8 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
     { value: 'storeName', label: 'By Name', icon: 'text-outline' }
   ];
 
+
+const categoryOptions = ['All', 'Hotel',' Restaurent', 'Beauty', 'Bakery', 'Grocery'];
   const fetchNearbyStores = async (page = 1, resetStores = true) => {
     try {
       if (page === 1) {
@@ -75,7 +79,8 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
         page,
         limit,
         sortBy: selectedSortBy,
-        sortOrder: selectedSortBy === 'averageRating' ? 'desc' : 'asc'
+        sortOrder: selectedSortBy === 'averageRating' ? 'desc' : 'asc',
+        ...(selectedCategory !== 'All' && { category: selectedCategory })
       };
 
       console.log('API Request params:', params);
@@ -128,7 +133,7 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   // Refetch when filters change
   useEffect(() => {
     fetchNearbyStores(1, true);
-  }, [selectedDistance, selectedSortBy]);
+  }, [selectedDistance, selectedSortBy, selectedCategory]);
 
   // Pull-to-refresh functionality
   const handleRefresh = () => {
@@ -159,12 +164,19 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
     setShowSortDropdown(!showSortDropdown);
     setShowDistanceDropdown(false);
   };
-
-  // Close dropdowns when touching outside
-  const closeDropdowns = () => {
+  const toggleCategoryDropdown = () => {
+    setShowCategoryDropdown(!showCategoryDropdown);
     setShowDistanceDropdown(false);
     setShowSortDropdown(false);
   };
+  const closeDropdowns = () => {
+    setShowDistanceDropdown(false);
+    setShowSortDropdown(false);
+    setShowCategoryDropdown(false);
+  };
+  
+
+ 
 
   // Render Compact Horizontal Filter Pills
   const renderCompactFilters = () => (
@@ -197,6 +209,17 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
           </Text>
           <Ionicons name="chevron-down" size={12} color="#14B8A6" />
         </TouchableOpacity>
+        {/* Category Filter Pill */}
+<TouchableOpacity 
+  style={[styles.filterPill, showCategoryDropdown && styles.activeFilterPill]}
+  onPress={toggleCategoryDropdown}
+  activeOpacity={0.7}
+>
+  <Ionicons name="grid-outline" size={14} color="#14B8A6" />
+  <Text style={styles.filterPillText}>{selectedCategory}</Text>
+  <Ionicons name="chevron-down" size={12} color="#14B8A6" />
+</TouchableOpacity>
+
 
         {/* Store Count Info Pill */}
         <View style={styles.infoPill}>
@@ -232,6 +255,46 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
           </View>
         </View>
       )}
+{/* Category Dropdown */}
+{showCategoryDropdown && (
+  <View style={styles.compactDropdown}>
+    <View style={styles.dropdownHeader}>
+      <Text style={styles.dropdownHeaderText}>Select Category</Text>
+    </View>
+    {categoryOptions.map((category, index) => (
+      <TouchableOpacity
+        key={index}
+        style={[
+          styles.compactDropdownItem,
+          selectedCategory === category && styles.selectedCompactDropdownItem
+        ]}
+        onPress={() => {
+          setSelectedCategory(category);
+          setShowCategoryDropdown(false);
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={styles.compactDropdownItemContent}>
+          <Ionicons 
+            name="pricetag-outline" 
+            size={16} 
+            color={selectedCategory === category ? "#155366" : "#666666"} 
+          />
+          <Text style={[
+            styles.compactDropdownItemText,
+            selectedCategory === category && styles.selectedCompactDropdownItemText
+          ]}>
+            {category}
+          </Text>
+        </View>
+        {selectedCategory === category && (
+          <Ionicons name="checkmark-circle" size={18} color="#155366" />
+        )}
+      </TouchableOpacity>
+    ))}
+  </View>
+)}
+
 
       {/* Sort Dropdown */}
       {showSortDropdown && (

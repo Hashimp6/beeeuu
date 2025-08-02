@@ -107,12 +107,12 @@ const ProductDetailModal = ({
           <p className="text-gray-700 text-sm">{product.description}</p>
 
           {/* Rating */}
-          <div className="flex items-center gap-1">
+          {/* <div className="flex items-center gap-1">
             <Star size={16} className="text-yellow-400 fill-current" />
             <span className="text-sm text-gray-700 font-medium">
-              {product.rating || '4.5'} {/* Default fallback */}
+              {product.rating || '4.5'}
             </span>
-          </div>
+          </div> */}
 
           {/* Price */}
           <div className="flex items-center gap-2">
@@ -124,10 +124,7 @@ const ProductDetailModal = ({
             )}
           </div>
 
-          {/* Type */}
-          <p className="text-sm text-gray-600">
-             <span className="font-medium capitalize">{product.type}</span>
-          </p>
+         
 
           {/* Action Button */}
           <div className="pt-4">

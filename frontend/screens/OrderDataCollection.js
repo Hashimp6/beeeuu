@@ -415,7 +415,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
         
         // Step 2: Configure Razorpay options
         const options = {
-          description: 'Order Payment',
+          description: `Order Paymentfrpm ${user.username||" "}`,
           image: store.profileImage || 'https://via.placeholder.com/100',
           currency: order.currency,
           key: order.key_id,
@@ -723,7 +723,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
 )}
 
             <View style={styles.inputContainer}>
-            {store?.category === 'Hotel / Restaurent' && (orderType === 'Dine In' || orderType === 'Parcel') 
+            {store?.category === 'Hotel / Restaurent' && (orderType === 'Eat In' || orderType === 'Parcel') 
   ? <Text style={styles.inputLabel}>Table Number</Text> 
   : <Text style={styles.inputLabel}>Delivery Address</Text>}
               <TextInput
