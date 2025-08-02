@@ -49,7 +49,7 @@ const orderSchema = new mongoose.Schema({
   buyerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    
   },
   customerName: {
     type: String,

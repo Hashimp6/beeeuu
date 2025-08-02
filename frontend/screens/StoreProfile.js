@@ -85,7 +85,13 @@ const SellerProfile = () => {
       });
     };
     
-
+    const restaurantCategories = [
+      { key: 'starter', label: 'Starter' },
+      { key: 'main-course', label: 'Main Course' },
+      { key: 'drinks', label: 'Drinks' },
+      { key: 'desserts', label: 'Desserts' },
+      { key: 'combo-meal', label: 'Combo Meal' }
+    ];
     
     const handleAppointment = (productId,productName) => {
       setLoading(true);
@@ -229,6 +235,22 @@ const handleShare = async () => {
     fetchProducts();
   }, [store]);
 
+
+  const isRestaurant = store?.category === 'Hotel / Restaurent';
+
+const groupedProducts = isRestaurant
+  ? restaurantCategories.reduce((acc, cat) => {
+      acc[cat.label] = products.filter(
+        (product) =>
+          product.category?.toLowerCase() === cat.label.toLowerCase() ||
+          product.category?.toLowerCase() === cat.key
+      );
+      return acc;
+    }, {})
+  : null;
+
+
+  
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -367,64 +389,75 @@ const handleShare = async () => {
 
       {/* Tab Content */}
       {activeTab === 'products' ? (
-   <View style={styles.productList}>
-   {products && products.length > 0 ? (
-     products.map((item) => (
-       <TouchableOpacity
-         key={item._id}
-         style={styles.productCard}
-         onPress={() => setSelectedProduct(item)}
-       >
-         <Image
-           source={{ 
-             uri: item.images && item.images.length > 0 
-               ? item.images[0] 
-               : 'https://picsum.photos/300?random=11'
-           }}
-           style={styles.productImage}
-         />
-         <View style={styles.productInfo}>
-           <Text style={styles.productName}>{item.name}</Text>
-           <Text style={styles.productDetails}>
-             {item.description?.length > 30 
-               ? item.description.slice(0, 30) + '...' 
-               : item.description}
-           </Text>
-           <View style={styles.productFooter}>
-             <Text style={styles.productPrice}>₹{item.price}</Text>
-             <TouchableOpacity
-               style={styles.bookNowBtn}
-               onPress={() => {
-                 if (item.type === 'service') {
-                   handleAppointment(item._id, item.name);
-                 } else if (item.type === 'product') {
-                   handleOrder(item);
-                 } else {
-                   alert("Unknown item type");
-                 }
-               }}
-             >
-               <Text style={styles.bookNowText}>
-                 {item.type === 'service' ? 'Book' : 'Add to Cart'}
-               </Text>
-             </TouchableOpacity>
-           </View>
-         </View>
-       </TouchableOpacity>
-     ))
-   ) : (
-     <View style={styles.noDataContainer}>
-       <View style={styles.iconWrapper}>
-         <Text style={styles.noDataIcon}>🛍️</Text>
-       </View>
-       <Text style={styles.noDataTitle}>No Products Found</Text>
-       <Text style={styles.noDataSubtitle}>
-         It looks like there are no products listed in this store yet. 
-         Please check back soon or browse other stores.
-       </Text>
-     </View>
-   )}
- </View>
+  <View style={styles.productList}>
+    {isRestaurant ? (
+      // Grouped by restaurant categories
+      Object.entries(groupedProducts).map(([categoryLabel, items]) => (
+        items.length > 0 && (
+        <View key={categoryLabel} style={{ marginBottom: 20 }}>
+          <Text style={styles.categoryHeader}>{categoryLabel}</Text>
+          {items.length > 0 ? (
+            items.map((item) => (
+              <TouchableOpacity
+                key={item._id}
+                style={styles.productCard}
+                onPress={() => setSelectedProduct(item)}
+              >
+                <Image
+                  source={{
+                    uri:
+                      item.images?.[0] ||
+                      'https://picsum.photos/300?random=11',
+                  }}
+                  style={styles.productImage}
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName}>{item.name}</Text>
+                  <Text style={styles.productDetails}>
+                    {item.description?.length > 30
+                      ? item.description.slice(0, 30) + '...'
+                      : item.description}
+                  </Text>
+                  <View style={styles.productFooter}>
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
+                    <TouchableOpacity
+                      style={styles.bookNowBtn}
+                      onPress={() => {
+                        if (item.type === 'service') {
+                          handleAppointment(item._id, item.name);
+                        } else {
+                          handleOrder(item);
+                        }
+                      }}
+                    >
+                      <Text style={styles.bookNowText}>
+                        {item.type === 'service' ? 'Book' : 'Add to Cart'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={{ fontStyle: 'italic', color: '#888' }}>
+              No items in this category
+            </Text>
+          )}
+        </View>
+      )))
+    ) : (
+      // Default list for non-restaurant stores
+      products.map((item) => (
+        <TouchableOpacity
+          key={item._id}
+          style={styles.productCard}
+          onPress={() => setSelectedProduct(item)}
+        >
+          {/* Your existing product card rendering here */}
+        </TouchableOpacity>
+      ))
+    )}
+  </View>
 ) : (
   <View style={styles.gallery}>
     {gallery && gallery.length > 0 ? (
@@ -672,6 +705,14 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     lineHeight: 24,
   },
+  categoryHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#155366',
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  
   iconButton: {
     backgroundColor: '#E3F2F7',
     width: 46,
