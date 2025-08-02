@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
+  TextInput ,
   Image
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -24,7 +25,7 @@ const StoreOrders = ({ route, navigation }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
-
+  const [otpInputs, setOtpInputs] = useState({});
   const { user, token } = useAuth() || {};
 
   const validateRequiredData = () => {
@@ -169,7 +170,7 @@ const StoreOrders = ({ route, navigation }) => {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Confirm', 
-          onPress: () => updateOrderStatus(orderId, 'completed')
+          onPress: () => updateOrderStatus(orderId, 'processing')
         }
       ]
     );
@@ -189,6 +190,36 @@ const StoreOrders = ({ route, navigation }) => {
     );
   };
 
+  const handleVerifyOtpAndDeliver = async (orderId, enteredOtp) => {
+    if (!enteredOtp || enteredOtp.length !== 4) {
+      Alert.alert('Error', 'Please enter a valid 4-digit OTP');
+      return;
+    }
+  
+    // Find the order to get the stored OTP
+    const order = orders.find(o => o._id === orderId);
+    if (!order || !order.otp) {
+      Alert.alert('Error', 'Order OTP not found');
+      return;
+    }
+  
+    if (enteredOtp !== order.otp) {
+      Alert.alert('Error', 'Invalid OTP. Please check and try again.');
+      return;
+    }
+  
+    Alert.alert(
+      'Mark as Delivered',
+      'OTP verified! Mark this order as delivered?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delivered', 
+          onPress: () => updateOrderStatus(orderId, 'delivered')
+        }
+      ]
+    );
+  };
   const handleDeliverOrder = (orderId) => {
     Alert.alert(
       'Mark as Delivered',
@@ -355,26 +386,33 @@ const StoreOrders = ({ route, navigation }) => {
 
         {/* Product Section */}
         <View style={styles.productSection}>
-          <View style={styles.productHeader}>
-            {productImage && (
-              <Image 
-                source={{ uri: productImage }} 
-                style={styles.productImage}
-                resizeMode="cover"
-              />
-            )}
-            <View style={styles.productDetails}>
-              <Text style={styles.productName}>{productName}</Text>
-              <View style={styles.priceQuantityRow}>
-                <Text style={styles.unitPrice}>₹{item.unitPrice}</Text>
-                <Text style={styles.quantityText}>× {item.quantity}</Text>
-              </View>
-              <Text style={styles.paymentMethod}>
-                {item.paymentMethod?.toUpperCase()} • {item.paymentStatus?.charAt(0).toUpperCase() + item.paymentStatus?.slice(1)}
-              </Text>
-            </View>
+  {item.products?.map((prod, index) => {
+    const productName = prod.productId?.name || 'Product';
+    const productImage = prod.productId?.image;
+    const quantity = prod.quantity;
+    const unitPrice = formatPrice(prod.unitPrice);
+
+    return (
+      <View key={index} style={styles.productHeader}>
+        {productImage && (
+          <Image 
+            source={{ uri: productImage }} 
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+        )}
+        <View style={styles.productDetails}>
+          <Text style={styles.productName}>{productName}</Text>
+          <View style={styles.priceQuantityRow}>
+            <Text style={styles.unitPrice}>{unitPrice}</Text>
+            <Text style={styles.quantityText}>× {quantity}</Text>
           </View>
         </View>
+      </View>
+    );
+  })}
+</View>
+
 
         {/* Customer Information Section */}
         <View style={styles.customerSection}>
@@ -406,6 +444,46 @@ const StoreOrders = ({ route, navigation }) => {
             </View>
           )}
         </View>
+        {status === 'shipped' && (
+  <View style={{ marginTop: 10 }}>
+    <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6 }}>
+      Enter Delivery OTP:
+    </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{
+        flex: 1,
+        backgroundColor: '#F1F1F1',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: 8,
+        marginRight: 10,
+      }}>
+        <TextInput
+          placeholder="Enter 4-digit OTP"
+          keyboardType="numeric"
+          maxLength={4}
+          value={otpInputs[item._id] || ''}
+          onChangeText={(text) => setOtpInputs(prev => ({ ...prev, [item._id]: text }))}
+          style={{ fontSize: 16 }}
+        />
+      </View>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.deliverButton]}
+        onPress={() => handleVerifyOtpAndDeliver(item._id, otpInputs[item._id])}
+        disabled={isUpdating}
+      >
+        {isUpdating ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <>
+            <Icon name="done-all" size={16} color="#FFFFFF" />
+            <Text style={styles.deliverButtonText}>Submit</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
 
         {/* Action Buttons based on Status */}
         {status === 'pending' && (
@@ -435,7 +513,7 @@ const StoreOrders = ({ route, navigation }) => {
               ) : (
                 <>
                   <Icon name="check" size={16} color="#FFFFFF" />
-                  <Text style={styles.confirmButtonText}>Completed</Text>
+                  <Text style={styles.confirmButtonText}>Accept</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -476,24 +554,48 @@ const StoreOrders = ({ route, navigation }) => {
           </View>
         )}
 
-        {status === 'shipped' && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.deliverButton]}
-              onPress={() => handleDeliverOrder(item._id)}
-              disabled={isUpdating}
-            >
-              {isUpdating ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Icon name="done-all" size={16} color="#FFFFFF" />
-                  <Text style={styles.deliverButtonText}>Mark Delivered</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+{status === 'processing' && (
+  <View style={{ marginTop: 10 }}>
+    <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6 }}>
+      Enter Delivery OTP:
+    </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{
+        flex: 1,
+        backgroundColor: '#F1F1F1',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: 8,
+        marginRight: 10,
+      }}>
+        <TextInput
+          placeholder="Enter 4-digit OTP"
+          keyboardType="numeric"
+          maxLength={4}
+          value={otpInputs[item._id] || ''}
+          onChangeText={(text) => setOtpInputs(prev => ({ ...prev, [item._id]: text }))}
+          style={{ fontSize: 16 }}
+        />
+      </View>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.deliverButton]}
+        onPress={() => handleVerifyOtpAndDeliver(item._id, otpInputs[item._id])}
+        disabled={isUpdating || (otpInputs[item._id]?.length !== 4)}
+      >
+        {isUpdating ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <>
+            <Icon name="done-all" size={16} color="#FFFFFF" />
+            <Text style={styles.deliverButtonText}>Verify & Deliver</Text>
+          </>
         )}
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+
+{/* Remove the old action buttons section for processing status */}
       </View>
     );
   };
@@ -861,7 +963,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   deliverButton: {
-    backgroundColor: '#32D74B',
+    backgroundColor: '#000000',
   },
   cancelButtonText: {
     color: '#FF3B30',

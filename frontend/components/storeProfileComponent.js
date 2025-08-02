@@ -147,184 +147,256 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
         </View>
 
         <View style={styles.dashboardCard}>
-        <View style={styles.storeImageContainer}>
-    {store.profileImage ? (
-      <Image
-        source={{ uri: store.profileImage }}
-        style={styles.storeImage}
-      />
-    ) : (
-      <View style={styles.storeInitialAvatar}>
-        <Text style={styles.storeInitialLetter}>
-          {store.name ? store.name.charAt(0).toUpperCase() : 'S'}
-        </Text>
-      </View>
-    )}
-  </View>
-
-          <Text style={styles.storeName}>{store.storeName}</Text>
-          <Text style={styles.storeCategory}>{store.category}</Text>
-          <View style={styles.ratingContainer}>
-            <Icon name="star" size={16} color="#f39c12" />
-            <Text style={styles.ratingText}>
-              {store.rating} ({store.reviews} reviews)
+  <View style={styles.cardContainer}>
+    {/* Left side - Image */}
+    <View style={styles.leftSection}>
+      <View style={styles.storeImageContainer}>
+        {store.profileImage ? (
+          <Image
+            source={{ uri: store.profileImage }}
+            style={styles.storeImage}
+          />
+        ) : (
+          <View style={styles.storeInitialAvatar}>
+            <Text style={styles.storeInitialLetter}>
+              {store.name ? store.name.charAt(0).toUpperCase() : 'S'}
             </Text>
           </View>
-          <Text style={styles.storeCategory}>{store.place}</Text>
-          
-
-          <TouchableOpacity style={styles.editStoreButton} onPress={handleEditStore}>
-            <Icon name="edit" size={16} color="#fff" />
-            <Text style={styles.editStoreButtonText}>Edit Store Details</Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
+    </View>
 
-      {/* Appointment Management */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Icon name="event-note" size={22} color="#155366"/>
-          <Text style={styles.sectionTitle}>Appointment Management</Text>
+    {/* Right side - Store Details */}
+    <View style={styles.rightSection}>
+      <View style={styles.storeDetails}>
+        <Text style={styles.storeName}>{store.storeName}</Text>
+        <View style={styles.ratingContainer}>
+          <Icon name="star" size={16} color="#f39c12" />
+          <Text style={styles.ratingText}>
+            {store.averageRating} ({store.numberOfRatings} reviews)
+          </Text>
         </View>
-
-        <View style={styles.card}>
-        <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "confirmed",storeId:store._id})}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.pendingDot]} />
-              <Text style={styles.appointmentOptionText}>Coming Appointments</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "pending",storeId:store._id})}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.acceptDot]} />
-              <Text style={styles.appointmentOptionText}>Pending Appointments</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "today",storeId:store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.todayDot]} />
-              <Text style={styles.appointmentOptionText}>Today's Appointments</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "completed",storeId:store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.completedDot]} />
-              <Text style={styles.appointmentOptionText}>Completed Appointments</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-             
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreAppointments", { status: "cancelled",storeId:store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.cancelledDot]} />
-              <Text style={styles.appointmentOptionText}>Cancelled Appointments</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-             
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-      {/* Product Management */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Icon name="shopping-cart" size={22} color="#155366"/>
-          <Text style={styles.sectionTitle}>Product Management</Text>
-        </View>
-
-        <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreOrders", { status: "pending", storeId: store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.pendingDot]} />
-              <Text style={styles.appointmentOptionText}>Pending Orders</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          
-
-          <View style={styles.divider} />
-
         
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreOrders", { status: "completed", storeId: store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.completedDot]} />
-              <Text style={styles.appointmentOptionText}>Completed Orders</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.appointmentOption}
-            onPress={() => navigation.navigate("StoreOrders", { status: "cancelled", storeId: store._id })}
-          >
-            <View style={styles.appointmentOptionLeft}>
-              <View style={[styles.statusDot, styles.cancelledDot]} />
-              <Text style={styles.appointmentOptionText}>Cancelled Orders</Text>
-            </View>
-            <View style={styles.appointmentCount}>
-              <Icon name="chevron-right" size={20} color="#888" />
-            </View>
-          </TouchableOpacity>
+        <Text style={styles.storeLocation}>{store.place}</Text>
+      </View>
+    </View>
+  </View>
+  
+  {/* Full width Edit Button */}
+  <TouchableOpacity style={styles.editStoreButton} onPress={handleEditStore}>
+    <Icon name="edit" size={16} color="#fff" />
+    <Text style={styles.editStoreButtonText}>Edit</Text>
+  </TouchableOpacity>
+</View>
+      </View>
 
 
-        
+  
+
+<View style={styles.section}>
+  <View style={styles.sectionHeader}>
+    <Icon name="shopping-cart" size={22} color="#155366"/>
+    <Text style={styles.sectionTitle}>Product Management</Text>
+  </View>
+
+  {/* Analytics Dashboard Grid */}
+  <View style={styles.dashboardGrid}>
+    {/* Pending Orders Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.pendingCard]}
+      onPress={() => navigation.navigate("StoreOrders", { status: "pending", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.pendingIconBg]}>
+          <Icon name="hourglass-empty" size={24} color="#f39c12" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Pending</Text>
         </View>
       </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Pending Orders</Text>
+        <Icon name="trending-up" size={16} color="#f39c12" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Processing Orders Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.processingCard]}
+      onPress={() => navigation.navigate("StoreOrders", { status: "processing", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.processingIconBg]}>
+          <Icon name="refresh" size={24} color="#3498db" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Processing</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Processing Orders</Text>
+        <Icon name="sync" size={16} color="#3498db" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Delivered Orders Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.deliveredCard]}
+      onPress={() => navigation.navigate("StoreOrders", { status: "delivered", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.deliveredIconBg]}>
+          <Icon name="check-circle" size={24} color="#2ecc71" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Delivered</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Delivered Orders</Text>
+        <Icon name="trending-up" size={16} color="#2ecc71" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Cancelled Orders Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.cancelledCard]}
+      onPress={() => navigation.navigate("StoreOrders", { status: "cancelled", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.cancelledIconBg]}>
+          <Icon name="cancel" size={24} color="#e74c3c" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Cancelled</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Cancelled Orders</Text>
+        <Icon name="trending-down" size={16} color="#e74c3c" />
+      </View>
+    </TouchableOpacity>
+  </View>
+
+
+</View>
+
+
+<View style={styles.section}>
+  <View style={styles.sectionHeader}>
+    <Icon name="event-note" size={22} color="#155366"/>
+    <Text style={styles.sectionTitle}>Appointment Management</Text>
+  </View>
+
+  {/* Appointment Analytics Dashboard Grid */}
+  <View style={styles.dashboardGrid}>
+    {/* Coming Appointments Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.comingCard]}
+      onPress={() => navigation.navigate("StoreAppointments", { status: "confirmed", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.comingIconBg]}>
+          <Icon name="schedule" size={24} color="#f39c12" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Coming</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Coming Appointments</Text>
+        <Icon name="arrow-forward" size={16} color="#f39c12" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Pending Appointments Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.pendingAppointmentCard]}
+      onPress={() => navigation.navigate("StoreAppointments", { status: "pending", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.pendingAppointmentIconBg]}>
+          <Icon name="pending-actions" size={24} color="#8e44ad" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Pending</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Pending Appointments</Text>
+        <Icon name="timer" size={16} color="#8e44ad" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Today's Appointments Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.todayCard]}
+      onPress={() => navigation.navigate("StoreAppointments", { status: "today", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.todayIconBg]}>
+          <Icon name="today" size={24} color="#3498db" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Today</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Today's Appointments</Text>
+        <Icon name="event-available" size={16} color="#3498db" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Completed Appointments Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.completedAppointmentCard]}
+      onPress={() => navigation.navigate("StoreAppointments", { status: "completed", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.completedAppointmentIconBg]}>
+          <Icon name="check-circle" size={24} color="#2ecc71" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Completed</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Completed Appointments</Text>
+        <Icon name="done-all" size={16} color="#2ecc71" />
+      </View>
+    </TouchableOpacity>
+
+    {/* Cancelled Appointments Card */}
+    <TouchableOpacity
+      style={[styles.analyticsCard, styles.cancelledAppointmentCard]}
+      onPress={() => navigation.navigate("StoreAppointments", { status: "cancelled", storeId: store._id })}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, styles.cancelledAppointmentIconBg]}>
+          <Icon name="cancel" size={24} color="#e74c3c" />
+        </View>
+        <View style={styles.cardCount}>
+          <Text style={styles.countLabel}>Cancelled</Text>
+        </View>
+      </View>
+      <View style={styles.cardFooter}>
+        <Text style={styles.cardTitle}>Cancelled Appointments</Text>
+        <Icon name="event-busy" size={16} color="#e74c3c" />
+      </View>
+    </TouchableOpacity>
+  </View>
+
+</View>
+
 
       {/* Store Settings */}
       <View style={styles.section}>
@@ -824,6 +896,229 @@ tempButtonText: {
   saveButtonText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  dashboardCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  leftSection: {
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  storeImageContainer: {
+    marginBottom: 12,
+  },
+  storeImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+  },
+  storeInitialAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    backgroundColor: '#155366',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#155366',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  storeInitialLetter: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  editStoreButton: {
+    backgroundColor: '#155366',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    shadowColor: '#00acc1',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+    marginTop:6, // Space between card content and button
+    width: '100%', // Full width of the container
+  },
+  editStoreButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  rightSection: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  storeDetails: {
+    gap: 8,
+  },
+  storeName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  storeLocation: {
+    fontSize: 14,
+    color: '#888',
+  },
+  dashboardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 2,
+  },
+  analyticsCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    borderLeftWidth: 4,
+  },
+  pendingCard: {
+    borderLeftColor: '#f39c12',
+    backgroundColor: '#fefcf3',
+  },
+  processingCard: {
+    borderLeftColor: '#3498db',
+    backgroundColor: '#f3f9ff',
+  },
+  deliveredCard: {
+    borderLeftColor: '#2ecc71',
+    backgroundColor: '#f3fff8',
+  },
+  cancelledCard: {
+    borderLeftColor: '#e74c3c',
+    backgroundColor: '#fff3f3',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pendingIconBg: {
+    backgroundColor: '#fef5e7',
+  },
+  processingIconBg: {
+    backgroundColor: '#ebf3fd',
+  },
+  deliveredIconBg: {
+    backgroundColor: '#eafaf1',
+  },
+  cancelledIconBg: {
+    backgroundColor: '#fdeaea',
+  },
+  cardCount: {
+    alignItems: 'flex-end',
+  },
+  countNumber: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    lineHeight: 32,
+  },
+  countLabel: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34495e',
+    flex: 1,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  quickActionButton: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    shadowColor: '#155366',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e8f4f8',
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#155366',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 
