@@ -14,7 +14,7 @@ const sendMessage = async (req, res) => {
     console.log("dtasdad",req.body,"recieverId",receiverId);
     
     const senderId = req.user.id;
-console.log("sender",senderId);
+    console.log("sender",senderId);
 
     if (!receiverId) {
       return res.status(400).json({
@@ -88,23 +88,25 @@ console.log("sender",senderId);
     await conversation.save();
 
     const savedMessage = conversation.messages[conversation.messages.length - 1];
-// Send push notification to receiver
-const receiverUser = await User.findById(receiverId);
-if (receiverUser && receiverUser.pushToken) {
-  const senderUser = await User.findById(senderId);
-  const notificationText = newMessage.type === 'text'
-    ? newMessage.text
-    : newMessage.type === 'image'
-    ? '📷 Sent an image'
-    : '📅 Sent an appointment';
 
-  await sendChatNotification(
-    receiverUser.pushToken,
-    senderUser.name || senderUser.username,
-    notificationText,
-    conversation._id.toString()
-  );
-}
+    // Send push notification to receiver - UPDATED
+    const receiverUser = await User.findById(receiverId);
+    if (receiverUser && receiverUser.pushTokens && receiverUser.pushTokens.length > 0) {
+      const senderUser = await User.findById(senderId);
+      const notificationText = newMessage.type === 'text'
+        ? newMessage.text
+        : newMessage.type === 'image'
+        ? '📷 Sent an image'
+        : '📅 Sent an appointment';
+
+      // Pass the array of pushTokens instead of single pushToken
+      await sendChatNotification(
+        receiverUser.pushTokens, // This is now an array
+        senderUser.name || senderUser.username,
+        notificationText,
+        conversation._id.toString()
+      );
+    }
 
     const messageForSocket = {
       _id: savedMessage._id,

@@ -3,37 +3,78 @@ const { Expo } = require('expo-server-sdk');
 // Create Expo SDK instance
 const expo = new Expo();
 
-const sendPushNotification = async (pushToken, title, body, data = {}) => {
+const sendPushNotification = async (pushTokens, title, body, data = {}) => {
   try {
-    // Check if the push token is valid
-    if (!Expo.isExpoPushToken(pushToken)) {
-      console.error(`Push token ${pushToken} is not a valid Expo push token`);
+    console.log('🚀 Starting push notification process...');
+    console.log('📱 Push tokens received:', pushTokens);
+    
+    // Ensure pushTokens is an array
+    const tokensArray = Array.isArray(pushTokens) ? pushTokens : [pushTokens];
+    
+    // Filter out invalid tokens
+    const validTokens = tokensArray.filter(token => {
+      const isValid = token && Expo.isExpoPushToken(token);
+      if (!isValid) {
+        console.error(`❌ Invalid push token: ${token}`);
+      }
+      return isValid;
+    });
+
+    if (validTokens.length === 0) {
+      console.error('❌ No valid push tokens found');
       return false;
     }
-    
-    const message = {
-      to: pushToken,
+
+    console.log('✅ Valid tokens:', validTokens);
+
+    // Create messages for all valid tokens
+    const messages = validTokens.map(token => ({
+      to: token,
       sound: 'default',
       title,
       body,
       data,
-    };
+      priority: 'high',
+      channelId: 'default',
+    }));
 
-    const ticket = await expo.sendPushNotificationsAsync([message]);
-    console.log('Push notification sent:', ticket);
-    return true;
+    console.log('📤 Sending messages:', messages);
+
+    // Send notifications in chunks (Expo recommends max 100 per batch)
+    const chunks = expo.chunkPushNotifications(messages);
+    const tickets = [];
+
+    for (let chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        tickets.push(...ticketChunk);
+        console.log('✅ Chunk sent successfully:', ticketChunk);
+      } catch (error) {
+        console.error('❌ Error sending chunk:', error);
+      }
+    }
+
+    console.log('📋 All tickets:', tickets);
+
+    // Check for errors in tickets
+    const errorTickets = tickets.filter(ticket => ticket.status === 'error');
+    if (errorTickets.length > 0) {
+      console.error('❌ Some notifications failed:', errorTickets);
+    }
+
+    return tickets.length > errorTickets.length; // Return true if at least one succeeded
   } catch (error) {
-    console.error('Error sending push notification:', error);
+    console.error('❌ Error in sendPushNotification:', error);
     return false;
   }
 };
 
-const sendChatNotification = async (receiverToken, senderName, messageText, conversationId) => {
+const sendChatNotification = async (receiverTokens, senderName, messageText, conversationId) => {
   const title = `New message from ${senderName}`;
   const body = messageText.length > 50 ? `${messageText.substring(0, 50)}...` : messageText;
   
   return await sendPushNotification(
-    receiverToken,
+    receiverTokens,
     title,
     body,
     {

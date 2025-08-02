@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-  // Products Information (Changed to array)
+  otp: {
+    type: String,
+  },
   products: [{
     productId: {
       type: mongoose.Schema.Types.ObjectId,

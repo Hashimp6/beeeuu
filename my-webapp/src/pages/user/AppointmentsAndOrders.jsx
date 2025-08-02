@@ -578,6 +578,8 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </div>
           )}
         </div>
+     
+
   {/* Delivery Address */}
   {item.deliveryAddress && (
   <div className="flex items-start mb-1">
@@ -610,39 +612,47 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
         </div>
   
         {/* Products Loop */}
-        {item.products?.map((prod, index) => {
-          const unitPrice = formatPrice(prod.unitPrice);
-          const totalPrice = formatPrice(prod.totalPrice);
-          return (
-            <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 mb-3 border border-gray-200">
-              <div className="flex items-center space-x-3">
-                {prod.productId?.image && (
-                  <div className="relative flex-shrink-0">
-                    <img 
-                      src={prod.productId.image} 
-                      alt={prod.productName}
-                      className="w-12 h-12 rounded-lg object-cover shadow-md border-2 border-white"
-                    />
-                    <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md">
-                      {prod.quantity}
-                    </div>
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-800 text-sm mb-1">{prod.productName}</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-600 font-medium">Qty: {prod.quantity}</span>
-                    {unitPrice && (
-                      <span className="text-xs text-gray-700 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">
-                        {unitPrice} each
-                      </span>
-                    )}
-                  </div>
-                </div>
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
+  {item.products?.map((prod, index) => {
+    const unitPrice = formatPrice(prod.unitPrice);
+    const totalPrice = formatPrice(prod.totalPrice);
+    return (
+      <div key={index}>
+        <div className="flex items-center space-x-3 py-2">
+          {prod.productId?.image && (
+            <div className="relative flex-shrink-0">
+              <img 
+                src={prod.productId.image} 
+                alt={prod.productName}
+                className="w-10 h-10 rounded-lg object-cover shadow border border-white"
+              />
+              <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center shadow">
+                {prod.quantity}
               </div>
             </div>
-          );
-        })}
+          )}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-gray-800 text-sm mb-0.5">{prod.productName}</h4>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-600">Qty: {prod.quantity}</span>
+              {unitPrice && (
+                <span className="text-xs text-gray-700 font-medium bg-white px-2 py-0.5 rounded shadow-sm">
+                  {unitPrice} each
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        {index < item.products.length - 1 && (
+          <hr className="border-t border-blue-200 my-1" />
+        )}
+      </div>
+    );
+  })}
+</div>
+
   
         {/* Info Section */}
         <div className="space-y-2 mb-3">
@@ -683,7 +693,16 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
             </div>
           )}
         </div>
-  
+        {item.status !== 'delivered' && item.otp && (
+  <div className="mt-3 p-3 rounded-lg bg-yellow-100 text-yellow-800 flex items-center space-x-2 shadow-sm">
+    <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c.83 0 1.5-.67 1.5-1.5S12.83 8 12 8s-1.5.67-1.5 1.5S11.17 11 12 11zm0 2v2m9-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span className="text-sm font-semibold">Customer OTP:</span>
+    <span className="text-lg font-bold tracking-wider">{item.otp}</span>
+  </div>
+)}
+
         {/* Cancel Button */}
         {item.status === 'pending' && (
           <div className="pt-3 border-t border-gray-200">

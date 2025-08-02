@@ -18,6 +18,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import { SERVER_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import Toast from 'react-native-toast-message';
 
 const UserAppointmentsOrders = ({ route, navigation }) => {
   const { user, status } = route.params;
@@ -251,6 +252,40 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
       [itemId]: feedback
     }));
   };
+
+  const markAsDelivered = async (orderId) => {
+    try {
+      const payload = {
+        status: 'delivered', // or whatever status you want
+      };
+  
+      const response = await axios.patch(`${SERVER_URL}/orders/status/${orderId}`, payload);
+  
+      if (response.status === 200) {
+        Toast.show({
+          type: 'success',
+          text1: '✅ Delivered',
+          text2: 'Order marked as delivered',
+          position: 'bottom', // or 'top'
+          visibilityTime: 3000,
+        });
+         fetchOrders();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: '❌ Failed',
+          text2: 'Could not update order status',
+        }); }
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: 'error',
+        text1: '❌ Error',
+        text2: 'Something went wrong',
+      }); }
+  };
+
+  
   const submitRatingFeedback = async (item) => {
     const itemId = item._id;
     const rating = ratings[itemId];
@@ -328,6 +363,8 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
       setSubmittingFeedback(prev => ({ ...prev, [itemId]: false }));
     }
   };
+
+  
   const renderStars = (itemId, currentRating) => {
     return (
       <View style={styles.starsContainer}>
@@ -600,6 +637,8 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             {item.status.replace('_', ' ').toUpperCase()}
           </Text>
         </View>
+       
+
   
         {/* Loop over all products */}
         {item.products?.map((product, index) => {
@@ -692,7 +731,29 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             </View>
           )}
         </View>
-  
+        {(item.status === 'pending' || item.status === 'processing') && (
+  <TouchableOpacity
+    style={styles.statusButton}
+    onPress={() =>
+      Alert.alert(
+        'Confirm Delivery',
+        'Are you sure you want to mark this order as delivered?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Yes, Deliver',
+            onPress: () => markAsDelivered(item._id),
+            style: 'default',
+          },
+        ]
+      )
+    }
+  >
+     <Icon name="check-circle" size={20} color="#fff" />
+    <Text style={styles.statusButtonText}>Mark as Delivered</Text>
+  </TouchableOpacity>
+)}
+
         {/* Rating and Feedback Section */}
         {renderRatingFeedbackSection(item)}
       </View>
@@ -1000,6 +1061,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
+  statusButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  statusButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',

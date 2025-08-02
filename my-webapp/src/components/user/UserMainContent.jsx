@@ -631,19 +631,22 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
       {history && getAppointmentOrderType() ? (
         // When showing appointments/orders, create proper flex container
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          <div className="flex-1 overflow-hidden">
-            <UserAppointmentsOrders 
-              type={getAppointmentOrderType()} 
-              setHistory={setHistory} 
-            />
-          </div>
-          {/* Keep User Profile Component visible even in appointment/order view */}
-          <div className="hidden xl:block w-[380px] px-4">
-            <div className="h-[calc(98vh-64px)] overflow-y-auto bg-white border-l border-gray-200 rounded-l-lg shadow-sm p-4">
-              <UserProfileComponent setHistory={setHistory} />
-            </div>
+        {/* Scrollable Appointments/Orders */}
+        <div className="flex-1 h-[calc(98vh-64px)] overflow-y-auto px-4 py-0 bg-gray-50">
+          <UserAppointmentsOrders 
+            type={getAppointmentOrderType()} 
+            setHistory={setHistory} 
+          />
+        </div>
+      
+        {/* Fixed Profile Section */}
+        <div className="hidden xl:flex w-[380px] border-l border-gray-200 bg-white">
+          <div className="fixed right-0 top-[64px] w-[380px] h-[calc(100vh-64px)] overflow-y-auto shadow-md p-4">
+            <UserProfileComponent setHistory={setHistory} />
           </div>
         </div>
+      </div>
+      
       ) : (
         // Default view with stores
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">

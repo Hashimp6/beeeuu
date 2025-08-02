@@ -6,17 +6,26 @@ const { sendPushNotification } = require('../services/notificationService');
 // Send order notification to a user
 const sendOrderNotification = async (userId, title, body, orderData) => {
   try {
-    // Get user's push token
-    const user = await User.findById(userId).select('pushToken username');
+    console.log(`🔔 Sending order notification to user: ${userId}`);
     
-    if (!user || !user.pushToken) {
-      console.log(`No push token found for user: ${userId}`);
+    // Get user's push tokens (note: pushTokens is an array)
+    const user = await User.findById(userId).select('pushTokens username');
+    
+    if (!user) {
+      console.log(`❌ User not found: ${userId}`);
       return false;
     }
 
-    // Send push notification
+    if (!user.pushTokens || user.pushTokens.length === 0) {
+      console.log(`⚠️ No push tokens found for user: ${user.username || userId}`);
+      return false;
+    }
+
+    console.log(`📱 Found ${user.pushTokens.length} push tokens for user: ${user.username}`);
+
+    // Send push notification to all user's devices
     const success = await sendPushNotification(
-      user.pushToken,
+      user.pushTokens, // Pass the entire array
       title,
       body,
       {
@@ -34,41 +43,54 @@ const sendOrderNotification = async (userId, title, body, orderData) => {
 
     return success;
   } catch (error) {
-    console.error('Error sending order notification:', error);
+    console.error('❌ Error sending order notification:', error);
     return false;
   }
 };
 
 // Get store owner's user ID from store ID
+// ✅ CORRECTED: Get store owner's user ID from store ID
 const getStoreOwnerId = async (storeId) => {
   try {
-    const store = await Store.findById(storeId).select('owner');
-    return store?.owner;
+    const store = await Store.findById(storeId).select('userId'); // ✅ Changed to 'userId'
+    return store?.userId; // ✅ Changed to 'userId'
   } catch (error) {
-    console.error('Error getting store owner:', error);
+    console.error('❌ Error getting store owner:', error);
     return null;
   }
 };
 
 // Notification for new order (to seller)
+// IMPROVED: Notification for new order (handles multiple products)
 const notifyNewOrder = async (orderData) => {
   try {
-    const storeOwnerId = await getStoreOwnerId(orderData.sellerId);
+    console.log('🛒 Sending new order notification...');
+    
+    const storeOwnerId = await getStoreOwnerId(orderData.sellerId._id || orderData.sellerId);
     
     if (!storeOwnerId) {
-      console.log('Store owner not found for new order notification');
+      console.log('❌ Store owner not found for new order notification');
       return false;
     }
 
     // Get customer name from order data or fetch from user
     let customerName = orderData.customerName;
     if (!customerName && orderData.buyerId) {
-      const customer = await User.findById(orderData.buyerId).select('username name');
+      const customer = await User.findById(orderData.buyerId._id || orderData.buyerId).select('username name');
       customerName = customer?.username || customer?.name || 'A customer';
     }
 
     const title = '🛒 New Order Received!';
-    const body = `${customerName} ordered ${orderData.quantity || 1}x ${orderData.productName} - ₹${orderData.totalAmount}`;
+    
+    // Handle multiple products in notification
+    let body;
+    if (orderData.products && orderData.products.length > 1) {
+      const totalItems = orderData.products.reduce((sum, product) => sum + product.quantity, 0);
+      body = `${customerName} ordered ${totalItems} items (${orderData.products.length} products) - ₹${orderData.totalAmount || 'N/A'}`;
+    } else {
+      const product = orderData.products?.[0] || {};
+      body = `${customerName} ordered ${product.quantity || 1}x ${product.productName || 'item'} - ₹${orderData.totalAmount || 'N/A'}`;
+    }
 
     return await sendOrderNotification(
       storeOwnerId,
@@ -77,34 +99,45 @@ const notifyNewOrder = async (orderData) => {
       { ...orderData, action: 'new_order' }
     );
   } catch (error) {
-    console.error('Error sending new order notification:', error);
+    console.error('❌ Error sending new order notification:', error);
     return false;
   }
 };
 
-// Notification for order confirmation (to buyer)
+// IMPROVED: Handle multiple products in other notifications too
 const notifyOrderConfirmed = async (orderData) => {
   try {
-    if (!orderData.buyerId) {
-      console.log('Buyer ID not found for order confirmation notification');
+    console.log('✅ Sending order confirmation notification...');
+    
+    const buyerId = orderData.buyerId._id || orderData.buyerId;
+    if (!buyerId) {
+      console.log('❌ Buyer ID not found for order confirmation notification');
       return false;
     }
 
     // Get store name
-    const store = await Store.findById(orderData.sellerId).select('name storeName');
-    const storeName = store?.name || store?.storeName || 'Store';
+    const storeId = orderData.sellerId._id || orderData.sellerId;
+    const store = await Store.findById(storeId).select('storeName');
+    const storeName = store?.storeName || 'Store';
 
     const title = '✅ Order Confirmed';
-    const body = `Your order for ${orderData.productName} has been confirmed by ${storeName}`;
+    
+    let body;
+    if (orderData.products && orderData.products.length > 1) {
+      body = `Your order with ${orderData.products.length} products has been confirmed by ${storeName}`;
+    } else {
+      const product = orderData.products?.[0] || {};
+      body = `Your order for ${product.productName || 'item'} has been confirmed by ${storeName}`;
+    }
 
     return await sendOrderNotification(
-      orderData.buyerId,
+      buyerId,
       title,
       body,
       { ...orderData, action: 'confirmed' }
     );
   } catch (error) {
-    console.error('Error sending order confirmation notification:', error);
+    console.error('❌ Error sending order confirmation notification:', error);
     return false;
   }
 };
@@ -112,8 +145,10 @@ const notifyOrderConfirmed = async (orderData) => {
 // Notification for order shipped (to buyer)
 const notifyOrderShipped = async (orderData, trackingNumber = null) => {
   try {
+    console.log('🚚 Sending order shipped notification...');
+    
     if (!orderData.buyerId) {
-      console.log('Buyer ID not found for order shipped notification');
+      console.log('❌ Buyer ID not found for order shipped notification');
       return false;
     }
 
@@ -131,7 +166,7 @@ const notifyOrderShipped = async (orderData, trackingNumber = null) => {
       { ...orderData, action: 'shipped', trackingNumber }
     );
   } catch (error) {
-    console.error('Error sending order shipped notification:', error);
+    console.error('❌ Error sending order shipped notification:', error);
     return false;
   }
 };
@@ -139,6 +174,8 @@ const notifyOrderShipped = async (orderData, trackingNumber = null) => {
 // Notification for order delivered (to both buyer and seller)
 const notifyOrderDelivered = async (orderData) => {
   try {
+    console.log('📦 Sending order delivered notifications...');
+    
     let notifications = [];
 
     // Notify buyer
@@ -182,7 +219,7 @@ const notifyOrderDelivered = async (orderData) => {
     const results = await Promise.allSettled(notifications);
     return results.some(result => result.status === 'fulfilled' && result.value);
   } catch (error) {
-    console.error('Error sending order delivered notifications:', error);
+    console.error('❌ Error sending order delivered notifications:', error);
     return false;
   }
 };
@@ -190,6 +227,8 @@ const notifyOrderDelivered = async (orderData) => {
 // Notification for order cancellation
 const notifyOrderCancelled = async (orderData, cancelledBy = 'buyer') => {
   try {
+    console.log('❌ Sending order cancellation notifications...');
+    
     let notifications = [];
 
     if (cancelledBy === 'buyer') {
@@ -238,7 +277,7 @@ const notifyOrderCancelled = async (orderData, cancelledBy = 'buyer') => {
     const results = await Promise.allSettled(notifications);
     return results.some(result => result.status === 'fulfilled' && result.value);
   } catch (error) {
-    console.error('Error sending order cancellation notifications:', error);
+    console.error('❌ Error sending order cancellation notifications:', error);
     return false;
   }
 };
@@ -246,10 +285,12 @@ const notifyOrderCancelled = async (orderData, cancelledBy = 'buyer') => {
 // Notification for payment received (to seller)
 const notifyPaymentReceived = async (orderData) => {
   try {
+    console.log('💰 Sending payment received notification...');
+    
     const storeOwnerId = await getStoreOwnerId(orderData.sellerId);
     
     if (!storeOwnerId) {
-      console.log('Store owner not found for payment notification');
+      console.log('❌ Store owner not found for payment notification');
       return false;
     }
 
@@ -269,7 +310,7 @@ const notifyPaymentReceived = async (orderData) => {
       { ...orderData, action: 'payment_received' }
     );
   } catch (error) {
-    console.error('Error sending payment notification:', error);
+    console.error('❌ Error sending payment notification:', error);
     return false;
   }
 };
@@ -277,8 +318,10 @@ const notifyPaymentReceived = async (orderData) => {
 // Notification for payment failed (to buyer)
 const notifyPaymentFailed = async (orderData) => {
   try {
+    console.log('❌ Sending payment failed notification...');
+    
     if (!orderData.buyerId) {
-      console.log('Buyer ID not found for payment failed notification');
+      console.log('❌ Buyer ID not found for payment failed notification');
       return false;
     }
 
@@ -292,7 +335,7 @@ const notifyPaymentFailed = async (orderData) => {
       { ...orderData, action: 'payment_failed' }
     );
   } catch (error) {
-    console.error('Error sending payment failed notification:', error);
+    console.error('❌ Error sending payment failed notification:', error);
     return false;
   }
 };

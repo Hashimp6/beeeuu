@@ -369,15 +369,33 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
   };
 
   const handleStatusUpdate = async (newStatus) => {
+    // Only ask for OTP if changing from processing → delivered
+    if (order.status === 'processing' && newStatus === 'delivered') {
+      const userOtp = prompt('Enter OTP provided by customer:');
+  
+      if (!userOtp) {
+        toast.error('OTP is required to mark as delivered');
+        return;
+      }
+  
+      if (userOtp !== order.otp) {
+        toast.error('Incorrect OTP');
+        return;
+      }
+    }
+  
     setIsUpdating(true);
     try {
       await onStatusChange(order._id, newStatus);
+      toast.success(`Order marked as ${newStatus}`);
     } catch (error) {
       console.error('Error updating status:', error);
+      toast.error('Failed to update order status');
     } finally {
       setIsUpdating(false);
     }
   };
+  
 
   const handlePaymentStatusChange = async (orderId, newStatus) => {
     toast((t) => (
@@ -390,7 +408,7 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
             onClick={async () => {
               toast.dismiss(t.id);
               try {
-                console.log("hg", `${SERVER_URL}/orders/payment/${orderId}`);
+              
                 
                 await axios.patch(
                   `${SERVER_URL}/orders/payment/${orderId}`,

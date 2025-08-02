@@ -5,6 +5,8 @@ const { notifyPaymentReceived } = require("../utils/appointmentNotification");
 const { notifyNewOrder } = require("../utils/orderNotification");
 
 
+
+
 const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
@@ -78,36 +80,73 @@ const createOrder = async (req, res) => {
         console.log('Could not fetch seller name:', error);
       }
     }
+
+    // Add OTP to the order
+    const generateOTP = () => {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    };
+    orderData.otp = generateOTP();
+
+    // Process products and calculate totals
     orderData.products = orderData.products.map((product) => ({
       ...product,
       totalPrice: product.quantity * product.unitPrice,
     }));
+    
     orderData.orderId = `ORD-${Date.now()}`;
     const order = new Order(orderData);
     await order.save();
-    console.log("order saved");
-    
+
+    // ✅ FIXED: Correct population (userId is the owner field in Store schema)
     const populatedOrder = await Order.findById(order._id)
-      .populate('buyerId', 'name email')
-      .populate('sellerId', 'name address')
+      .populate('buyerId', 'name email username')
+      .populate('sellerId', 'storeName userId') // ✅ userId is the store owner
       .populate('products.productId', 'name price image');
+
+    console.log('✅ Order created successfully:', populatedOrder._id);
+    
+    // 📊 Debug order data for notifications
+    console.log('📊 Order data for notification:', {
+      orderId: populatedOrder._id,
+      sellerId: populatedOrder.sellerId._id,
+      buyerId: populatedOrder.buyerId._id,
+      customerName: populatedOrder.customerName,
+      storeOwner: populatedOrder.sellerId?.userId,
+      products: populatedOrder.products.map(p => ({
+        name: p.productName,
+        quantity: p.quantity
+      }))
+    });
     
     // 🔔 SEND NOTIFICATION TO SELLER ABOUT NEW ORDER
     try {
-      await notifyNewOrder(populatedOrder);
-      console.log('✅ New order notification sent to seller');
+      console.log('🚀 Calling notifyNewOrder...');
+      
+      // ✅ FIXED: Pass the correctly populated order
+      const notificationResult = await notifyNewOrder(populatedOrder);
+      console.log('📬 New order notification result:', notificationResult);
+      
+      if (notificationResult) {
+        console.log('✅ New order notification sent successfully');
+      } else {
+        console.log('❌ New order notification failed');
+      }
     } catch (notificationError) {
-      console.error('❌ Failed to send new order notification:', notificationError);
-      // Don't fail the order creation if notification fails
+      console.error('❌ CRITICAL: New order notification error:', notificationError);
+      console.error('📊 Error details:', {
+        message: notificationError.message,
+        stack: notificationError.stack
+      });
     }
     
     // 💰 SEND PAYMENT NOTIFICATION IF PAYMENT IS COMPLETED
     if (orderData.paymentStatus === 'completed' || orderData.paymentStatus === 'paid') {
       try {
-        await notifyPaymentReceived(populatedOrder);
-        console.log('✅ Payment notification sent to seller');
-      } catch (notificationError) {
-        console.error('❌ Failed to send payment notification:', notificationError);
+        console.log('💳 Sending payment notification...');
+        const paymentNotificationResult = await notifyPaymentReceived(populatedOrder);
+        console.log('💰 Payment notification result:', paymentNotificationResult);
+      } catch (paymentError) {
+        console.error('❌ Payment notification error:', paymentError);
       }
     }
     
@@ -117,7 +156,7 @@ const createOrder = async (req, res) => {
       orderId: order.orderId
     });
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error('❌ Error creating order:', error);
     res.status(500).json({
       message: "Error creating order",
       error: error.message
