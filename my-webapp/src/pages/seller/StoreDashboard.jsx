@@ -461,6 +461,37 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
                       <span className="text-xl font-bold text-gray-900">{store?.averageRating}</span>
                       <span className="text-gray-600 ml-2">({store?.numberOfRatings} reviews)</span>
                     </div>
+                    <div className="mt-4 flex items-center space-x-4">
+  <label className="flex items-center cursor-pointer">
+    <div className="relative">
+      <input
+        type="checkbox"
+        className="sr-only"
+        checked={store?.isActive}
+        onChange={async () => {
+          try {
+            const newStatus = !store?.isActive;
+            await axios.put(`${SERVER_URL}/stores/toggle-active/${store._id}`, { isActive: newStatus });
+            setStore((prev) => ({ ...prev, isActive: newStatus }));
+            toast.success(`Store turned ${newStatus ? 'ON' : 'OFF'}`);
+          } catch (err) {
+            toast.error("Failed to update store status");
+            console.error(err);
+          }
+        }}
+      />
+      <div className={`block w-14 h-8 rounded-full transition-colors duration-300 ${store?.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+      <div
+        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300 ${
+          store?.isActive ? 'translate-x-6' : ''
+        }`}
+      ></div>
+    </div>
+    <span className="ml-3 text-gray-900 font-medium">
+      {store?.isActive ? 'Shop is ON' : 'Shop is OFF'}
+    </span>
+  </label>
+</div>
                     <button
   onClick={() =>
     navigate('/newStore', {

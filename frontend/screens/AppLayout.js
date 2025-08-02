@@ -10,6 +10,7 @@ import LocationSelectionModal from '../components/LocationSelection';
 import ProfileScreen from '../components/ProfileScreen';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import OffersReelsFeed from './OfferReelScreen';
+import StoreSearchPage from './SearchStoreScreen';
 
 const AppLayout = () => {
   const route = useRoute();
@@ -108,7 +109,7 @@ const AppLayout = () => {
           />
         );
       case 'Search':
-        return  
+        return  <StoreSearchPage/>
       case 'Profile':
         return <ProfileScreen />;
       

@@ -1039,6 +1039,17 @@ const verifyRazorpayPayment = async (req, res) => {
   }
 };
 
+
+const activeStatus= async (req, res) =>{
+  try {
+    const store = await Store.findByIdAndUpdate(req.params.id, { isActive: req.body.isActive }, { new: true });
+    res.json(store);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to toggle status" });
+  }
+}
+
+
   module.exports = {
     
     registerStore,
@@ -1059,5 +1070,6 @@ const verifyRazorpayPayment = async (req, res) => {
   updateRazorpayCredentials,
   getRazorpayCredentials,
   verifyRazorpayPayment ,
-  createRazorpayOrder
+  createRazorpayOrder,
+  activeStatus
   };

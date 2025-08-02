@@ -4,6 +4,10 @@ const orderSchema = new mongoose.Schema({
   otp: {
     type: String,
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },  
   products: [{
     productId: {
       type: mongoose.Schema.Types.ObjectId,

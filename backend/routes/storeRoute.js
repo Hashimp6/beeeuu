@@ -18,7 +18,8 @@ const {
   updateRazorpayCredentials,
   getRazorpayCredentials,
   createRazorpayOrder,
-  verifyRazorpayPayment
+  verifyRazorpayPayment,
+  activeStatus
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -47,6 +48,7 @@ router.put('/:id/razorpay', updateRazorpayCredentials);       // 🔐 Save encry
 router.get('/:id/razorpay', getRazorpayCredentials); 
 router.post('/razorpay/create-order', createRazorpayOrder);
 router.post('/razorpay/verify-payment', verifyRazorpayPayment);
+router.put('/toggle-active/:id',activeStatus)
 router.use(protect);
 
 // Register a new store - use uploadStoreImage middleware
