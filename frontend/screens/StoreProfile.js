@@ -364,8 +364,16 @@ const groupedProducts = isRestaurant
   >
     <Text style={styles.chatButtonText}>Chat Now</Text>
   </TouchableOpacity>
+  
         </View>
       </View>
+      {!store?.isActive && (
+  <View style={styles.inactiveContainer}>
+    <Text style={styles.inactiveText}>
+      ⚠️ This store is currently closed. Please try later.
+    </Text>
+  </View>
+)}
 
       {/* Tabs */}
       <View style={styles.tabRow}>
@@ -568,6 +576,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
+  inactiveContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#FDECEA',
+    borderRadius: 10,
+    alignSelf: 'center',
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
+  inactiveText: {
+    color: '#B71C1C',
+    fontWeight: '600',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  
   
   cartBadgeText: {
     color: 'white',

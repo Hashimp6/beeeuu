@@ -331,7 +331,10 @@ const handleTouchEnd = () => {
   };
 
   const handleAppointment = (product) => {
-    console.log("product is ",product);
+    if (!store?.isActive) {
+      toast.error("Store is not active right now. Please try later.");
+      return;
+    }
     
     navigate('/appointmentShedule', {
       state: {
@@ -342,6 +345,10 @@ const handleTouchEnd = () => {
   };
 
   const handleOrderProduct = (product) => {
+    if (!store?.isActive) {
+      toast.error("Store is not active right now. Please try later.");
+      return;
+    }
     addToCart(product, product.store);
   };
 
@@ -755,6 +762,14 @@ const handleTouchEnd = () => {
       </section>
 
       {/* Main Content */}
+      {!store?.isActive && (
+  <div className="w-full flex justify-center mt-4">
+    <div className="bg-gradient-to-r from-red-500 to-red-700 text-white px-6 py-3 rounded-lg shadow-md text-center text-sm font-semibold animate-pulse">
+      ⚠️ This store is currently closed.please try again later
+    </div>
+  </div>
+)}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     
       {activeTab === 'products' ? (

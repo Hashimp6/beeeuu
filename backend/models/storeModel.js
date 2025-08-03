@@ -2,16 +2,27 @@ const mongoose = require("mongoose");
 
 const storeSchema = new mongoose.Schema({
    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  storeName: { type: String, required: true },
+ 
+   storeName: { type: String, required: true },
+
    description: { type: String },
+
    profileImage: { type: String },
+
    place: { type: String },
+
   category: { type: String },
+
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
   subscription: {
     type: String,
     enum: ['basic', 'premium', 'golden'],
     default: 'basic'
   },
+
   validTill: {
     type: Date,
     default: null
@@ -21,6 +32,10 @@ const storeSchema = new mongoose.Schema({
     coordinates: [Number]
   },
   averageRating: {
+    type: Number,
+    default: 0
+  },
+  numberOfRatings: {
     type: Number,
     default: 0
   },
@@ -42,10 +57,7 @@ const storeSchema = new mongoose.Schema({
       default: ''
     }
   },
-  numberOfRatings: {
-    type: Number,
-    default: 0
-  },
+ 
   upi: { type: String },
   phone: { type: String },
   socialMedia: {
