@@ -72,7 +72,16 @@ const SellerProfile = () => {
     };
 
     const handleOrder = (product) => {
-      // Use the `store` from SellerProfile context, not product.store
+      if (!store?.isActive) {
+        Toast.show({
+          type: 'error',
+          text1: 'Store Closed',
+          text2: 'This shop is currently closed. Please try later.',
+        });
+        return; // Don't proceed
+      }
+    
+      // If store is active, proceed as normal
       addToCart(product, store);
     
       console.log('🛒 Product added:', product);
@@ -84,6 +93,7 @@ const SellerProfile = () => {
         text2: `${product.name} has been added to your cart.`,
       });
     };
+    
     
     const restaurantCategories = [
       { key: 'starter', label: 'Starter' },

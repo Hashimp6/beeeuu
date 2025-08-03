@@ -118,6 +118,10 @@ const ProductsGrid = ({
             if (product.type === 'service') {
               handleAppointment(product);
             } else {
+              if (!store?.isActive) {
+                toast.error('Shop is closed. Try again later.');
+                return;
+              }
               addToCart(product, store);
               toast.success(`${product.name} added to cart 🛒`);
               
