@@ -424,10 +424,13 @@ useEffect(() => {
                     Authorization: `Bearer ${authToken}`,
                   },
                 });
-  
+ 
+                const result =finalRes.data.data
                 toast.success(`✅ Order placed! Order ID: ${finalRes.data.orderId}`);
                 clearStoreCart(store._id);
-                 navigate(`/storeprofile/${store.storeName}`)
+                navigate(`/receipt/${result.orderId}`, { 
+                  state: { orderData: result } 
+                });
               } else {
                 toast.error("❌ Razorpay payment verification failed");
                 setIsPlacingOrder(false);
@@ -495,10 +498,13 @@ useEffect(() => {
             Authorization: `Bearer ${authToken}`,
           },
         });
-  
+
+  const result =response.data.data
         toast.success(`✅ Order placed! Order ID: ${response.data.orderId}`);
         clearStoreCart(store._id);
-        setTimeout(() => navigate(`/storeprofile/${store.storeName}`), 1500);
+        navigate(`/receipt/${result.orderId}`, { 
+          state: { orderData: result } 
+        });
       } catch (err) {
         console.error("❌ Order error:", err);
         toast.error("❌ Failed to place order");

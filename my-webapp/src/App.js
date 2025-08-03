@@ -26,6 +26,7 @@ import PaymentSuccess from "./pages/seller/payment/Success";
 import PaymentFailed from "./pages/seller/payment/Failed";
 import NotFound from "./pages/Error404";
 import SerchByLandingPage from "./pages/Home";
+import OrderReceipt from "./pages/user/OrderReciept";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -147,6 +148,7 @@ function App() {
  
             } 
           />
+         <Route path="/receipt/:orderId" element={<OrderReceipt />} />
            <Route 
             path="/payment-success" 
             element={
