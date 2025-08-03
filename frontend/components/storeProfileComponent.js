@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { SERVER_URL } from "../config";
+import Toast from "react-native-toast-message";
 
 const StoreProfileComponent = () => {
   const navigation = useNavigation();
@@ -64,6 +65,39 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
       totalRevenue: 2450,
     });
   }, [user]);
+
+
+  const toggleStoreStatus = async () => {
+    try {
+      const newStatus = !store.isActive;
+  
+      const response = await axios.put(
+        `${SERVER_URL}/stores/toggle-active/${store._id}`,
+        { isActive: newStatus }
+      );
+  
+      setStore((prevStore) => ({
+        ...prevStore,
+        isActive: response.data.isActive,
+      }));
+  
+      Toast.show({
+        type: 'success',
+        text1: `Store is now ${response.data.isActive ? "Open" : "Closed"}`,
+      });
+  
+    } catch (error) {
+      console.error("Toggle failed", error);
+  
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to change store status',
+        text2: 'Please try again later',
+      });
+    }
+  };
+  
+  
 
   const handleEditStore = () => {
     // Navigate to NewStore with existing store data
@@ -141,10 +175,36 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
     <View style={styles.container}>
       {/* Store Dashboard */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Icon name="dashboard" size={22} color="#155366" />
-          <Text style={styles.sectionTitle}>Store Dashboard</Text>
-        </View>
+      <View style={styles.sectionHeader}>
+  <View style={{ flexDirection: "row", alignItems: "center" }}>
+    <Icon name="dashboard" size={22} color="#155366" />
+    <Text style={styles.sectionTitle}>Store Dashboard</Text>
+  </View>
+
+ <TouchableOpacity onPress={toggleStoreStatus} style={styles.toggleStatusContainer}>
+  <View
+    style={[
+      styles.toggleIndicator,
+      { backgroundColor: store.isActive ? "#2ecc71" : "#e74c3c" },
+    ]}
+  >
+    <View
+      style={[
+        styles.toggleCircle,
+        {
+          alignSelf: store.isActive ? "flex-end" : "flex-start",
+          backgroundColor: "#fff",
+        },
+      ]}
+    />
+  </View>
+  <Text style={styles.toggleLabel}>
+    {store.isActive ? "Open" : "Closed"}
+  </Text>
+</TouchableOpacity>
+
+</View>
+
 
         <View style={styles.dashboardCard}>
   <View style={styles.cardContainer}>
@@ -588,11 +648,40 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
+
+sectionHeader: {
+  flexDirection: "row",
+  justifyContent: "space-between", // pushes items to edges
+  alignItems: "center",
+  paddingHorizontal: 16,
+  marginBottom: 10,
+},
+toggleStatusContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+toggleIndicator: {
+  width: 50,
+  height: 25,
+  borderRadius: 15,
+  padding: 2,
+  justifyContent: "center",
+  marginRight: 6,
+},
+
+toggleCircle: {
+  width: 20,
+  height: 20,
+  borderRadius: 10,
+},
+
+toggleLabel: {
+  fontSize: 12,
+  fontWeight: "bold",
+  color: "#333",
+},
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
