@@ -11,9 +11,9 @@ import toast from 'react-hot-toast';
 import OffersStories from '../../components/user/ProfileOffice';
 
 const StoreProfile = () => {
-  console.log("prms", useParams());
+
   const { addToCart,cart  } = useCart();
-  console.log("carts are",cart);
+
   
   const { storeName } = useParams();
   const navigate = useNavigate();

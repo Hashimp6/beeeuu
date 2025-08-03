@@ -142,9 +142,9 @@ function App() {
           <Route 
             path="/order-details" 
             element={
-              <ProtectedRoute>
+           
                 <OrderDetails />
-              </ProtectedRoute>
+ 
             } 
           />
            <Route 

@@ -26,6 +26,9 @@ import { useCart} from '../../context/CartContext';
 
 const OrderDetails = () => {
   const { user, token } = useAuth();
+  const authToken=token||" "
+  // const user = { _id: "688e399e51047e79d15e1476" };
+  // const token="";
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -57,7 +60,18 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [addressError, setAddressError] = useState('');
   const [transactionError, setTransactionError] = useState('');
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [buyerId, setBuyerId] = useState(null); 
   
+
+  useEffect(() => {
+    if (user && user._id) {
+      setBuyerId(user._id);
+    } else {
+      setShowGuestModal(true); // Ask user to login or continue as guest
+    }
+  }, [user]);
+
   useEffect(() => {
     // Don't redirect if we're in the process of placing an order
     if (isPlacingOrder) return;
@@ -293,7 +307,7 @@ useEffect(() => {
       return;
     }
   
-    const note = `Order by ${user?.username} | ${storeProducts.slice(0, 2).map(p => p.name).join(", ")}${storeProducts.length > 2 ? '...' : ''}`;
+    const note = `Order by ${customerName} | ${storeProducts.slice(0, 2).map(p => p.name).join(", ")}${storeProducts.length > 2 ? '...' : ''}`;
     const upiLink = generateUPILink(upiId, name, amount, note);
   
     if (isMobile) {
@@ -319,8 +333,7 @@ useEffect(() => {
     }
   };
   const handlePlaceOrder = async () => {
-    console.log("Order placement started",selectedPayment);
-  
+    if (!buyerId) return;
     setIsPlacingOrder(true);
   
     // Step 1: Validate inputs
@@ -359,7 +372,7 @@ useEffect(() => {
           receipt: `receipt_${Date.now()}`,
           notes: {
             storeId: store._id,
-            customer: user.name,
+            customer: customerName,
           },
         });
   
@@ -393,7 +406,7 @@ useEffect(() => {
                 const orderData = {
                   products: orderProducts,
                   sellerId: store._id,
-                  buyerId: user._id,
+                  buyerId: buyerId,
                   totalAmount: parseFloat(calculateTotal()),
                   totalItems: getTotalItems(),
                   orderType: selectedService,
@@ -408,7 +421,7 @@ useEffect(() => {
                 const finalRes = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${authToken}`,
                   },
                 });
   
@@ -425,9 +438,9 @@ useEffect(() => {
             }
           },
           prefill: {
-            name: user.name,
-            email: user.email,
-            contact: user.phone,
+            name: customerName,
+            email: user?.email||"hashimhusain313@gmail.com",
+            contact: phoneNumber,
           },
           theme: {
             color: "#3399cc",
@@ -464,7 +477,7 @@ useEffect(() => {
         const orderData = {
           products: orderProducts,
           sellerId: store._id,
-          buyerId: user._id,
+          buyerId: buyerId,
           totalAmount: parseFloat(calculateTotal()),
           totalItems: getTotalItems(),
           orderType: selectedService,
@@ -479,7 +492,7 @@ useEffect(() => {
         const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authToken}`,
           },
         });
   
@@ -990,6 +1003,36 @@ useEffect(() => {
           </div>
         </div>
       )}
+
+
+{showGuestModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white p-6 rounded-xl shadow-xl text-center">
+      <h2 className="text-xl font-semibold text-gray-800">You are not logged in</h2>
+      <p className="text-gray-600">Would you like to continue as guest or login?</p>
+      <div className="mt-4 flex justify-center gap-4">
+        <button
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          onClick={() => {
+            setBuyerId("688e399e51047e79d15e1476"); // guest ID locally
+            setShowGuestModal(false);
+          }}
+        >
+          Continue as Guest
+        </button>
+        <button
+          className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
+          onClick={() => navigate('/login')}
+        >
+          Login
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
       {showQRCode && (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center">
