@@ -574,7 +574,12 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
   <SimplePieChart data={businessOverviewData} title="Business Overview" />
    <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
   <SimplePieChart data={orderStatusData} title="Order Status" />
-
+  <button
+      onClick={() => navigate('/qr')}
+      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl mt-4 transition duration-300"
+    >
+      📲  QR Page
+    </button>
 </div>
 
              

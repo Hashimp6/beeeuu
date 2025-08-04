@@ -27,6 +27,7 @@ import PaymentFailed from "./pages/seller/payment/Failed";
 import NotFound from "./pages/Error404";
 import SerchByLandingPage from "./pages/Home";
 import OrderReceipt from "./pages/user/OrderReciept";
+import RestaurantQRGenerator from "./components/Store/GenerateQr";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -69,7 +70,7 @@ function App() {
           <Route path="/store/:storeName" element={<StoreProfile />} />
           <Route path="/offers" element={<HomeLayout />} />
           <Route path="/offers/:offerId" element={<HomeLayout />} />
-          
+          <Route path="/Qr" element={<RestaurantQRGenerator/>} />
           {/* Public Home Route - accessible to everyone */}
           <Route
             path="/home"
