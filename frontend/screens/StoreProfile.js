@@ -471,9 +471,40 @@ const groupedProducts = isRestaurant
           style={styles.productCard}
           onPress={() => setSelectedProduct(item)}
         >
-          {/* Your existing product card rendering here */}
+          <Image
+            source={{
+              uri: item.images?.[0] || 'https://picsum.photos/300?random=11',
+            }}
+            style={styles.productImage}
+          />
+          <View style={styles.productInfo}>
+            <Text style={styles.productName}>{item.name}</Text>
+            <Text style={styles.productDetails}>
+              {item.description?.length > 30
+                ? item.description.slice(0, 30) + '...'
+                : item.description}
+            </Text>
+            <View style={styles.productFooter}>
+              <Text style={styles.productPrice}>₹{item.price}</Text>
+              <TouchableOpacity
+                style={styles.bookNowBtn}
+                onPress={() => {
+                  if (item.type === 'service') {
+                    handleAppointment(item._id, item.name);
+                  } else {
+                    handleOrder(item);
+                  }
+                }}
+              >
+                <Text style={styles.bookNowText}>
+                  {item.type === 'service' ? 'Book' : 'Add to Cart'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </TouchableOpacity>
       ))
+      
     )}
   </View>
 ) : (

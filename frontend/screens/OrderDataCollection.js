@@ -38,7 +38,7 @@ console.log("authuser",user);
   const [customerName, setCustomerName] = useState(user?.username || '');
   const [address, setAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
-  const [selectedPayment, setSelectedPayment] = useState('razorpay'||UPI);
+  const [selectedPayment, setSelectedPayment] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -93,6 +93,23 @@ const paymentOptions = filteredPaymentOptions.map((type) => {
     return null;
   }
 }).filter(Boolean);
+
+useEffect(() => {
+  if (store?.paymentType) {
+    let defaultPayment = '';
+
+    if (store.paymentType.includes('Razorpay')) {
+      defaultPayment = 'razorpay';
+    } else if (store.paymentType.includes('UPI')) {
+      defaultPayment = 'upi';
+    } else if (store.paymentType.includes('Cash on Delivery')) {
+      defaultPayment = 'cod';
+    }
+
+    setSelectedPayment(defaultPayment);
+  }
+}, [store]);
+
 
 const validateService = () => {
   const isRestaurantOrHotel = 

@@ -47,7 +47,7 @@ const OrderDetails = () => {
   const [customerName, setCustomerName] = useState(user?.username || '');
   const [address, setAddress] = useState('');  
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
-  const [selectedPayment, setSelectedPayment] = useState('razorpay');
+  const [selectedPayment, setSelectedPayment] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -107,6 +107,22 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
     }
   }, [storeProducts]);
 console.log("llo",store);
+
+useEffect(() => {
+  if (store?.paymentType) {
+    let defaultPayment = '';
+
+    if (store.paymentType.includes('Razorpay')) {
+      defaultPayment = 'razorpay';
+    } else if (store.paymentType.includes('UPI')) {
+      defaultPayment = 'upi';
+    } else if (store.paymentType.includes('Cash on Delivery')) {
+      defaultPayment = 'cod';
+    }
+
+    setSelectedPayment(defaultPayment);
+  }
+}, [store]);
 
 const paymentOptions = [
   { id: 'cod', name: 'Cash on Delivery', icon: IndianRupee },

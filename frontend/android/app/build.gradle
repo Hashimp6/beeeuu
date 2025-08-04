@@ -125,7 +125,7 @@ android {
     }
 
     androidResources {
-        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 }
 
@@ -161,6 +161,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
 implementation 'com.google.firebase:firebase-auth'
 implementation 'com.google.firebase:firebase-messaging'
+ implementation 'com.razorpay:standard-core:1.0.7'
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
     def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: "") == "true";

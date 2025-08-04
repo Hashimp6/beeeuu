@@ -625,12 +625,6 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
         </View>
        
       </View>
-      <TouchableOpacity
-  style={styles.tempButton}
-  onPress={() => navigation.navigate("StoreAdmin")} // 🔁 Change this to your target screen name
->
-  <Text style={styles.tempButtonText}>new Store Admin Page</Text>
-</TouchableOpacity>
     </View>
   );
 };
