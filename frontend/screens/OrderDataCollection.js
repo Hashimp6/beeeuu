@@ -249,19 +249,18 @@ useEffect(() => {
     setTransactionError('');
     setPaymentCompleted(false);
     
-    // If selecting digital payment, show payment modal
-    if (paymentId === 'UPI') {
+    // If selecting UPI payment, show payment modal
+    if (paymentId === 'upi') {
       setShowPaymentModal(true);
     }
   };
-
   // Generate payment deep link
 // Replace the generatePaymentDeepLink function with this fixed version:
 
 const generatePaymentDeepLink = (paymentMethod) => {
   const amount = calculateTotal();
   const merchantName = store.storeName || 'Merchant';
-  const merchantUPI = store.upi || 'merchant@paytm';
+  const merchantUPI = store.upi || store.upiId || 'merchant@paytm'; // Fix UPI ID reference
   
   // Generate a proper transaction note
   const transactionNote = products.length === 1 
@@ -274,15 +273,16 @@ const generatePaymentDeepLink = (paymentMethod) => {
   
   switch (paymentMethod) {
     case 'gpay':
-    deepLink = `upi://pay?pa=${merchantUPI}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+      deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
       break;
     case 'phonepe':
-      deepLink = `upi://pay?pa=${merchantUPI}&pn=${merchantName}&am=${amount}&cu=INR&tn=${transactionNote}`;
+      deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
       break;
     case 'paytm':
       deepLink = `paytmmp://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
       break;
     case 'upi':
+    default:
       deepLink = `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
       break;
   }
@@ -297,32 +297,65 @@ const generatePaymentDeepLink = (paymentMethod) => {
       const deepLink = generatePaymentDeepLink(paymentMethod);
       
       if (deepLink) {
+        console.log(`🔗 Attempting to open ${paymentMethod} with link:`, deepLink);
+        
         const supported = await Linking.canOpenURL(deepLink);
         if (supported) {
           await Linking.openURL(deepLink);
+          
+          // Show success message and instructions
+          Toast.show({
+            type: 'info',
+            text1: '💳 Payment App Opened',
+            text2: 'Complete payment and return to enter transaction ID',
+            position: 'top',
+            visibilityTime: 4000,
+          });
+          
           return true;
         } else {
           // Try alternative deep links
           const alternativeLinks = getAlternativeDeepLinks(paymentMethod);
           for (const altLink of alternativeLinks) {
-            const altSupported = await Linking.canOpenURL(altLink);
-            if (altSupported) {
-              console.log(`🔗 Using alternative deep link:`, altLink);
-              await Linking.openURL(altLink);
-              return true;
+            try {
+              const altSupported = await Linking.canOpenURL(altLink);
+              if (altSupported) {
+                console.log(`🔗 Using alternative deep link:`, altLink);
+                await Linking.openURL(altLink);
+                
+                Toast.show({
+                  type: 'info',
+                  text1: '💳 Payment App Opened',
+                  text2: 'Complete payment and return to enter transaction ID',
+                  position: 'top',
+                  visibilityTime: 4000,
+                });
+                
+                return true;
+              }
+            } catch (altError) {
+              console.log('Alternative link failed:', altError);
+              continue;
             }
           }
           
+          // If no apps work, show install message
           Alert.alert(
             'App Not Found', 
-            `${paymentMethod.toUpperCase()} app is not installed on your device. Please install the app or use a different payment method.`
+            `${paymentMethod.toUpperCase()} app is not installed. Please install a UPI app or use a different payment method.`,
+            [
+              {
+                text: 'OK',
+                onPress: () => console.log('User acknowledged app not found')
+              }
+            ]
           );
           return false;
         }
       }
     } catch (error) {
       console.error('Payment app error:', error);
-      Alert.alert('Error', 'Failed to open payment app. Please try again.');
+      Alert.alert('Error', 'Failed to open payment app. Please try again or use a different payment method.');
       return false;
     }
   };
@@ -331,7 +364,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
   const getAlternativeDeepLinks = (paymentMethod) => {
     const amount = calculateTotal();
     const merchantName = store.storeName || 'Merchant';
-    const merchantUPI = store.upiId || 'merchant@paytm';
+    const merchantUPI = store.upi || store.upiId || 'merchant@paytm';
     
     switch (paymentMethod) {
       case 'gpay':
@@ -350,17 +383,48 @@ const generatePaymentDeepLink = (paymentMethod) => {
           `paytm://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`
         ];
       default:
-        return [];
+        return [
+          `upi://pay?pa=${merchantUPI}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`
+        ];
     }
   };
 
   // Handle payment process
   const handlePaymentProcess = async () => {
-    const success = await openPaymentApp(selectedPayment);
-    if (success) {
-      // Don't close modal immediately, let user complete payment and enter transaction ID
+    try {
+      // For UPI, we'll show a list of available payment apps
+      Alert.alert(
+        'Choose Payment App',
+        'Select your preferred UPI app to complete the payment',
+        [
+          {
+            text: 'Google Pay',
+            onPress: () => openPaymentApp('gpay')
+          },
+          {
+            text: 'PhonePe', 
+            onPress: () => openPaymentApp('phonepe')
+          },
+          {
+            text: 'Paytm',
+            onPress: () => openPaymentApp('paytm')
+          },
+          {
+            text: 'Other UPI App',
+            onPress: () => openPaymentApp('upi')
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Payment process error:', error);
+      Alert.alert('Error', 'Failed to initiate payment. Please try again.');
     }
   };
+  
 
   // Confirm payment completion
   const confirmPaymentCompletion = () => {
