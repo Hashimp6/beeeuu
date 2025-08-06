@@ -512,7 +512,7 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
         buttons.push(
           <button
             key="confirm"
-            onClick={() => handleStatusUpdate('confirmed')}
+            onClick={() => handleStatusUpdate('processing')}
             disabled={isUpdating}
             className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-teal-600 hover:to-teal-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-md"
           >
@@ -538,11 +538,11 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
         buttons.push(
           <button
             key="ship"
-            onClick={() => handleStatusUpdate('shipped')}
+            onClick={() => handleStatusUpdate('delivered')}
             disabled={isUpdating}
             className="flex-1 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-md"
           >
-            {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Truck className="w-4 h-4" /><span>Ship</span></>}
+            {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Truck className="w-4 h-4" /><span>Delivered</span></>}
           </button>
         );
         break;
@@ -745,51 +745,102 @@ const OrderManagement = ({ store }) => {
   const [selectedStatus, setSelectedStatus] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notificationTimer, setNotificationTimer] = useState(null);
+  const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [audioReady, setAudioReady] = useState(false); // NEW: Track audio readiness
   const [previousPendingCount, setPreviousPendingCount] = useState(0);
   
   // Audio ref for notification sound
-  const audioRef = useRef(null);
+  const audioRef = useRef(null); // CHANGED: Use ref instead of state
 
   // Create notification sound
-  useEffect(() => {
-    // Create audio context and generate beep sound
-    if (soundEnabled && typeof window !== 'undefined') {
+// Create notification sound
+// FIND this section around line 20-50 and REPLACE it completely:
+
+// Create notification sound - FIXED VERSION
+useEffect(() => {
+  if (soundEnabled && typeof window !== 'undefined') {
+    const createChimeSound = () => {
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
         
-        const createBeepSound = () => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz frequency
-          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-          gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.5);
-        };
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
         
-        audioRef.current = createBeepSound;
+        // Create a pleasant chime with descending tones
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+        oscillator.frequency.setValueAtTime(450, audioContext.currentTime + 0.2);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.type = 'sine';
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
       } catch (error) {
-        console.log('Audio context not supported');
+        console.log('Audio context error:', error);
       }
-    }
-  }, [soundEnabled]);
+    };
 
+    // Set the audio element and mark as ready
+    audioRef.current = { play: createChimeSound };  // ✅ CHANGED: Use audioRef instead of setAudioElement
+    setAudioReady(true); // ✅ NEW: Mark audio as ready
+    console.log('🔊 Audio system initialized');
+  } else {
+    setAudioReady(false);
+  }
+}, [soundEnabled]);
   // Play notification sound
-  const playNotificationSound = () => {
-    if (soundEnabled && audioRef.current) {
-      try {
-        audioRef.current();
-      } catch (error) {
-        console.log('Error playing sound:', error);
+// Play notification sound
+// Replace your existing playNotificationSound function with this:
+
+const playNotificationSound = () => {
+  if (soundEnabled && audioReady && audioRef.current) {
+    try {
+      if (audioRef.current.play && typeof audioRef.current.play === 'function') {
+        audioRef.current.play();
+        console.log('🔊 Playing notification sound');
       }
+    } catch (error) {
+      console.log('Error playing sound:', error);
     }
-  };
+  } else {
+    console.log('🔇 Sound not played - soundEnabled:', soundEnabled, 'audioReady:', audioReady);
+  }
+};
+
+// Start persistent notification
+const startPersistentNotification = () => {
+  if (notificationTimer || !soundEnabled || !audioReady) {
+    console.log('🔇 Notification not started - timer:', !!notificationTimer, 'sound:', soundEnabled, 'audioReady:', audioReady);
+    return;
+  }
+  
+  // Play immediately
+  playNotificationSound();
+  
+  // Then repeat every 2 seconds
+  const timer = setInterval(() => {
+    playNotificationSound();
+  }, 2000);
+  
+  setNotificationTimer(timer);
+  setHasNewOrders(true);
+  console.log('🔔 Started persistent notification');
+};
+
+// Stop notification
+const stopNotification = () => {
+  if (notificationTimer) {
+    clearInterval(notificationTimer);
+    setNotificationTimer(null);
+    setHasNewOrders(false);
+    console.log('🔕 Stopped notification');
+  }
+};
 
   const statusOptions = [
     { value: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length, color: 'bg-yellow-500' },
@@ -830,16 +881,32 @@ const OrderManagement = ({ store }) => {
       const newOrders = response.data.orders || response.data || [];
       
       // Check for new pending orders and play sound
-      if (status === 'pending' || selectedStatus === 'pending') {
-        const currentPendingCount = newOrders.filter(o => o.status === 'pending').length;
-        if (currentPendingCount > previousPendingCount && previousPendingCount > 0) {
-          playNotificationSound();
-          // Show a toast notification (you can replace this with your toast implementation)
-          console.log('🔔 New order received!');
-        }
-        setPreviousPendingCount(currentPendingCount);
-      }
+      const pendingOrders = newOrders.filter(o => o.status === 'pending');
+      const currentPendingCount = pendingOrders.length;
       
+      // Handle notifications for pending orders
+     // Handle notifications for pending orders with audio ready check
+if (currentPendingCount > 0) {
+  if (!hasNewOrders) {
+    // Wait a bit for audio to be ready if it's not yet
+    if (!audioReady && soundEnabled) {
+      console.log('⏳ Audio not ready yet, waiting...');
+      setTimeout(() => {
+        if (audioReady) {
+          startPersistentNotification();
+        }
+      }, 500); // Wait 500ms for audio to initialize
+    } else {
+      startPersistentNotification();
+    }
+    
+    toast.success(`🔔 You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}!`);
+  }
+} else {
+  stopNotification();
+}
+      
+      setPreviousPendingCount(currentPendingCount);
       setOrders(newOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -850,6 +917,7 @@ const OrderManagement = ({ store }) => {
   };
 
 // 1. Fix the handleStatusChange function in OrderManagement component
+// Fixed handleStatusChange function - replace your existing one with this:
 const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
   if (paymentStatus) {
     // Handle payment status update
@@ -863,7 +931,7 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
     return;
   }
 
-  // Handle order status update (existing logic)
+  // Handle order status update
   toast((t) => (
     <span className="flex flex-col gap-2">
       <span className="text-sm font-medium">Are you sure you want to change status to <b>{newStatus}</b>?</span>
@@ -883,12 +951,29 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                   timeout: 10000
                 }
               );
-              setOrders(prev =>
-                prev.map(order =>
+              
+              // Update the orders state immediately
+              setOrders(prev => {
+                const updatedOrders = prev.map(order =>
                   order._id === orderId ? { ...order, status: newStatus } : order
-                )
-              );
+                );
+                
+                // Check if there are any remaining pending orders after this update
+                const remainingPendingOrders = updatedOrders.filter(order => order.status === 'pending');
+                
+                // If no pending orders remain, stop the notification
+                if (remainingPendingOrders.length === 0) {
+                  console.log('🔕 No more pending orders, stopping notification');
+                  stopNotification();
+                }
+                
+                return updatedOrders;
+              });
+              
+              // Refresh the orders list
+              await fetchOrders(selectedStatus);
               toast.success(`Status updated to ${newStatus}`);
+              
             } catch (error) {
               console.error('Error updating order status:', error);
               toast.error('Failed to update status');
@@ -923,19 +1008,20 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
   const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
   useEffect(() => {
-    fetchOrders(selectedStatus); // initial fetch on mount or status change
-    
-    // Set initial pending count
-    const initialPendingCount = orders.filter(o => o.status === 'pending').length;
-    setPreviousPendingCount(initialPendingCount);
+    // Only fetch orders after audio is ready (or audio is disabled)
+    if (!soundEnabled || audioReady) {
+      fetchOrders(selectedStatus);
+      
+      const interval = setInterval(() => {
+        fetchOrders(selectedStatus);
+      }, 30000);
   
-    const interval = setInterval(() => {
-      fetchOrders(selectedStatus); // fetch every 30 seconds
-    }, 30000); // 30 seconds = 30000 ms
-  
-    return () => clearInterval(interval); // clean up on unmount
-  }, [selectedStatus, storeId, token]); // Add missing dependencies
-
+      return () => {
+        clearInterval(interval);
+        stopNotification();
+      };
+    }
+  }, [selectedStatus, storeId, token, soundEnabled, audioReady]); // Added audioReady dependency
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -949,7 +1035,23 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                 </h1>
                 <p className="text-gray-300 text-lg">Manage and track all your orders efficiently</p>
               </div>
-              
+              {/* ADD THIS NOTIFICATION INDICATOR */}
+{hasNewOrders && (
+  <div className="mb-4 bg-red-500 text-white px-6 py-3 rounded-2xl text-center animate-pulse shadow-lg">
+    <div className="flex items-center justify-center space-x-2">
+      <span className="text-2xl">🔔</span>
+      <span className="font-bold text-lg">New Orders Pending - Sound Notification Active!</span>
+      <button
+        onClick={stopNotification}
+        className="ml-4 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm font-semibold transition-colors"
+      >
+        Dismiss
+      </button>
+    </div>
+  </div>
+)}
+
+<div className="flex gap-6"></div>
               <div className="flex gap-6">
                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
                   <div className="flex items-center space-x-4">
@@ -980,7 +1082,17 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                 <div className="fixed top-4 right-24 z-50 flex flex-row space-x-3 ">
   {/* Sound Toggle */}
   <button
-    onClick={() => setSoundEnabled(!soundEnabled)}
+onClick={() => {
+  const newSoundState = !soundEnabled;
+  setSoundEnabled(newSoundState);
+  
+  // If disabling sound, stop notifications
+  if (!newSoundState) {
+    stopNotification();
+    setAudioReady(false);
+  }
+  // Audio will be recreated by useEffect when soundEnabled changes
+}}
     className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
     title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
   >

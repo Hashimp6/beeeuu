@@ -179,7 +179,7 @@ export default function ModernProcessSection() {
         <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { number: "30s", label: "Average Order Time", icon: Clock },
-            { number: "0", label: "Apps to Download", icon: Smartphone },
+            { number: "No .1", label: "Dedicated App and Web App", icon: Smartphone },
             { number: "100%", label: "Secure Payment", icon: Check },
             { number: "24/7", label: "Always Available", icon: Star }
           ].map((stat, index) => (

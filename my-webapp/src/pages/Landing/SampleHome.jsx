@@ -54,38 +54,56 @@ export default function SerchByHero() {
         </div>
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 lg:pt-28 pb-8 sm:pb-12 lg:pb-20">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 lg:pt-32 pb-8 sm:pb-12 lg:pb-20">
+        
+        {/* NEW: Animated Main Heading */}
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+            <span className={`inline-block transform transition-all duration-700 ease-out ${isVisible ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400">
+                SerchBy
+              </span>
+            </span>
+            <span className={`inline-block transform transition-all duration-700 ease-out delay-300 ${isVisible ? 'translate-x-0 opacity-100 rotate-0' : 'translate-x-8 opacity-0 rotate-6'}`}>
+              <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 ml-3">
+                for Restaurants
+              </span>
+            </span>
+          </h1>
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
           {/* Content Section */}
-          <div className={`space-y-4 sm:space-y-6 lg:space-y-8 text-center lg:text-left transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <div className={`space-y-4 sm:space-y-6 lg:space-y-8 text-center lg:text-left transform transition-all duration-1000 delay-700 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
 
             {/* Premium Badge */}
             <div className="flex justify-center lg:justify-start">
               <span className="inline-flex items-center px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500/20 to-teal-400/20 backdrop-blur-md border border-teal-400/30 text-teal-300 text-xs sm:text-sm font-semibold rounded-full">
                 <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-teal-400" />
-                #1 QR Restaurant Solution
+                #1 QR Restaurant Ordering Automation Solution
               </span>
             </div>
 
             {/* Hero Title */}
             <div className="space-y-2 sm:space-y-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
                 <span className="block">Future of</span>
+                <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-300">
+                  Digital
+                </span>
                 <span className="block">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-teal-300 to-white">
-                    Restaurant
+                    Restaurants
                   </span>
                 </span>
-                <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-300">
-                  Ordering
-                </span>
-              </h1>
+               
+              </h2>
             </div>
 
             {/* Subtitle */}
             <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0 px-2 sm:px-0">
-              Transform your restaurant with instant QR ordering.no wait times, just 
+             Digitalise Your Restaurant with SerchBy. Transform your restaurant with instant QR ordering. No wait times, just 
               <span className="text-teal-400 font-semibold"> seamless dining experiences</span> that your customers will love.
             </p>
 
@@ -96,7 +114,7 @@ export default function SerchByHero() {
                 { value: "50%", label: "Less Wait Time", icon: Users },
                 { value: "98%", label: "Customer Satisfaction", icon: TrendingUp }
               ].map(({ value, label, icon: Icon }, index) => (
-                <div key={label} className={`text-center transform transition-all duration-700 delay-${index * 200} ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+                <div key={label} className={`text-center transform transition-all duration-700 delay-${900 + index * 200} ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
                   <div className="flex justify-center mb-1 sm:mb-2">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400" />
                   </div>
@@ -111,7 +129,7 @@ export default function SerchByHero() {
               <button className="group relative overflow-hidden px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-teal-400 text-white text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-2xl hover:shadow-teal-500/25 transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 <span className="relative flex items-center justify-center gap-2">
-                  Start Free Trial
+                 Lets Add Your Restaurent
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </button>
@@ -119,7 +137,7 @@ export default function SerchByHero() {
           </div>
 
           {/* Visual Section */}
-          <div className={`relative transform transition-all duration-1000 delay-300 px-4 sm:px-0 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <div className={`relative transform transition-all duration-1000 delay-1000 px-4 sm:px-0 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             
             {/* Main Phone Mockup */}
             <div className="relative mx-auto max-w-xs sm:max-w-sm">
