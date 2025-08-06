@@ -31,10 +31,9 @@ const StoreDashboard = () => {
   const [revenueData, setRevenueData] = useState(null); // NEW: revenue state
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('product');
-    const [upiDropdownVisible, setUpiDropdownVisible] = useState(false);
-  const [upiModalVisible, setUpiModalVisible] = useState(false);
-  const [upiInput, setUpiInput] = useState("");
-  const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
+  const [passwordPrompt, setPasswordPrompt] = useState({ show: false, page: '' });
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authenticatedPages, setAuthenticatedPages] = useState(new Set());  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analyticsData, setAnalyticsData] = useState([]);
 const [newUpi, setNewUpi] = useState("");
@@ -134,7 +133,105 @@ const [newUpi, setNewUpi] = useState("");
     }
   }, [store]);
  
+  const verifyPassword = () => {
+    if (passwordInput === store?.security?.password) {
+      // Correct password - grant access
+      setAuthenticatedPages(prev => new Set([...prev, passwordPrompt.page]));
+      setPasswordPrompt({ show: false, page: '' });
+      setPasswordInput('');
+      toast.success('Access granted!');
+    } else {
+      // Wrong password
+      toast.error('Incorrect password');
+      setPasswordInput('');
+    }
+  };
   
+  // 3. ADD FUNCTION TO CHECK IF PAGE IS ACCESSIBLE
+  const isPageAccessible = (pageId) => {
+    const securedPages = store?.security?.pages || [];
+    
+    // If page is not secured, allow access
+    if (!securedPages.includes(pageId)) {
+      return true;
+    }
+    
+    // If page is secured, check if authenticated
+    return authenticatedPages.has(pageId);
+  };
+  
+  const handleTabClick = (tabId) => {
+    const securedPages = store?.security?.pages || [];
+    
+    if (securedPages.includes(tabId) && !authenticatedPages.has(tabId)) {
+      // Show password prompt instead of changing tab
+      setPasswordPrompt({ show: true, page: tabId });
+      return;
+    }
+    
+    // Safe to change tab
+    setActiveTab(tabId);
+    setSidebarOpen(false);
+  };
+
+  const PasswordModal = () => {
+    if (!passwordPrompt.show) return null;
+  
+    const handleSubmit = () => {
+      if (passwordInput === store?.security?.password) {
+        setAuthenticatedPages(prev => new Set([...prev, passwordPrompt.page]));
+        setActiveTab(passwordPrompt.page); // ✅ NOW set active tab after verification
+        setPasswordPrompt({ show: false, page: '' });
+        setPasswordInput('');
+        setSidebarOpen(false);
+        toast.success('Access granted!');
+      } else {
+        toast.error('Incorrect password');
+        setPasswordInput('');
+      }
+    };
+  
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-96 max-w-md mx-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            🔒 Enter Password
+          </h3>
+          <p className="text-gray-600 mb-4">
+            This page requires authentication to view content.
+          </p>
+          
+          <input
+            type="password"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            placeholder="Enter password"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4"
+            onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+            autoFocus
+          />
+          
+          <div className="flex space-x-3">
+            <button
+              onClick={handleSubmit}
+              className="flex-1 bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Access Page
+            </button>
+            <button
+              onClick={() => {
+                setPasswordPrompt({ show: false, page: '' });
+                setPasswordInput('');
+              }}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
   const handleUpiUpdate = async () => {
     try {
       const storeId=store._id
@@ -370,23 +467,27 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
         </div>
         
         <nav className="flex-1 mt-6 px-4">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                setSidebarOpen(false);
-              }}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 transition-all ${
-                activeTab === item.id
-                  ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
+        {sidebarItems.map((item) => (
+  <button
+    key={item.id}
+    onClick={() => handleTabClick(item.id)}
+    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl mb-2 transition-all ${
+      activeTab === item.id
+        ? 'bg-teal-50 text-teal-700 border-r-2 border-teal-500'
+        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+    }`}
+  >
+    <item.icon className="w-5 h-5" />
+    <span className="font-medium">{item.label}</span>
+    {/* Show lock icon for secured pages */}
+    {store?.security?.pages?.includes(item.id) && !authenticatedPages.has(item.id) && (
+      <div className="ml-auto text-red-500">
+        🔒
+      </div>
+    )}
+  </button>
+))}
+
         </nav>
       </div>
 
@@ -566,47 +667,40 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
 
             {/* Tab Content */}
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-  <MonthlyAnalyticsChart data={analyticsData} title="Monthly Orders & Appointments" />
-  <SimplePieChart data={businessOverviewData} title="Business Overview" />
-   <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
-  <SimplePieChart data={orderStatusData} title="Order Status" />
-  <button
-      onClick={() => navigate('/qr')}
-      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl mt-4 transition duration-300"
-    >
-      📲  QR Page
-    </button>
-</div>
+            {activeTab === 'overview' && isPageAccessible('overview') && (
+  <div>
+    {/* Your overview content */}
+    <div className="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
+      {/* ... existing overview content ... */}
+    </div>
+  </div>
+)}
 
-             
-              </div>
-            )}
- {activeTab === 'Offers' && (
-            <OfferManagement storeId={store._id}/>
-            )}
-            {activeTab === 'appointments' && (
-            <AppointmentManagement storeId={store._id} />
-            )}
+{activeTab === 'Offers' && isPageAccessible('Offers') && (
+  <OfferManagement storeId={store._id}/>
+)}
 
-            {activeTab === 'orders' && (
-            <OrderManagement store={store}/>
-            )}
-             {activeTab === 'product' && (
-            <ProductManagement store={store}/>
-            )}
-               {activeTab === 'gallery' && (
-            <GalleryManagement storeId={store._id}/>
-            )}
-               {activeTab === 'subscription' && (
-            <SubscriptionController store={store}/>
-            )}
+{activeTab === 'appointments' && isPageAccessible('appointments') && (
+  <AppointmentManagement storeId={store._id} />
+)}
 
+{activeTab === 'orders' && isPageAccessible('orders') && (
+  <OrderManagement store={store}/>
+)}
 
-{activeTab === 'settings' && (
+{activeTab === 'product' && isPageAccessible('product') && (
+  <ProductManagement store={store}/>
+)}
+
+{activeTab === 'gallery' && isPageAccessible('gallery') && (
+  <GalleryManagement storeId={store._id}/>
+)}
+
+{activeTab === 'subscription' && isPageAccessible('subscription') && (
+  <SubscriptionController store={store}/>
+)}
+
+{activeTab === 'settings' && isPageAccessible('settings') && (
   <StoreSettings 
     store={store}
     handleUpiUpdate={handleUpiUpdate}
@@ -615,6 +709,24 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
     logout={logout}
   />
 )}
+
+{/* ✅ SHOW ACCESS DENIED MESSAGE FOR SECURED PAGES */}
+{store?.security?.pages?.includes(activeTab) && !authenticatedPages.has(activeTab) && (
+  <div className="flex items-center justify-center min-h-96">
+    <div className="text-center">
+      <div className="text-6xl mb-4">🔒</div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+      <p className="text-gray-600 mb-4">This page is password protected</p>
+      <button
+        onClick={() => setPasswordPrompt({ show: true, page: activeTab })}
+        className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+      >
+        Enter Password
+      </button>
+    </div>
+  </div>
+)}
+<PasswordModal />
           </div>
         </div>
       </div>

@@ -1050,6 +1050,66 @@ const activeStatus= async (req, res) =>{
 }
 
 
+
+
+const updateProtectedPages = async (req, res) => {
+  const { storeId } = req.params;
+  const { pages } = req.body;
+
+  try {
+    if (!Array.isArray(pages)) {
+      return res.status(400).json({ message: "Pages must be an array." });
+    }
+
+    const store = await Store.findByIdAndUpdate(
+      storeId,
+      { "security.pages": pages },
+      { new: true }
+    );
+
+    if (!store) {
+      return res.status(404).json({ message: "Store not found." });
+    }
+
+    res.status(200).json({
+      message: "Protected pages updated successfully.",
+      updatedPages: store.security.pages,
+    });
+  } catch (err) {
+    console.error("Error updating protected pages:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+const updateSecurityPassword = async (req, res) => {
+  const { storeId } = req.params;
+  const { password } = req.body;
+
+  if (!password || password.trim() === '') {
+    return res.status(400).json({ message: 'Password is required' });
+  }
+
+  try {
+    const updatedStore = await Store.findByIdAndUpdate(
+      storeId,
+      { 'security.password': password },
+      { new: true }
+    );
+
+    if (!updatedStore) {
+      return res.status(404).json({ message: 'Store not found' });
+    }
+
+    res.json({
+      message: 'Security password updated successfully',
+      security: updatedStore.security,
+    });
+  } catch (error) {
+    console.error('Error updating security password:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
   module.exports = {
     
     registerStore,
@@ -1071,5 +1131,7 @@ const activeStatus= async (req, res) =>{
   getRazorpayCredentials,
   verifyRazorpayPayment ,
   createRazorpayOrder,
-  activeStatus
+  activeStatus,
+  updateProtectedPages,
+  updateSecurityPassword
   };

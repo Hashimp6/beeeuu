@@ -14,6 +14,8 @@ const StoreSettings = ({ store, logout }) => {
   const [showKeys, setShowKeys] = useState(false);
 const [isFetchingKeys, setIsFetchingKeys] = useState(false);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [securedPages, setSecuredPages] = useState(store.security?.pages || []);
+const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
   const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
   const toggleItem = (list, setList, item) => {
     if (list.includes(item)) {
@@ -22,6 +24,22 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
       setList([...list, item]);
     }
   };
+  const pageOptions = ['overview','Offers','appointments', 'orders', 'product', 'gallery', 'settings']; // Customize based on your app
+  const handleUpdateSecuredPages = async () => {
+    setUpdatingSecuredPages(true);
+    try {
+      await axios.put(`${SERVER_URL}/stores/${store._id}/security`, {
+        pages: securedPages
+      });
+      alert('Secured pages updated successfully!');
+    } catch (err) {
+      console.error('Failed to update secured pages:', err);
+      alert('Failed to update secured pages.');
+    } finally {
+      setUpdatingSecuredPages(false);
+    }
+  };
+  
   const handleViewRazorpay = async () => {
     if (showKeys) {
       setShowKeys(false);
@@ -231,6 +249,37 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
               </button>
             </div>
           )}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+  <h3 className="text-lg font-semibold text-gray-900 mb-4">Protected Pages</h3>
+  <p className="text-sm text-gray-600 mb-2">
+    Select which pages require a password to access.
+  </p>
+  {pageOptions.map((page) => (
+    <label key={page} className="flex items-center space-x-2 mb-2">
+      <input
+        type="checkbox"
+        checked={securedPages.includes(page)}
+        onChange={() => {
+          setSecuredPages(prev =>
+            prev.includes(page)
+              ? prev.filter(p => p !== page)
+              : [...prev, page]
+          );
+        }}
+      />
+      <span>{page}</span>
+    </label>
+  ))}
+
+  <button
+    onClick={handleUpdateSecuredPages}
+    disabled={updatingSecuredPages}
+    className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+  >
+    {updatingSecuredPages ? 'Saving...' : 'Save Protected Pages'}
+  </button>
+</div>
+
         </div>
       </div>
 

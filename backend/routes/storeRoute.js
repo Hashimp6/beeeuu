@@ -19,7 +19,9 @@ const {
   getRazorpayCredentials,
   createRazorpayOrder,
   verifyRazorpayPayment,
-  activeStatus
+  activeStatus,
+  updateProtectedPages,
+  updateSecurityPassword
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -33,6 +35,8 @@ router.get("/nearby",getNearbyStores);
  router.get("/checkName", checkStoreNameAvailability);
  router.get('/:storeId/upi', getStoreUpi);
  router.put('/update-upi/:storeId',updateUPI);
+ router.put('/:storeId/security', updateProtectedPages);
+ router.put('/:storeId/security-password', updateSecurityPassword);
  //for store analetics
 router.get("/store-analetics/:storeId", getStoreAnalytics);
 //for revenue

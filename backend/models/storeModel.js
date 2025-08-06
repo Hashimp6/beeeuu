@@ -17,6 +17,10 @@ const storeSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  security: {
+    password: { type: String },
+    pages: [String] // Pages requiring protection
+  },
   subscription: {
     type: String,
     enum: ['basic', 'premium', 'golden'],
