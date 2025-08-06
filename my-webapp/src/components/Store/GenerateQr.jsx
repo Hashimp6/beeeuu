@@ -157,29 +157,29 @@ const RestaurantQRGenerator = () => {
       // Instruction text with premium styling
       ctx.fillStyle = '#d4af37';
       ctx.font = 'bold 22px "Times New Roman", serif';
-      ctx.fillText('SCAN WITH YOUR PHONE CAMERA', canvas.width / 2, 620);
+      ctx.fillText('SCAN WITH YOUR PHONE CAMERA', canvas.width / 2, 630);
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '18px "Times New Roman", serif';
-      ctx.fillText('TO VIEW OUR DIGITAL MENU', canvas.width / 2, 650);
+      ctx.fillText('TO VIEW OUR DIGITAL MENU', canvas.width / 2, 660);
       
       // Show the actual URL for verification
       ctx.fillStyle = '#888888';
       ctx.font = '14px monospace';
       const displayUrl = formattedUrl.length > 50 ? formattedUrl.substring(0, 47) + '...' : formattedUrl;
-      ctx.fillText(displayUrl, canvas.width / 2, 680);
+      ctx.fillText(displayUrl, canvas.width / 2, 690);
       
       // Decorative elements
       ctx.fillStyle = '#d4af37';
       ctx.font = '20px serif';
-      ctx.fillText('✦ ◆ ✦', canvas.width / 2, 710);
+      ctx.fillText('✦ ◆ ✦', canvas.width / 2, 720);
       
-      // Camera icon and instruction
+      // Camera icon and instruction - with proper padding
       ctx.fillStyle = 'rgba(212, 175, 55, 0.9)';
       ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('📱 POINT YOUR CAMERA HERE', canvas.width / 2, 590);
+      ctx.fillText('📱 POINT YOUR CAMERA HERE', canvas.width / 2, 610);
       
-      // Premium features list
+      // Premium features list - adjusted position to avoid overlap
       ctx.fillStyle = '#cccccc';
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'left';
@@ -191,32 +191,67 @@ const RestaurantQRGenerator = () => {
       ];
       
       features.forEach((feature, index) => {
-        ctx.fillText(feature, canvas.width / 2 - 140, 750 + index * 25);
+        ctx.fillText(feature, canvas.width / 2 - 200, 740 + index * 22);
       });
       
-      // SerchBy branding section
+      // Table Number Section - Positioned on the right side (adjusted)
+      // TABLE NUMBER heading with golden effect (positioned right)
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 28px "Times New Roman", serif';
+      ctx.shadowColor = '#d4af37';
+      ctx.shadowBlur = 1;
+      ctx.fillText('TABLE NUMBER', canvas.width - 150, 740);
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      
+      // Large white box for table number (positioned right)
+      const boxWidth = 160;
+      const boxHeight = 70;
+      const boxX = canvas.width - 150 - boxWidth / 2;
+      const boxY = 760;
+      
+      // Outer golden frame for table number box
+      const tableFrameGradient = ctx.createLinearGradient(boxX - 8, boxY - 8, boxX + boxWidth + 8, boxY + boxHeight + 8);
+      tableFrameGradient.addColorStop(0, '#d4af37');
+      tableFrameGradient.addColorStop(0.5, '#f4e4bc');
+      tableFrameGradient.addColorStop(1, '#d4af37');
+      ctx.fillStyle = tableFrameGradient;
+      ctx.fillRect(boxX - 8, boxY - 8, boxWidth + 16, boxHeight + 16);
+      
+      // White box for writing table number
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+      
+      // Subtle inner border
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(boxX + 4, boxY + 4, boxWidth - 8, boxHeight - 8);
+      
+     
+      // SerchBy branding section - moved down to accommodate all content
       ctx.textAlign = 'center';
       ctx.fillStyle = '#16a085';
       ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('SerchBy', canvas.width / 2, 880);
+      ctx.fillText('SerchBy', canvas.width / 2, 860);
       
       ctx.fillStyle = '#888888';
       ctx.font = '14px sans-serif';
-      ctx.fillText('Premium Digital Menu Solutions', canvas.width / 2, 905);
+      ctx.fillText('Restaurent order automation system', canvas.width / 2, 885);
       
       // Website
       ctx.fillStyle = '#666666';
       ctx.font = '12px sans-serif';
-      ctx.fillText('www.serchby.com', canvas.width / 2, 925);
+      ctx.fillText('www.serchby.com phn:7012455400', canvas.width / 2, 905);
       
-      // Bottom decorative border
-      const bottomGradient = ctx.createLinearGradient(0, 960, canvas.width, 960);
+      // Bottom decorative border - adjusted to fit all content
+      const bottomGradient = ctx.createLinearGradient(0, 940, canvas.width, 940);
       bottomGradient.addColorStop(0, 'transparent');
       bottomGradient.addColorStop(0.2, '#d4af37');
       bottomGradient.addColorStop(0.8, '#d4af37');
       bottomGradient.addColorStop(1, 'transparent');
       ctx.fillStyle = bottomGradient;
-      ctx.fillRect(0, 960, canvas.width, 6);
+      ctx.fillRect(0, 940, canvas.width, 6);
       
       // Corner decorative elements
       ctx.fillStyle = '#d4af37';

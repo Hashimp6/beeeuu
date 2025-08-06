@@ -580,6 +580,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/UserContext";
+import SerchByHero from "./Landing/SampleHome";
+import ProcessSection from "./Landing/Steps";
 
 // Header Component
 const Header = () => {
@@ -2234,11 +2236,9 @@ const App = () => {
         }
       `}</style>
       <Header/>
-      <HeroSection/>
-      <ValueProposition/>
-      <Features/>
-      <Stats/>
-      <HowItWorks />
+      <SerchByHero />
+      <ProcessSection/>
+      
       {/* <Testimonials /> */}
       <CTASection />
       <Footer />
