@@ -19,7 +19,7 @@ const ProductsGrid = ({
   const activeProducts = products.filter(product => product.active !== false);
 
   // Check if this is a Hotel/Restaurant store
-  const isRestaurant = store?.category === 'Hotel / Restaurent';
+  const isRestaurant = store?.category === 'Restaurant';
 
   // Restaurant categories with icons
   const restaurantCategories = [

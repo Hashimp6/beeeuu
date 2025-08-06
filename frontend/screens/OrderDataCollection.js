@@ -771,7 +771,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
             </View>
 
 
-            {store?.category === 'Hotel / Restaurent' && (
+            {store?.category === 'Restaurant' && (
   <View style={[styles.inputContainer, { marginBottom: 12 }]}>
     <Text style={[styles.inputLabel, { color: '#00796B' }]}>Order Type</Text>
     <View style={styles.radioGroup}>
@@ -804,7 +804,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
 )}
 
             <View style={styles.inputContainer}>
-            {store?.category === 'Hotel / Restaurent' && (orderType === 'Eat In' || orderType === 'Parcel') 
+            {store?.category === 'Restaurant' && (orderType === 'Eat In' || orderType === 'Parcel') 
   ? <Text style={styles.inputLabel}>Table Number</Text> 
   : <Text style={styles.inputLabel}>Delivery Address</Text>}
               <TextInput

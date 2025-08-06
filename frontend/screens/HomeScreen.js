@@ -37,7 +37,7 @@ const HomeScreen = ({ userLocation, locationUpdateTrigger }) => {
   ];
 
 
-const categoryOptions = ['All', 'Hotel',' Restaurent', 'Beauty', 'Bakery', 'Grocery'];
+const categoryOptions = ['All', 'Hotel',' Restaurant', 'Beauty', 'Bakery', 'Grocery'];
   const fetchNearbyStores = async (page = 1, resetStores = true) => {
     try {
       if (page === 1) {

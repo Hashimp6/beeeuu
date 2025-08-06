@@ -129,7 +129,7 @@ export default function SerchByHero() {
               <button className="group relative overflow-hidden px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-teal-400 text-white text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl shadow-2xl hover:shadow-teal-500/25 transform hover:-translate-y-1 transition-all duration-300 w-full sm:w-auto">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 <span className="relative flex items-center justify-center gap-2">
-                 Lets Add Your Restaurent
+                 Lets Add Your Restaurant
                   <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </button>

@@ -237,7 +237,7 @@ const RestaurantQRGenerator = () => {
       
       ctx.fillStyle = '#888888';
       ctx.font = '14px sans-serif';
-      ctx.fillText('Restaurent order automation system', canvas.width / 2, 885);
+      ctx.fillText('Restaurant order automation system', canvas.width / 2, 885);
       
       // Website
       ctx.fillStyle = '#666666';

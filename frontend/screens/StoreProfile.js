@@ -246,7 +246,7 @@ const handleShare = async () => {
   }, [store]);
 
 
-  const isRestaurant = store?.category === 'Hotel / Restaurent';
+  const isRestaurant = store?.category === 'Restaurant';
 
 const groupedProducts = isRestaurant
   ? restaurantCategories.reduce((acc, cat) => {

@@ -209,7 +209,7 @@ const [isFetchingKeys, setIsFetchingKeys] = useState(false);
           </div>
 
           {/* Service Options Section - Only for Hotel/Restaurant */}
-          {store.category === "Hotel / Restaurent" && (
+          {store.category === "Restaurant" && (
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
               {serviceOptions.map((option) => (

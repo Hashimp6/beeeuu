@@ -188,9 +188,9 @@ orderSchema.pre('save', function(next) {
         break;
       case 'delivered':
         if (!this.deliveredAt) this.deliveredAt = now;
-        if (this.paymentMethod === 'cod') {
-          this.paymentStatus = 'completed';
-        }
+        // if (this.paymentMethod === 'cod') {
+        //   this.paymentStatus = 'completed';
+        // }
         break;
       case 'cancelled':
         if (!this.cancelledAt) this.cancelledAt = now;

@@ -26,10 +26,13 @@ const AddProductForm = ({
   onClose, 
   onSubmit, 
   storeId,
+  storeCategory,
   editingProduct = null,
   loading = false,
   fetchProducts = () => {}
 }) => {
+  console.log("storecategory",storeCategory);
+  
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [product, setProduct] = useState({
@@ -385,16 +388,28 @@ const AddProductForm = ({
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Category</option>
+  <option value="">Select Category</option>
+
+  {/* Render restaurant/hotel options if storeCategory is "Hotel" or "Restaurant" */}
+  {['Hotel', 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
+    <>
+      <option value="signature">signature</option>
+      <option value="starter">Starter</option>
+      <option value="main-course">Main Course</option>
+      <option value="drinks">Drinks</option>
+      <option value="desserts">Desserts</option>
+      <option value="combo-meal">Combo Meal</option>
+      <option value="today-special">Today Special</option>
+    </>
+  )}
+
+  {/* Otherwise show general categories */}
+  {!['Hotel', 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
+    <>
               <option value="beauty-cosmetics">Beauty & Cosmetics</option>
               <option value="games">Games</option>
               <option value="bakery">Bakery</option>
               <option value="food-products">Food Products</option>
-              <option value="starter">Starter</option>
-  <option value="main-course">Main Course</option>
-  <option value="drinks">Drinks</option>
-  <option value="desserts">Desserts</option>
-  <option value="combo-meal">Combo Meal</option>
               <option value="gifts-crafts">Gifts & Crafts</option>
               <option value="wedding-services">Wedding Services</option>
               <option value="groceries">Groceries</option>
@@ -436,7 +451,11 @@ const AddProductForm = ({
               <option value="tailoring">Tailoring</option>
               <option value="tutor-coaching">Tutor / Coaching</option>
               <option value="other">Other</option>
-            </select>
+    </>
+  )}
+</select>
+
+      
             {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
           </div>
 
@@ -563,8 +582,8 @@ const AddProductForm = ({
   );
 };
 // Main Store Product Screen Component
-const ProductManagement = ({ storeId }) => {
-
+const ProductManagement = ({ store}) => {
+const storeId=store._id
       const { user, token } = useAuth() || {};
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -814,6 +833,7 @@ const handleToggleActive = async (productId, newActiveStatus) => {
   editingProduct={editingProduct}
   loading={loading}
   storeId={storeId} 
+  storeCategory={store?.category}
   fetchProducts={fetchProducts} 
 />
 <ProductDetailsModal

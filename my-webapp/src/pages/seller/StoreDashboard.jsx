@@ -596,7 +596,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
             <OrderManagement store={store}/>
             )}
              {activeTab === 'product' && (
-            <ProductManagement storeId={store._id}/>
+            <ProductManagement store={store}/>
             )}
                {activeTab === 'gallery' && (
             <GalleryManagement storeId={store._id}/>
