@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import OfferManagement from '../../components/Store/OfferManagement';
 import SubscriptionController from '../../components/Store/Subscription';
 import StoreSettings from '../../components/Store/StoreSettings';
+import RestaurantOrderScreen from '../../components/Store/OrderTaking';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -422,16 +423,28 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
     { name: 'Cancelled', value: stats.cancelledAppointments, color: '#ef4444' }
   ];
 
-  const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: Home },
-    { id: 'Offers', label: 'Offers', icon: Tag },
-    { id: 'appointments', label: 'Appointments', icon: Calendar },
-    { id: 'orders', label: 'Orders', icon: Package },
-    { id: 'product', label: 'Product / Service', icon: StoreIcon },
-    { id: 'gallery', label: 'gallery', icon: Image },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
+  const sidebarItems = store?.category === "Restaurant"
+  ? [
+      { id: 'overview', label: 'Overview', icon: Home },
+      { id: 'Create', label: 'Create', icon: Plus },
+      { id: 'Offers', label: 'Offers', icon: Tag },
+      { id: 'appointments', label: 'Appointments', icon: Calendar },
+      { id: 'orders', label: 'Orders', icon: Package },
+      { id: 'product', label: 'Product / Service', icon: StoreIcon },
+      { id: 'gallery', label: 'gallery', icon: Image },
+      { id: 'subscription', label: 'Subscription', icon: CreditCard },
+      { id: 'settings', label: 'Settings', icon: Settings },
+    ]
+  : [
+      { id: 'overview', label: 'Overview', icon: Home },
+      { id: 'Offers', label: 'Offers', icon: Tag },
+      { id: 'appointments', label: 'Appointments', icon: Calendar },
+      { id: 'orders', label: 'Orders', icon: Package },
+      { id: 'product', label: 'Product / Service', icon: StoreIcon },
+      { id: 'gallery', label: 'gallery', icon: Image },
+      { id: 'subscription', label: 'Subscription', icon: CreditCard },
+      { id: 'settings', label: 'Settings', icon: Settings },
+    ];
 
   if (loading) {
     return (
@@ -522,7 +535,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto">           
-        <div className="p-4 sm:p-6 lg:p-8">  
+        <div >  
             {/* Store Info Card - Always visible */}
             {activeTab === 'overview' && (
             <div className="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
@@ -667,13 +680,27 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
 
             {/* Tab Content */}
-            {activeTab === 'overview' && isPageAccessible('overview') && (
-  <div>
-    {/* Your overview content */}
-    <div className="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
-      {/* ... existing overview content ... */}
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+  <MonthlyAnalyticsChart data={analyticsData} title="Monthly Orders & Appointments" />
+  <SimplePieChart data={businessOverviewData} title="Business Overview" />
+   <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
+  <SimplePieChart data={orderStatusData} title="Order Status" />
+  <button
+      onClick={() => navigate('/qr')}
+      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl mt-4 transition duration-300"
+    >
+      📲  QR Page
+    </button>
+
     </div>
   </div>
+)}
+
+{activeTab === 'Create' && isPageAccessible('Create') && (
+  <RestaurantOrderScreen store={store}/>
 )}
 
 {activeTab === 'Offers' && isPageAccessible('Offers') && (

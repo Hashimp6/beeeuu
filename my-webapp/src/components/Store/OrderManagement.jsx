@@ -291,6 +291,442 @@ const PrintReceipt = ({ order, store, onClose }) => {
     </div>
   );
 };
+// COD Table Print Receipt Component - Add this after PrintReceipt component
+const CODTablePrintReceipt = ({ tableData, tableName, store, onClose }) => {
+  const printRef = useRef();
+
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>COD Receipt - ${tableName}</title>
+          <style>
+            body { 
+              font-family: 'Courier New', monospace; 
+              margin: 0; 
+              padding: 15px; 
+              line-height: 1.3; 
+              font-size: 12px;
+            }
+            .receipt { 
+              max-width: 300px; 
+              margin: 0 auto; 
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 2px solid #000; 
+              padding-bottom: 8px; 
+              margin-bottom: 8px; 
+            }
+            .table-highlight {
+              background: #ff6b35;
+              color: #fff;
+              padding: 8px 12px;
+              margin: 8px 0;
+              text-align: center;
+              font-weight: bold;
+              font-size: 16px;
+              letter-spacing: 1px;
+            }
+            .section { 
+              margin: 8px 0; 
+              padding: 5px 0;
+            }
+            .section-title {
+              font-weight: bold;
+              font-size: 11px;
+              margin-bottom: 5px;
+              text-transform: uppercase;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 2px;
+            }
+            .order-group {
+              border: 1px solid #ccc;
+              margin: 8px 0;
+              padding: 6px;
+              background: #f9f9f9;
+            }
+            .order-header {
+              font-weight: bold;
+              font-size: 11px;
+              margin-bottom: 4px;
+              border-bottom: 1px dashed #666;
+              padding-bottom: 2px;
+            }
+            .items-table { 
+              width: 100%;
+              border-collapse: collapse;
+              margin: 4px 0;
+              font-size: 10px;
+            }
+            .items-table td {
+              padding: 2px 4px;
+              vertical-align: top;
+            }
+            .item-name { text-align: left; }
+            .item-qty, .item-price, .item-total { text-align: right; }
+            .order-total {
+              text-align: right;
+              font-weight: bold;
+              margin-top: 4px;
+              padding-top: 2px;
+              border-top: 1px solid #666;
+            }
+            .grand-total {
+              border: 2px solid #000;
+              margin: 12px 0;
+              padding: 8px;
+              text-align: center;
+              font-weight: bold;
+              font-size: 14px;
+              background: #000;
+              color: #fff;
+            }
+            .customer-info {
+              font-size: 10px;
+              line-height: 1.2;
+              margin: 8px 0;
+              padding: 6px;
+              border: 1px dashed #000;
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 15px; 
+              font-size: 9px; 
+              border-top: 1px dashed #000;
+              padding-top: 8px;
+            }
+            .payment-note {
+              background: #fffacd;
+              border: 2px solid #ffa500;
+              padding: 8px;
+              margin: 8px 0;
+              text-align: center;
+              font-weight: bold;
+              font-size: 12px;
+            }
+            @media print {
+              body { print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Print COD Receipt - {tableName}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Receipt Preview */}
+          <div ref={printRef} className="receipt border p-4 bg-gray-50">
+            {/* Header */}
+            <div className="header">
+              <h1 style={{margin: '0', fontSize: '16px', fontWeight: 'bold'}}>
+                {store?.storeName || 'RESTAURANT NAME'}
+              </h1>
+              <p style={{margin: '3px 0', fontSize: '10px'}}>
+                {store?.place || 'Store Address Here'}
+              </p>
+              <p style={{margin: '3px 0', fontSize: '10px'}}>
+                Tel: {store?.phone || '+91 XXXXXXXXXX'}
+              </p>
+            </div>
+
+            {/* Table Highlight */}
+            <div className="table-highlight">
+              {tableName.toUpperCase()} - COD BILL
+            </div>
+
+            {/* Customer Details */}
+            <div className="customer-info">
+              <div className="section-title">Customer Details</div>
+              <div><strong>{tableData.customerName}</strong></div>
+              <div>{tableData.phoneNumber}</div>
+              <div>Date: {formatDate(new Date().toISOString())}</div>
+            </div>
+
+            {/* Individual Orders */}
+            <div className="section">
+              <div className="section-title">Order Details ({tableData.orders.length} Orders)</div>
+              {tableData.orders.map((order, index) => (
+                <div key={order._id} className="order-group">
+                  <div className="order-header">
+                    Order #{order.orderId} - {formatDate(order.orderDate)}
+                  </div>
+                  <table className="items-table">
+                    {order.products?.map((product, idx) => (
+                      <tr key={idx}>
+                        <td className="item-name" style={{width: '45%'}}>{product.productName}</td>
+                        <td className="item-qty" style={{width: '15%'}}>{product.quantity}</td>
+                        <td className="item-price" style={{width: '20%'}}>₹{product.unitPrice}</td>
+                        <td className="item-total" style={{width: '20%'}}>₹{product.totalPrice}</td>
+                      </tr>
+                    ))}
+                  </table>
+                  <div className="order-total">
+                    Order Total: ₹{order.totalAmount}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Payment Note */}
+            <div className="payment-note">
+              CASH ON DELIVERY (COD)
+              <br />
+              PAYMENT PENDING
+            </div>
+
+            {/* Grand Total */}
+            <div className="grand-total">
+              TOTAL AMOUNT TO COLLECT
+              <br />
+              ₹{tableData.totalAmount}
+            </div>
+
+            {/* Summary */}
+            <div className="section">
+              <div style={{fontSize: '10px', textAlign: 'center'}}>
+                <div><strong>Payment Summary:</strong></div>
+                <div>Total Orders: {tableData.orders.length}</div>
+                <div>Payment Method: Cash on Delivery</div>
+                <div>Status: Pending Collection</div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="footer">
+              <p style={{margin: '5px 0', fontWeight: 'bold'}}>Please collect payment from customer</p>
+              <p style={{margin: '3px 0'}}>
+                Support: {store?.email || 'support@restaurant.com'}
+              </p>
+              <p style={{margin: '3px 0'}}>
+                Printed: {formatDate(new Date().toISOString())}
+              </p>
+            </div>
+          </div>
+
+          {/* Print Buttons */}
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={handlePrint}
+              className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              Print COD Receipt
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+// COD Payment Tracker Component - Add this after PrintReceipt component
+// Updated COD Payment Tracker Component with Print - Replace the existing one
+const CODPaymentTracker = ({ orders, onMarkTablePaid, store }) => {
+  const [showPrintModal, setShowPrintModal] = useState(null); // Track which table to print
+
+  // Group orders by table number and calculate COD totals
+  const codOrdersByTable = orders
+    .filter(order => 
+      order.paymentMethod === 'cod' && 
+      order.paymentStatus !== 'completed' &&
+      order.status !== 'cancelled'
+    )
+    .reduce((acc, order) => {
+      // Extract table number from delivery address or use a default grouping
+      const tableMatch = order.deliveryAddress?.match(/table\s*(\d+)/i) || 
+                        order.deliveryAddress?.match(/(\d+)/);
+      const tableNumber = tableMatch ? `Table ${tableMatch[1]}` : 'Table Not Specified';
+      
+      if (!acc[tableNumber]) {
+        acc[tableNumber] = {
+          orders: [],
+          totalAmount: 0,
+          customerName: order.customerName,
+          phoneNumber: order.phoneNumber
+        };
+      }
+      
+      acc[tableNumber].orders.push(order);
+      acc[tableNumber].totalAmount += parseFloat(order.totalAmount || 0);
+      
+      return acc;
+    }, {});
+
+  const handleMarkTablePaid = (tableNumber, orders) => {
+    const orderIds = orders.map(order => order._id);
+    onMarkTablePaid(orderIds, tableNumber);
+  };
+
+  const handlePrintTable = (tableName, tableData) => {
+    setShowPrintModal({ tableName, tableData });
+  };
+
+  if (Object.keys(codOrdersByTable).length === 0) {
+    return null; // Don't show if no COD pending
+  }
+
+  return (
+    <>
+      <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 mb-8">
+        <div className="p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-black">COD Payment Pending</h3>
+            <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
+              {Object.keys(codOrdersByTable).length} Tables
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.entries(codOrdersByTable).map(([tableNumber, tableData]) => (
+              <div 
+                key={tableNumber}
+                className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-lg text-orange-900">{tableNumber}</h4>
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {tableData.orders.length} Orders
+                    </div>
+                    {/* Print Button */}
+                    <button
+                      onClick={() => handlePrintTable(tableNumber, tableData)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-lg transition-colors shadow-md"
+                      title="Print COD Receipt"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <User className="w-4 h-4 text-orange-600" />
+                    <span className="text-orange-800 font-medium">{tableData.customerName}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Phone className="w-4 h-4 text-orange-600" />
+                    <span className="text-orange-700">{tableData.phoneNumber}</span>
+                  </div>
+                </div>
+
+                {/* Individual Orders */}
+                <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
+                  {tableData.orders.map((order, index) => (
+                    <div key={order._id} className="bg-white/70 rounded-lg p-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-800">{order.orderId}</span>
+                        <span className="font-bold text-orange-700">₹{order.totalAmount}</span>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {order.products?.slice(0, 2).map(p => p.productName).join(', ')}
+                        {order.products?.length > 2 && ` +${order.products.length - 2} more`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total Amount */}
+                <div className="border-t-2 border-orange-300 pt-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-lg text-orange-900">Total Amount:</span>
+                    <span className="font-bold text-2xl text-orange-800">₹{tableData.totalAmount}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  {/* Mark as Paid Button */}
+                  <button
+                    onClick={() => handleMarkTablePaid(tableNumber, tableData.orders)}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md flex items-center justify-center space-x-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Mark as Paid</span>
+                  </button>
+                  
+                  {/* Print Button */}
+                  <button
+                    onClick={() => handlePrintTable(tableNumber, tableData)}
+                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 py-3 rounded-xl font-semibold hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-md flex items-center justify-center"
+                    title="Print COD Receipt"
+                  >
+                    <Printer className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Summary Footer */}
+          <div className="mt-8 p-6 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl text-white">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-lg font-bold">Total COD Pending</h4>
+                <p className="text-orange-100">Across all tables</p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold">
+                  ₹{Object.values(codOrdersByTable).reduce((sum, table) => sum + table.totalAmount, 0)}
+                </p>
+                <p className="text-orange-100">{Object.keys(codOrdersByTable).length} tables pending</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Print Modal */}
+      {showPrintModal && (
+        <CODTablePrintReceipt
+          tableData={showPrintModal.tableData}
+          tableName={showPrintModal.tableName}
+          store={store}
+          onClose={() => setShowPrintModal(null)}
+        />
+      )}
+    </>
+  );
+};
 
 
 // Compact Order Card Component
@@ -786,7 +1222,7 @@ const OrderManagement = ({ store }) => {
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [audioReady, setAudioReady] = useState(false); // NEW: Track audio readiness
   const [previousPendingCount, setPreviousPendingCount] = useState(0);
-  
+  const [showCODOnly, setShowCODOnly] = useState(false);
   // Audio ref for notification sound
   const audioRef = useRef(null); // CHANGED: Use ref instead of state
 
@@ -833,6 +1269,80 @@ useEffect(() => {
   // Play notification sound
 // Play notification sound
 // Replace your existing playNotificationSound function with this:
+
+// Add this function inside OrderManagement component after handleStatusChange
+const handleMarkTablePaid = async (orderIds, tableName) => {
+  const totalAmount = orderIds.reduce((sum, orderId) => {
+    const order = orders.find(o => o._id === orderId);
+    return sum + (order ? parseFloat(order.totalAmount) : 0);
+  }, 0);
+
+  toast((t) => (
+    <span className="flex flex-col gap-2">
+      <span className="text-sm font-medium">
+        Mark all orders for <b>{tableName}</b> as paid?
+      </span>
+      <span className="text-xs text-gray-600">
+        Total Amount: ₹{totalAmount} | {orderIds.length} orders
+      </span>
+      <div className="flex justify-end gap-2 mt-2">
+        <button
+          onClick={async () => {
+            toast.dismiss(t.id);
+            try {
+              // Update all orders for this table
+              const updatePromises = orderIds.map(orderId =>
+                axios.patch(
+                  `${SERVER_URL}/orders/payment/${orderId}`,
+                  { paymentStatus: 'completed' },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                )
+              );
+
+              await Promise.all(updatePromises);
+
+              // Update local state
+              setOrders(prev =>
+                prev.map(order =>
+                  orderIds.includes(order._id)
+                    ? { ...order, paymentStatus: 'completed' }
+                    : order
+                )
+              );
+
+              toast.success(`✅ ${tableName} marked as paid! Total: ₹${totalAmount}`);
+              
+              // Refresh orders to get updated data
+              setTimeout(() => fetchOrders(selectedStatus), 1000);
+              
+            } catch (error) {
+              console.error('Error updating table payments:', error);
+              toast.error('Failed to update payments');
+            }
+          }}
+          className="px-3 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+        >
+          Confirm Payment
+        </button>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="px-3 py-1.5 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </span>
+  ), { 
+    duration: Infinity,
+    position: 'top-center',
+  });
+};
+
 
 const playNotificationSound = () => {
   if (soundEnabled && audioReady && audioRef.current) {
@@ -1144,6 +1654,47 @@ onClick={() => {
   >
     <RefreshCcw className="w-5 h-5" />
   </button>
+  {/* Add this COD Toggle Button in the fixed button container with sound toggle */}
+  <div className="fixed top-4 right-24 z-50 flex flex-row space-x-3">
+                  {/* COD Only View Toggle */}
+                  <button
+                    onClick={() => setShowCODOnly(!showCODOnly)}
+                    className={`px-4 py-2 rounded-full shadow-lg backdrop-blur-md transition font-semibold text-sm flex items-center space-x-2 ${
+                      showCODOnly 
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                        : 'bg-black/50 hover:bg-black/70 text-white'
+                    }`}
+                    title={showCODOnly ? 'Show all orders' : 'Show only COD tracker'}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    <span>{showCODOnly ? 'Exit COD' : 'COD Only'}</span>
+                  </button>
+
+                  {/* Sound Toggle */}
+                  <button
+                    onClick={() => {
+                      const newSoundState = !soundEnabled;
+                      setSoundEnabled(newSoundState);
+                      if (!newSoundState) {
+                        stopNotification();
+                        setAudioReady(false);
+                      }
+                    }}
+                    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
+                    title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
+                  >
+                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                  </button>
+
+                  {/* Refresh Button */}
+                  <button
+                    onClick={() => fetchOrders(selectedStatus)}
+                    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
+                    title="Refresh Orders"
+                  >
+                    <RefreshCcw className="w-5 h-5" />
+                  </button>
+                </div>
 </div>
 
 
@@ -1151,6 +1702,14 @@ onClick={() => {
             </div>
           </div>
         </div>
+        {showCODOnly && (
+  <CODPaymentTracker 
+  orders={orders} 
+  onMarkTablePaid={handleMarkTablePaid}
+  store={store}
+/>
+)}
+
 
         {/* Filter Section */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50">

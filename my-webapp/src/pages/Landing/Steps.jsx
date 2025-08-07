@@ -193,28 +193,8 @@ export default function ModernProcessSection() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="text-center mt-16">
-          <button className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-            <QrCode className="w-6 h-6" />
-            Try It Now - Scan QR Code
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="text-gray-500 mt-4">Works on any phone • No registration required</p>
-        </div>
-
-        {/* Step Indicators */}
-        <div className="flex justify-center gap-2 mt-10">
-          {steps.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveStep(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                activeStep === index ? 'bg-blue-600 scale-125' : 'bg-gray-300 hover:bg-gray-400'
-              }`}
-            />
-          ))}
-        </div>
+    
+        
       </div>
     </section>
   );

@@ -582,6 +582,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/UserContext";
 import SerchByHero from "./Landing/SampleHome";
 import ProcessSection from "./Landing/Steps";
+import WhatWeOffer from "./Landing/WhatWeOffer";
 
 // Header Component
 const Header = () => {
@@ -2237,6 +2238,7 @@ const App = () => {
       `}</style>
       <Header/>
       <SerchByHero />
+      <WhatWeOffer/>
       <ProcessSection/>
       
       {/* <Testimonials /> */}
