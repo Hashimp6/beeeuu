@@ -1,8 +1,14 @@
 const Order = require("../models/orderModel");
 const Store = require("../models/storeModel");
 const mongoose = require("mongoose");
-const { notifyPaymentReceived } = require("../utils/appointmentNotification");
-const { notifyNewOrder } = require("../utils/orderNotification");
+
+const { notifyNewOrder, notifyOrderConfirmed,
+  notifyOrderShipped,
+  notifyOrderDelivered,
+  notifyOrderCancelled,
+  notifyPaymentReceived,
+  notifyPaymentFailed, 
+  notifyOrderReady} = require("../utils/orderNotification");
 
 
 
@@ -279,11 +285,37 @@ const updateOrderStatus = async (req, res) => {
     await order.save();
 
     // Send notifications based on status change
-    // try {
-    //   await notifyOrderStatusChanged(order, oldStatus, newStatus);
-    // } catch (notificationError) {
-    //   console.error('Notification failed:', notificationError);
-    // }
+   // Send notifications based on new status
+try {
+  switch (newStatus) {
+    case 'confirmed':
+      await notifyOrderConfirmed(order);
+      break;
+
+    case 'shipped':
+      await notifyOrderShipped(order, trackingNumber);
+      break;
+
+    case 'delivered':
+      await notifyOrderDelivered(order);
+      break;
+
+    case 'cancelled':
+      // Optional: pass who cancelled (buyer/seller)
+      await notifyOrderCancelled(order, 'seller'); // or 'buyer'
+      break;
+
+    case 'returned':
+      // You can create a new function like notifyOrderReturned if needed
+      break;
+
+    default:
+      console.log('No notification handler for status:', newStatus);
+  }
+} catch (notificationError) {
+  console.error('Notification failed:', notificationError);
+}
+
 
     res.status(200).json({
       message: `Order ${newStatus} successfully`,
@@ -636,7 +668,30 @@ const confirmOrderPayment = async (req, res) => {
   }
 };
 
+const notifyReady = async (req, res) => {
+  try {
+    const orderId = req.params.id;
 
+    const order = await Order.findById(orderId)
+      .populate('buyerId', 'username name pushTokens')
+      .populate('sellerId', 'storeName userId');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const success = await notifyOrderReady(order); // ✅ JUST send notification
+
+    if (success) {
+      return res.status(200).json({ message: 'Customer notified that the product is ready' });
+    } else {
+      return res.status(500).json({ message: 'Notification failed' });
+    }
+  } catch (error) {
+    console.error('❌ Error sending ready notification:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 
 module.exports = {
@@ -651,5 +706,6 @@ module.exports = {
   getOrdersByStatus,
   getOrderStats,
   getPendingNonCodOrders,
-  confirmOrderPayment 
+  confirmOrderPayment,
+  notifyReady 
 };

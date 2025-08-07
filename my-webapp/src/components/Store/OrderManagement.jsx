@@ -396,6 +396,21 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
     }
   };
   
+const handleNotifyReady = async (orderId) => {
+  try {
+    console.log("theid",orderId);
+    
+    await axios.post(`${SERVER_URL}/orders/${orderId}/notify-ready`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    toast.success('Customer notified: Order is ready');
+  } catch (error) {
+    console.error('Failed to send ready notification', error);
+    toast.error('Failed to notify customer');
+  }
+};
 
   const handlePaymentStatusChange = async (orderId, newStatus) => {
     toast((t) => (
@@ -488,6 +503,17 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
               {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4" /><span>Deliver</span></>}
             </button>
           );
+          buttons.push(
+            <button
+              key="ready"
+              onClick={() => handleNotifyReady(order._id)}
+              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-1 shadow-md"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>Ready</span>
+            </button>
+          );
+          
           break;
       }
   
@@ -545,6 +571,17 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
             {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Truck className="w-4 h-4" /><span>Delivered</span></>}
           </button>
         );
+        buttons.push(
+          <button
+            key="ready"
+            onClick={() => handleNotifyReady(order._id)}
+            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center space-x-1 shadow-md"
+          >
+            <CheckCircle className="w-4 h-4" />
+            <span>Ready</span>
+          </button>
+        );
+        
         break;
       
       case 'shipped':

@@ -12,7 +12,8 @@ const {
   getOrdersByStatus,
   getOrderStats,
   getPendingNonCodOrders,
-  confirmOrderPayment
+  confirmOrderPayment,
+  notifyReady
 } = require('../controllers/orderController');
 
 // You might have auth middleware
@@ -25,6 +26,7 @@ router.post('/create', createOrder);
 // Query params: ?status=pending&role=buyer&startDate=2024-01-01&endDate=2024-12-31&limit=20&page=1
 router.get('/store/:id', getUserOrders);
 
+router.post('/:id/notify-ready', notifyReady); 
 router.put('/confirm-payment/:orderId', confirmOrderPayment);
 
 router.get('/pending-non-cod/:storeId', getPendingNonCodOrders);

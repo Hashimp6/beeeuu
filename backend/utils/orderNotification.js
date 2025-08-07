@@ -127,7 +127,7 @@ const notifyOrderConfirmed = async (orderData) => {
       body = `Your order with ${orderData.products.length} products has been confirmed by ${storeName}`;
     } else {
       const product = orderData.products?.[0] || {};
-      body = `Your order for ${product.productName || 'item'} has been confirmed by ${storeName}`;
+      body = `Your order from ${product.productName || 'item'} has been confirmed by ${storeName}`;
     }
 
     return await sendOrderNotification(
@@ -174,6 +174,8 @@ const notifyOrderShipped = async (orderData, trackingNumber = null) => {
 // Notification for order delivered (to both buyer and seller)
 const notifyOrderDelivered = async (orderData) => {
   try {
+    console.log("ooooo",orderData);
+    
     console.log('📦 Sending order delivered notifications...');
     
     let notifications = [];
@@ -181,7 +183,7 @@ const notifyOrderDelivered = async (orderData) => {
     // Notify buyer
     if (orderData.buyerId) {
       const title = '📦 Order Delivered';
-      const body = `Your order for ${orderData.productName} has been delivered successfully!`;
+      const body = `Your order from ${orderData.sellerName} has been delivered successfully!`;
       
       notifications.push(
         sendOrderNotification(
@@ -340,6 +342,44 @@ const notifyPaymentFailed = async (orderData) => {
   }
 };
 
+// Notification for order ready (to buyer)
+const notifyOrderReady = async (orderData) => {
+  try {
+    console.log('🟢 Sending order ready notification...');
+
+    const buyerId = orderData.buyerId?._id || orderData.buyerId;
+    if (!buyerId) {
+      console.log('❌ Buyer ID not found for order ready notification');
+      return false;
+    }
+
+    const storeId = orderData.sellerId?._id || orderData.sellerId;
+    const store = await Store.findById(storeId).select('storeName');
+    const storeName = store?.storeName || 'Store';
+
+    const title = '🟢 Order Ready for Pickup/Delivery';
+
+    let body;
+    if (orderData.products && orderData.products.length > 1) {
+      body = `Your order with ${orderData.products.length} products is ready at ${storeName}`;
+    } else {
+      const product = orderData.products?.[0] || {};
+      body = `Your order for ${product.productName || 'item'} is ready at ${storeName}`;
+    }
+
+    return await sendOrderNotification(
+      buyerId,
+      title,
+      body,
+      { ...orderData, action: 'ready' }
+    );
+  } catch (error) {
+    console.error('❌ Error sending order ready notification:', error);
+    return false;
+  }
+};
+
+
 module.exports = {
   notifyNewOrder,
   notifyOrderConfirmed,
@@ -347,5 +387,6 @@ module.exports = {
   notifyOrderDelivered,  
   notifyOrderCancelled,
   notifyPaymentReceived,
-  notifyPaymentFailed
+  notifyPaymentFailed,
+  notifyOrderReady
 };

@@ -446,6 +446,7 @@ export const NotificationProvider = ({ children }) => {
     testAppointmentNotification,
     toggleNotifications,
     areNotificationsEnabled,
+    clearPushTokenFromServer,
   };
 
   console.log('🎁 [NOTIFICATION] Providing context value to children');

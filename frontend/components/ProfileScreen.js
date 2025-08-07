@@ -17,8 +17,10 @@ import StoreProfileComponent from "./storeProfileComponent";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CategoryManagementScreen from "./CategoryMgtByAdmin";
+import { useNotification } from "../context/NotificationContext";
 
 const ProfileScreen = () => {
+  const { clearPushTokenFromServer } = useNotification();
   const { logout } = useAuth();
   const navigation = useNavigation();
   const [user, setUser] = useState(null); 
@@ -41,6 +43,7 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
+      await clearPushTokenFromServer();
       await logout();
     } catch (error) {
       console.error("Logout failed:", error);
