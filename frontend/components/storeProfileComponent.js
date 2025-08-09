@@ -157,7 +157,7 @@ const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
   
   const handleSaveStore = () => {
     // In a real app, you would make an API call to update store data
-    console.log("Saving store data:", editData);
+   
     setStore({ ...store, ...editData });
     Alert.alert("Success", "Store details updated successfully!");
    

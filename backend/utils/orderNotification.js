@@ -6,8 +6,7 @@ const { sendPushNotification } = require('../services/notificationService');
 // Send order notification to a user
 const sendOrderNotification = async (userId, title, body, orderData) => {
   try {
-    console.log(`🔔 Sending order notification to user: ${userId}`);
-    
+   
     // Get user's push tokens (note: pushTokens is an array)
     const user = await User.findById(userId).select('pushTokens username');
     
@@ -174,10 +173,8 @@ const notifyOrderShipped = async (orderData, trackingNumber = null) => {
 // Notification for order delivered (to both buyer and seller)
 const notifyOrderDelivered = async (orderData) => {
   try {
-    console.log("ooooo",orderData);
-    
-    console.log('📦 Sending order delivered notifications...');
-    
+  
+   
     let notifications = [];
 
     // Notify buyer
@@ -229,8 +226,7 @@ const notifyOrderDelivered = async (orderData) => {
 // Notification for order cancellation
 const notifyOrderCancelled = async (orderData, cancelledBy = 'buyer') => {
   try {
-    console.log('❌ Sending order cancellation notifications...');
-    
+  
     let notifications = [];
 
     if (cancelledBy === 'buyer') {
@@ -287,13 +283,11 @@ const notifyOrderCancelled = async (orderData, cancelledBy = 'buyer') => {
 // Notification for payment received (to seller)
 const notifyPaymentReceived = async (orderData) => {
   try {
-    console.log('💰 Sending payment received notification...');
-    
+
     const storeOwnerId = await getStoreOwnerId(orderData.sellerId);
     
     if (!storeOwnerId) {
-      console.log('❌ Store owner not found for payment notification');
-      return false;
+   return false;
     }
 
     let customerName = orderData.customerName;
@@ -320,11 +314,9 @@ const notifyPaymentReceived = async (orderData) => {
 // Notification for payment failed (to buyer)
 const notifyPaymentFailed = async (orderData) => {
   try {
-    console.log('❌ Sending payment failed notification...');
-    
+  
     if (!orderData.buyerId) {
-      console.log('❌ Buyer ID not found for payment failed notification');
-      return false;
+     return false;
     }
 
     const title = '❌ Payment Failed';
@@ -345,12 +337,9 @@ const notifyPaymentFailed = async (orderData) => {
 // Notification for order ready (to buyer)
 const notifyOrderReady = async (orderData) => {
   try {
-    console.log('🟢 Sending order ready notification...');
-
-    const buyerId = orderData.buyerId?._id || orderData.buyerId;
+   const buyerId = orderData.buyerId?._id || orderData.buyerId;
     if (!buyerId) {
-      console.log('❌ Buyer ID not found for order ready notification');
-      return false;
+   return false;
     }
 
     const storeId = orderData.sellerId?._id || orderData.sellerId;

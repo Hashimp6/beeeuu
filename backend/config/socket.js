@@ -23,25 +23,21 @@ function initializeSocket(server) {
   // JWT authentication middleware
   io.use(async (socket, next) => {
     try {
-      console.log("🔐 Verifying token using secret:", process.env.JWT_SECRET);
-
+     
       // Accept token from either auth header or query param
       const token = socket.handshake.auth.token || socket.handshake.query.token;
 
       if (!token) {
-        console.log('❌ No token provided — rejecting connection');
         return next(new Error('Authentication error: No token provided'));
       }
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log("✅ Token verified, user ID:", decoded.id);
-
+      
       // Find user by decoded id
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
-        console.log('❌ User not found — rejecting connection');
         return next(new Error('Authentication error: User not found'));
       }
 
@@ -50,8 +46,7 @@ function initializeSocket(server) {
 
       next();
     } catch (error) {
-      console.error('❌ Socket authentication error:', error.message);
-      next(new Error('Authentication error: Invalid token'));
+     next(new Error('Authentication error: Invalid token'));
     }
   });
 

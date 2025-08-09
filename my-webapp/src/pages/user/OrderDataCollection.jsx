@@ -40,7 +40,6 @@ const OrderDetails = () => {
   
   const [store, setStore] = useState(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false); // Add loading state
-  console.log("Order data:", storeProducts, store);
 
   // Form states
   const [productQuantities, setProductQuantities] = useState({});
@@ -85,8 +84,7 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
     const fetchStoreDetails = async () => {
       try {
         const response = await axios.get(`${SERVER_URL}/stores/${storeId}`);
-        console.log("Fetched store:", response.data.store); 
-        setStore(response.data.store);
+      setStore(response.data.store);
       } catch (error) {
         console.error("Error fetching store data:", error);
         toast.error("Failed to fetch store information.");
@@ -106,7 +104,7 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
       setProductQuantities(initialQuantities);
     }
   }, [storeProducts]);
-console.log("llo",store);
+
 
 useEffect(() => {
   if (store?.paymentType) {
@@ -378,10 +376,8 @@ useEffect(() => {
     // Razorpay Payment Flow
     if (selectedPayment === "razorpay") {
       try {
-        console.log("Oiewfewent started");
-        const totalAmount = parseFloat(calculateTotal());
-  console.log("ttt",totalAmount);
-  
+     const totalAmount = parseFloat(calculateTotal());
+
         const res = await axios.post(`${SERVER_URL}/stores/razorpay/create-order`, {
           amount: totalAmount * 100,
           currency: "INR",
@@ -466,11 +462,9 @@ useEffect(() => {
           },
         };
   
-        console.log("✅ Opening Razorpay popup");
-        const rzp = new window.Razorpay(options);
+    const rzp = new window.Razorpay(options);
         rzp.open();
-        console.log("✅ Razorpay popup command issued");
-        
+  
   
         setIsPlacingOrder(false); // Razorpay popup is now handling flow
         return;

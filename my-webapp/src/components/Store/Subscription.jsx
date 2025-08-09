@@ -62,7 +62,7 @@ border: "border-2 border-amber-500",
 ];
 
 const SubscriptionController = ({ store }) => {
-  console.log("Store data:", store);
+  
   const { user } = useAuth();
   const [loading, setLoading] = useState({});
   const [userEmail] = useState(user.email);

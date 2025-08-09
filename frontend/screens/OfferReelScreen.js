@@ -63,7 +63,6 @@ const OffersReelsFeed = ({ onOfferPress }) => {
       if (isInitial) {
         setRefreshing(true);
       }
-console.log("uddd",user);
 const lat=user.latitude;
 const lng=user.longitude;
      
@@ -81,8 +80,7 @@ const lng=user.longitude;
 
       if (response.data.success) {
         const newOffers = response.data.data;
-      // console.log("off",response.data.data);
-      
+  
         
         if (isInitial) {
           setOffers(newOffers);

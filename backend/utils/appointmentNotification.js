@@ -10,8 +10,7 @@ const sendAppointmentNotification = async (userId, title, body, appointmentData)
     const user = await User.findById(userId).select('pushTokens username');
 
     if (!user || !user.pushTokens || user.pushTokens.length === 0) {
-      console.log(`No push tokens found for user: ${userId}`);
-      return false;
+     return false;
     }
 
     const results = await Promise.allSettled(
@@ -183,7 +182,7 @@ const notifyPaymentReceived = async (appointmentData, paymentAmount, paymentType
     const storeOwnerId = await getStoreOwnerId(appointmentData.store);
     
     if (!storeOwnerId) {
-      console.log('Store owner not found for payment notification');
+ 
       return false;
     }
 

@@ -8,7 +8,6 @@ const deleteImageFiles = (imagePaths) => {
       if (imagePath && fs.existsSync(imagePath)) {
         try {
           fs.unlinkSync(imagePath);
-          console.log(`Deleted image: ${imagePath}`);
         } catch (error) {
           console.error(`Error deleting image ${imagePath}:`, error);
         }
@@ -20,7 +19,6 @@ const deleteImageFiles = (imagePaths) => {
 // Add Product
 const addProduct = async (req, res) => {
   try {
-    console.log("request comes from bc", req.body);
     
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -35,7 +33,6 @@ const addProduct = async (req, res) => {
       return res.status(400).json({ message: "Store, Name and Price are required" });
     }
     
-    console.log("images ", images);
     
     // Create product object with conditional quantity
     const productData = {
@@ -75,7 +72,6 @@ const addProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { productId } = req.params;
-    console.log("update data", req.body);
     
     // Find existing product to get current images
     const existingProduct = await Product.findById(productId);
@@ -148,9 +144,8 @@ const getAllProducts = async (req, res) => {
 };
 const getProductsByStore = async (req, res) => {
   try {
-    console.log("sdd");
-    const { storeId } = req.params;
-    console.log("sdd",storeId );
+        const { storeId } = req.params;
+
     
     const products = await Product.find({ store: storeId });
     res.status(200).json(products);

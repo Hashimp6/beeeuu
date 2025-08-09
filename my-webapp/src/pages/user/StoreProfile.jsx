@@ -61,7 +61,6 @@ const handleTouchMove = (e) => {
   };
 
   const handleCloseChatApp = () => {
-    console.log('Closing chat app'); // Debug log
     setShowChatApp(false);
     setSelectedUser(null);
   };
@@ -89,7 +88,7 @@ const handleTouchEnd = () => {
         const response = await axios.get(`${SERVER_URL}/stores/storeprofile/${storeName}`);
     
         const storeData = response.data.data;
-        console.log("Store data:", storeData);
+
     
         setStore(storeData);
     
@@ -122,10 +121,8 @@ const handleTouchEnd = () => {
       if (!store || !store._id) return;
 
       try {
-        console.log("Fetching products for store:", store._id);
-        const response = await axios.get(`${SERVER_URL}/products/store/${store._id}`);
+      const response = await axios.get(`${SERVER_URL}/products/store/${store._id}`);
         
-        console.log("Products fetched:", response.data);
         setProducts(response.data);
         
       } catch (err) {
@@ -182,13 +179,10 @@ const handleTouchEnd = () => {
     if (tab === 'gallery' && !gallery.length && store && store._id) {
       try {
         setLoading(true);
-        console.log("Fetching gallery for store:", store._id);
-        
+   
         const response = await axios.get(`${SERVER_URL}/gallery/${store._id}`);
         
-        console.log("Gallery data:", response.data);
-        // Adjust based on your API response structure
-        const galleryData = response.data.data?.images || response.data.images || response.data;
+      const galleryData = response.data.data?.images || response.data.images || response.data;
         setGallery(galleryData);
         
       } catch (err) {
@@ -248,8 +242,7 @@ const handleTouchEnd = () => {
         });
         setShowShareModal(false);
       } catch (error) {
-        console.log('Error sharing:', error);
-        setShowShareModal(true);
+      setShowShareModal(true);
       }
     } else {
       setShowShareModal(true);
@@ -377,7 +370,6 @@ const handleTouchEnd = () => {
 
   const onChatNow = () => {
    setShowChat(true)
-    console.log('Starting chat with store:', enhancedStore?.storeName);
   };
 
   // Loading state

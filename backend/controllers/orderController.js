@@ -16,8 +16,6 @@ const { notifyNewOrder, notifyOrderConfirmed,
 const createOrder = async (req, res) => {
   try {
     const orderData = req.body;
-    console.log('Creating order:', orderData);
-    
     // Validate required fields
     const requiredFields = ['products', 'sellerId', 'buyerId', 'customerName', 'deliveryAddress', 'phoneNumber'];
     for (let field of requiredFields) {
@@ -109,8 +107,6 @@ const createOrder = async (req, res) => {
       .populate('sellerId', 'storeName userId') // ✅ userId is the store owner
       .populate('products.productId', 'name price image');
 
-    console.log('✅ Order created successfully:', populatedOrder._id);
-    
     // 📊 Debug order data for notifications
     console.log('📊 Order data for notification:', {
       orderId: populatedOrder._id,
@@ -126,12 +122,10 @@ const createOrder = async (req, res) => {
     
     // 🔔 SEND NOTIFICATION TO SELLER ABOUT NEW ORDER
     try {
-      console.log('🚀 Calling notifyNewOrder...');
-      
+   
       // ✅ FIXED: Pass the correctly populated order
       const notificationResult = await notifyNewOrder(populatedOrder);
-      console.log('📬 New order notification result:', notificationResult);
-      
+   
       if (notificationResult) {
         console.log('✅ New order notification sent successfully');
       } else {
@@ -174,7 +168,6 @@ const getUserOrders = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, role, startDate, endDate, limit = 50, page = 1 } = req.query;
-console.log("get here");
 
     if (!id) {
       return res.status(400).json({ message: "ID parameter is required" });
@@ -227,7 +220,7 @@ console.log("get here");
 
     // Get total count for pagination
     const totalCount = await Order.countDocuments(query);
-console.log("orders",orders);
+
 
     res.status(200).json({
       message: "Orders fetched successfully",
@@ -255,7 +248,6 @@ const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status, trackingNumber, estimatedDeliveryDate, notes } = req.body;
 
-    console.log("Updating order:", orderId, "to status:", status);
 
     // Validate status
     const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "returned"];
@@ -521,8 +513,6 @@ const getOrdersByStatus = async (req, res) => {
   try {
     const { storeId } = req.params; // store ID
     const { status } = req.query;
-    console.log("ORDERis",storeId,status);
-    
     if (!storeId) {
       return res.status(400).json({ message: "Seller ID is required" });
     }
@@ -538,7 +528,6 @@ const getOrdersByStatus = async (req, res) => {
     .populate("buyerId", "name email")
     .populate("products.productId", "name price image")
     .sort({ orderDate: -1 });
-console.log(orders);
 
     res.status(200).json({
       message: "Orders fetched successfully",
@@ -621,7 +610,7 @@ const getPendingNonCodOrders = async (req, res) => {
   }
 };
 const confirmOrderPayment = async (req, res) => {
-  console.log("reac");
+
   
   const { orderId } = req.params; // order ID passed in URL
 

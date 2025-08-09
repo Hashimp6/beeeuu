@@ -7,8 +7,6 @@ const OrderReceipt = () => {
     const receiptRef = useRef();
     const location = useLocation(); // ✅ get location state
     const orderData = location.state?.orderData; // ✅ safely get passed order data
-  console.log("dddass",orderData);
-  
 
   const order = orderData ;
 

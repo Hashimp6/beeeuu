@@ -94,8 +94,7 @@ const StoreSearchPage = ({ navigation }) => {
       });
 
       if (response.data.success) {
-        console.log("store1s",response.data.data.stores);
-        
+      
         setStores(response.data.data.stores);
         setPagination(response.data.data.pagination);
       } else {
@@ -133,8 +132,7 @@ const StoreSearchPage = ({ navigation }) => {
       });
 
       if (response.data.success) {
-        console.log("store2s",response.data.data.stores);
-        setStores(response.data.data.stores);
+     setStores(response.data.data.stores);
         setPagination(response.data.data.pagination);
       } else {
         Alert.alert('Search Error', 'No results found');

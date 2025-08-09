@@ -35,8 +35,7 @@ const StoreOffers = ({ route, navigation }) => {
       const response = await axios.get(`${SERVER_URL}/offers/store/${store._id}`);
   
       if (response.data.success) {
-        console.log("offer",response.data.data);
-        setOffers(response.data.data);
+     setOffers(response.data.data);
         setPagination(response.data.pagination);
       } else {
         Toast.show({

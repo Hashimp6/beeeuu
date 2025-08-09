@@ -57,7 +57,6 @@ const StoreAppointments = ({ route, navigation }) => {
         apiUrl = `${SERVER_URL}/appointments/store/${storeId}/status`;
       }
       
-      console.log('Fetching appointments for status:', status, 'storeId:', storeId);
 
       const response = await axios.get(apiUrl, {
         params,
@@ -70,12 +69,9 @@ const StoreAppointments = ({ route, navigation }) => {
       
 
       if (response.status === 200) {
-        console.log(response.data.appointments );
-        
-        const appointmentsData = response.data.appointments || [];
+     const appointmentsData = response.data.appointments || [];
         setAppointments(appointmentsData);
-        console.log(`Fetched ${appointmentsData.length} appointments`);
-      } else {
+     } else {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error) {

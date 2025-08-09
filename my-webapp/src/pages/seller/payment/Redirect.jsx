@@ -26,7 +26,7 @@ const RedirectStatusScreens = () => {
       return () => clearTimeout(timer);
     } else if (status === 'success' && countdown === 0) {
       // Auto redirect would happen here
-      console.log('Auto-redirecting...');
+    
     }
   }, [status, countdown]);
 

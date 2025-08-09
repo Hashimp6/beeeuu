@@ -20,9 +20,6 @@ const ResetPasswordPage = () => {
     const t = queryParams.get('token');
     const e = decodeURIComponent(queryParams.get('email'));
   
-    console.log("🔍 ResetPasswordPage mounted");
-    console.log("👉 Token from URL:", t);
-    console.log("👉 Email from URL:", e);
   
     if (!t || !e) {
       toast.error("Missing token or email. Please use the correct reset link.");
@@ -57,10 +54,6 @@ const ResetPasswordPage = () => {
     }
 
     try {
-      console.log("🚀 Submitting with:");
-console.log("📧 Email:", email);
-console.log("🔑 Token:", token);
-console.log("🔒 New Password:", newPassword);
 
       setIsLoading(true);
       const res = await axios.post(`${SERVER_URL}/users/reset-password`, {

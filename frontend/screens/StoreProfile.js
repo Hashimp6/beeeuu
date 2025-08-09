@@ -38,7 +38,7 @@ const SellerProfile = () => {
   const { name } = route.params;
  
   useEffect(() => {
-    console.log('🧺 Updated Cart:', cart);
+    console.log('🧺 Updated Cart:');
   }, [cart]);
 
   const openLink = (url) => {
@@ -84,9 +84,7 @@ const SellerProfile = () => {
       // If store is active, proceed as normal
       addToCart(product, store);
     
-      console.log('🛒 Product added:', product);
-      console.log('📦 Correct Store ID:', store._id);
-    
+     
       Toast.show({
         type: 'success',
         text1: 'Added to Cart',
@@ -137,7 +135,6 @@ const handleShare = async () => {
     const result = await ProfileShareHandler.shareStore(store);
     
     if (result.success) {
-      console.log('Store profile shared successfully!');
       // Optional: Show success toast/alert to user
       Toast.show({
         type: 'success',

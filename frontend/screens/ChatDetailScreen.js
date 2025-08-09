@@ -39,8 +39,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   
   // Setup navigation header and fetch data
   useEffect(() => {
-    console.log("other details", otherUser);
-    
+ 
     // Validate required data
     if (!otherUser || !user || !token) {
       Alert.alert(
@@ -61,9 +60,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
         if (!chatId) {
           const receiverId = typeof otherUser === 'object' ? 
             (otherUser._id || otherUser.userId) : otherUser;
-          
-          console.log('Creating conversation with receiverId:', receiverId);
-          
+        
           // Create a new conversation
           const response = await axios.post(
             `${SERVER_URL}/messages/conversations`,
@@ -74,8 +71,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
               }
             }
           );
-          console.log("response", response.data);
-          
+       
           chatId = response.data.conversationId;
         }
         
@@ -111,8 +107,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
   // Process pending appointment once we have a conversation ID
   useEffect(() => {
     if (pendingAppointment && conversationId) {
-      console.log('Processing pending appointment with conversation ID:', conversationId);
-      sendAppointmentMessage(pendingAppointment.message, pendingAppointment.data);
+     sendAppointmentMessage(pendingAppointment.message, pendingAppointment.data);
       setPendingAppointment(null);
     }
   }, [pendingAppointment, conversationId]);
@@ -126,8 +121,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
     
     // Listen for new messages
     socket.on('new-message', (data) => {
-      console.log('Raw socket data received:', data);
-      
+     
       // Only update if it's for our conversation
       if (data.conversationId === chatId) {
         const newMessage = {
@@ -140,8 +134,7 @@ const ChatDetailScreen = ({ navigation, route }) => {
           image: data.message.image || null
         };
         
-        console.log('Processed new message:', newMessage);
-        
+       
         // Check if this message already exists (to prevent duplicates)
         setMessages(prevMessages => {
           const existingMessage = prevMessages.find(msg => 

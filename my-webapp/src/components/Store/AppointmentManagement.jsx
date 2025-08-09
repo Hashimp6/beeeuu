@@ -282,8 +282,7 @@ const AppointmentManagement = ({ storeId }) => {
     try {
       let apiUrl = '';
       let params = { status };
-      console.log("gttt",storeId,status);
-      
+    
       if (status === 'today') {
         apiUrl = `${SERVER_URL}/appointments/user/${storeId}`;
         const today = new Date().toISOString().split('T')[0];
@@ -300,8 +299,7 @@ const AppointmentManagement = ({ storeId }) => {
         },
         timeout: 10000
       });
-      console.log("Raw appointment response:", response.data);
-      const raw = response.data.appointments ?? response.data ?? [];
+   const raw = response.data.appointments ?? response.data ?? [];
 
       if (Array.isArray(raw)) {
         setAppointments(

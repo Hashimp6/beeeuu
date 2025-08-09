@@ -3,8 +3,6 @@ const User = require("../models/userModel");
 const updatePushToken = async (req, res) => {
   try {
     const { userId, pushToken } = req.body;
-    console.log("🛬 Received request:", { userId, pushToken });
-
     if (!userId || !pushToken) {
       return res.status(400).json({
         success: false,
@@ -23,9 +21,7 @@ const updatePushToken = async (req, res) => {
     if (!user.pushTokens.includes(pushToken)) {
       user.pushTokens.push(pushToken);
       await user.save();
-      console.log("✅ Token added. Final pushTokens array:", user.pushTokens);
     } else {
-      console.log("🔁 Token already exists:", pushToken);
     }
 
     return res.status(200).json({

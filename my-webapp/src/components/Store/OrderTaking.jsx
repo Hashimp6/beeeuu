@@ -88,13 +88,10 @@ const RestaurantOrderScreen = ({ store }) => {
           setMenuItems(activeProducts);
           
           // Debug logging
-          console.log('Transformed products:', transformedProducts);
-          console.log('Active products:', activeProducts);
-          
+        
           // Get unique categories from actual data and create category objects
           const uniqueCategories = [...new Set(activeProducts.map(item => item.category))];
-          console.log('Unique categories found:', uniqueCategories);
-          
+         
           const categoryObjects = uniqueCategories.map(categoryName => ({
             name: categoryName,
             icon: getCategoryIcon(categoryName),
@@ -218,7 +215,6 @@ const RestaurantOrderScreen = ({ store }) => {
           },
         });
       
-        console.log("Order response:", finalRes.data);
       
         if (finalRes.data.message === "Order created successfully") {
           alert(`Order placed successfully! Total: ₹${getTotalAmount()}`);

@@ -43,8 +43,7 @@ const ChatListScreen = ({ navigation }) => {
         }
       );
       
-      console.log("Conversations response:", response.data);
-      
+     
       setConversations(response.data.conversations || response.data);
       setLoading(false);
       setRefreshing(false);
@@ -121,14 +120,12 @@ const ChatListScreen = ({ navigation }) => {
 // Replace the complex display name logic in your renderItem function with this simplified version:
 
 const renderItem = ({ item }) => {
-  console.log("Rendering conversation item:", JSON.stringify(item, null, 2));
-  
+ 
   const otherUser = getOtherUser(item);
   const lastMessage = item.lastMessage || (item.messages && item.messages[item.messages.length - 1]);
   const updatedAt = item.updatedAt || item.createdAt;
 
   if (!otherUser) {
-    console.log("No other user found for conversation:", item);
     return null;
   }
 

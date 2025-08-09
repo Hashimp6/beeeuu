@@ -145,8 +145,7 @@ const RegisterScreen = () => {
     
     try {
       setIsLoading(true);
-      console.log("fine");
-
+  
       // Send registration request
       const response = await axios.post(`${SERVER_URL}/users/register`, {
         name,
@@ -156,8 +155,7 @@ const RegisterScreen = () => {
 
       // Check response data structure
       if (response.data && response.data.message) {
-        console.log("OTP request successful");
-        
+     
         Toast.show({
           type: 'success',
           text1: 'Registration Successful!',

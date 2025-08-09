@@ -80,7 +80,7 @@ const [newUpi, setNewUpi] = useState("");
         // ✅ 1. Fetch Analytics Data
         const analyticsRes = await axios.get(`${SERVER_URL}/stores/store-analetics/${store._id}`);
         const analytics = analyticsRes.data.data;
-        console.log("Analytics data:", analytics);
+
         setAnalyticsData(analytics);
   
         // ✅ 2. Calculate Stats from Analytics
@@ -121,7 +121,7 @@ const [newUpi, setNewUpi] = useState("");
   
         // ✅ 3. Fetch Revenue Data (new API)
         const revenueRes = await axios.get(`${SERVER_URL}/stores/revenue/${store._id}`);
-        console.log("Revenue Data:", revenueRes.data);
+    
         setRevenueData(revenueRes.data);
   
       } catch (err) {
@@ -238,7 +238,7 @@ const [newUpi, setNewUpi] = useState("");
   const handleUpiUpdate = async () => {
     try {
       const storeId=store._id
-      console.log("jh",storeId);
+
       
       await axios.put(`${SERVER_URL}/stores/update-upi/${storeId}`, { upi: newUpi });
       alert("UPI Updated successfully");

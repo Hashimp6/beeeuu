@@ -14,7 +14,7 @@ const filePath = path.resolve(__dirname, "../android/app/google-services.json");
 try {
   const json = Buffer.from(base64, "base64").toString("utf-8");
   fs.writeFileSync(filePath, json);
-  console.log("✅ google-services.json written to android/app/");
+
 } catch (error) {
   console.error("❌ Failed to write google-services.json", error);
   process.exit(1);

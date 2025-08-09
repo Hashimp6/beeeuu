@@ -49,7 +49,7 @@ const NewStore = () => {
       const response = await axios.get(`${SERVER_URL}/category/group`);
       const data = response.data;
   
-      console.log("Fetched Categories:", data);
+ 
   
       // Extract only the main category titles
       const mainCategories = data.map(mainCategory => mainCategory.title);

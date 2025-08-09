@@ -674,8 +674,7 @@ const OfferManagement = ({ storeId }) => {
         throw new Error('Store details not available');
       }
 
-      console.log("seller ID:", storeId, token);
-
+  
       const response = await axios.get(`${SERVER_URL}/offers/store/${storeId}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -683,8 +682,7 @@ const OfferManagement = ({ storeId }) => {
         },
       });
 
-      console.log('Fetched offers:', response.data.data);
-      setOffers(response.data.data || []);
+     setOffers(response.data.data || []);
 
     } catch (err) {
       console.error('Error fetching offers:', err);
@@ -767,8 +765,6 @@ const OfferManagement = ({ storeId }) => {
           },
         });
 
-        console.log('Offer deleted:', response.data);
-        
         // Remove from local state
         setOffers(prev => prev.filter(offer => offer._id !== offerId));
         

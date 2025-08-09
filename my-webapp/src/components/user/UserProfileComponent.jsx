@@ -221,8 +221,7 @@ const UserProfileComponent = ({  setHistory }) => {
         phone: editForm.phone.trim(),
         address: editForm.address.trim()
       };
-  console.log("updating data",updateData);
-  
+
       const response = await axios.put(`${SERVER_URL}/users/change-address`, updateData, {
         headers: { 'Content-Type': 'application/json' }
       });

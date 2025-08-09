@@ -117,8 +117,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
   };
   
   const fetchStores = useCallback(async (searchTerm = '', filterData = filters) => {
-    console.log("fetchStores called with:", { searchTerm, filterData, isGuest });
-  
+
     // Get coordinates - use default for guests or when location is not available
     let latitude, longitude;
     
@@ -240,8 +239,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
   
   useEffect(() => {
     const loadInitialData = async () => {
-      console.log("⏳ Loading initial data...", { isGuest, hasToken: !!token });
-      
+  
       // Always fetch stores (works for both guests and logged-in users)
       await fetchStores('', filters);
       

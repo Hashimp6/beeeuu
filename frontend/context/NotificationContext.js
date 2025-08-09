@@ -57,8 +57,7 @@ export const NotificationProvider = ({ children }) => {
   const saveNotificationSettings = async (enabled) => {
     try {
       await AsyncStorage.setItem('notificationsEnabled', JSON.stringify(enabled));
-      console.log('💾 [NOTIFICATION] Settings saved - enabled:', enabled);
-    } catch (error) {
+   } catch (error) {
       console.error('❌ [NOTIFICATION] Error saving settings:', error);
     }
   };
@@ -80,11 +79,9 @@ export const NotificationProvider = ({ children }) => {
 
   // Clear push token from server
   const clearPushTokenFromServer = async () => {
-    console.log('🌐 [NOTIFICATION] Clearing push token from server...');
-    
+   
     if (!token || !user) {
-      console.log('⚠️ [NOTIFICATION] No auth token or user - cannot clear server token');
-      return;
+     return;
     }
 
     try {
@@ -99,9 +96,7 @@ export const NotificationProvider = ({ children }) => {
           timeout: 10000,
         }
       );
-
-      console.log('📥 [NOTIFICATION] Server response:', response.data);
-      if (response.data.success) {
+  if (response.data.success) {
         console.log('✅ [NOTIFICATION] Push token cleared from server successfully');
       }
     } catch (error) {
@@ -116,35 +111,28 @@ export const NotificationProvider = ({ children }) => {
 
   // Register for push notifications
   const registerForPushNotificationsAsync = async (forceRegister = false) => {
-    console.log('📱 [NOTIFICATION] Starting push notification registration...');
-    
+   
     // Check if notifications are disabled
     if (!notificationsEnabled && !forceRegister) {
-      console.log('🔕 [NOTIFICATION] Notifications disabled - skipping registration');
-      return null;
+  return null;
     }
     
     if (isRegistering) {
-      console.log('⏳ [NOTIFICATION] Registration already in progress, returning existing token');
-      return expoPushToken;
+     return expoPushToken;
     }
     
     setIsRegistering(true);
     let pushToken;
 
     try {
-      console.log('🔧 [NOTIFICATION] Platform:', Platform.OS);
-      console.log('📱 [NOTIFICATION] Device check:', Device.isDevice ? 'Physical device' : 'Simulator/Emulator');
-
+    
       if (Platform.OS === 'android') {
-        console.log('🤖 [NOTIFICATION] Setting up Android notification channel...');
-        await Notifications.setNotificationChannelAsync('default', {
+       await Notifications.setNotificationChannelAsync('default', {
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF231F7C',
         });
-        console.log('✅ [NOTIFICATION] Android notification channel configured');
       }
 
       if (!Device.isDevice) {
@@ -155,17 +143,13 @@ export const NotificationProvider = ({ children }) => {
         return null;
       }
 
-      console.log('🔍 [NOTIFICATION] Checking existing permissions...');
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      console.log('📋 [NOTIFICATION] Existing permission status:', existingStatus);
-      
+     
       let finalStatus = existingStatus;
 
       if (existingStatus !== 'granted') {
-        console.log('❓ [NOTIFICATION] Requesting permissions...');
-        const { status } = await Notifications.requestPermissionsAsync();
+       const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
-        console.log('📋 [NOTIFICATION] Permission request result:', finalStatus);
       }
 
       if (finalStatus !== 'granted') {
@@ -177,33 +161,24 @@ export const NotificationProvider = ({ children }) => {
         await toggleNotifications(false);
         return null;
       }
-
-      console.log('✅ [NOTIFICATION] Permissions granted, getting project ID...');
-      const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      console.log('🆔 [NOTIFICATION] Project ID:', projectId || 'NOT FOUND');
-      
+  const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+     
       if (!projectId) {
         console.error('❌ [NOTIFICATION] Project ID not found in app configuration');
         throw new Error('Project ID not found in app configuration');
       }
 
-      console.log('🎫 [NOTIFICATION] Getting Expo push token...');
-      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+     const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       pushToken = tokenData.data;
 
-      console.log('🎫 [NOTIFICATION] Expo Push Token received:', pushToken);
       setExpoPushToken(pushToken);
 
       if (token && pushToken) {
-        console.log('🔄 [NOTIFICATION] Updating push token on server...');
-        await updatePushTokenOnServer(pushToken);
+       await updatePushTokenOnServer(pushToken);
       } else {
         console.warn('⚠️ [NOTIFICATION] Cannot update server - missing auth token or push token');
-        console.log('🔑 [NOTIFICATION] Auth token present:', !!token);
-        console.log('🎫 [NOTIFICATION] Push token present:', !!pushToken);
-      }
+     }
 
-      console.log('✅ [NOTIFICATION] Registration completed successfully');
       return pushToken;
 
     } catch (error) {
@@ -219,24 +194,18 @@ export const NotificationProvider = ({ children }) => {
       return null;
     } finally {
       setIsRegistering(false);
-      console.log('🏁 [NOTIFICATION] Registration process finished');
     }
   };
 
   // Update push token on server
   const updatePushTokenOnServer = async (pushToken) => {
-    console.log('🌐 [NOTIFICATION] Updating push token on server...');
-    console.log('🔗 [NOTIFICATION] Server URL:', SERVER_URL);
-    console.log('🎫 [NOTIFICATION] Push token to update:', pushToken);
-    console.log('👤 [NOTIFICATION] User ID:', user?._id);
-    
+
     try {
       const payload = { 
         pushToken,
         userId: user._id 
       };
       
-      console.log('📤 [NOTIFICATION] Sending request with payload:', payload);
       
       const response = await axios.put(
         `${SERVER_URL}/notifications/update-push-token`,
@@ -249,9 +218,7 @@ export const NotificationProvider = ({ children }) => {
         }
       );
 
-      console.log('📥 [NOTIFICATION] Server response status:', response.status);
-      console.log('📥 [NOTIFICATION] Server response data:', response.data);
-
+    
       if (response.data.success) {
         console.log('✅ [NOTIFICATION] Push token updated on server successfully');
       } else {
@@ -297,8 +264,7 @@ export const NotificationProvider = ({ children }) => {
               username: data.senderName 
             }
           });
-          console.log('✅ [NOTIFICATION] Navigated to ChatDetailScreen');
-        } else {
+       } else {
           console.error('❌ [NOTIFICATION] Navigation not available for chat');
         }
       } 
@@ -308,8 +274,7 @@ export const NotificationProvider = ({ children }) => {
           navigation.navigate('AppointmentDetailScreen', {
             appointmentId: data.appointmentId
           });
-          console.log('✅ [NOTIFICATION] Navigated to AppointmentDetailScreen');
-        } else {
+       } else {
           console.error('❌ [NOTIFICATION] Navigation not available for appointment');
         }
       }
@@ -322,17 +287,14 @@ export const NotificationProvider = ({ children }) => {
     };
 
     setNotificationListeners(listeners);
-    console.log('✅ [NOTIFICATION] Listeners setup complete');
     return listeners;
   };
 
   // Remove notification listeners
   const removeNotificationListeners = () => {
-    console.log('🗑️ [NOTIFICATION] Removing notification listeners...');
-    
+  
     if (notificationListeners.notificationListener) {
-      console.log('🗑️ [NOTIFICATION] Removing notification listener');
-      Notifications.removeNotificationSubscription(notificationListeners.notificationListener);
+     Notifications.removeNotificationSubscription(notificationListeners.notificationListener);
     }
     if (notificationListeners.responseListener) {
      Notifications.removeNotificationSubscription(notificationListeners.responseListener);
@@ -352,8 +314,7 @@ export const NotificationProvider = ({ children }) => {
         },
         trigger: { seconds: 1 },
       });
-      console.log('✅ [NOTIFICATION] Local notification scheduled with ID:', notificationId);
-      return notificationId;
+   return notificationId;
     } catch (error) {
       console.error('❌ [NOTIFICATION] Error scheduling local notification:', error);
       throw error;
@@ -372,18 +333,15 @@ export const NotificationProvider = ({ children }) => {
           action: 'request' 
         }
       );
-      console.log('✅ [NOTIFICATION] Test appointment notification scheduled');
-    } catch (error) {
+  } catch (error) {
       console.error('❌ [NOTIFICATION] Failed to schedule test notification:', error);
     }
   };
 
   // Clear notification badge
   const clearBadge = async () => {
-    console.log('🔢 [NOTIFICATION] Clearing badge count...');
-    try {
+   try {
       await Notifications.setBadgeCountAsync(0);
-      console.log('✅ [NOTIFICATION] Badge cleared');
     } catch (error) {
       console.error('❌ [NOTIFICATION] Error clearing badge:', error);
     }
@@ -398,8 +356,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
 
     if (user && token && !expoPushToken && !isRegistering && notificationsEnabled && isInitialized) {
-      console.log('🚀 [NOTIFICATION] Starting notification registration...');
-      registerForPushNotificationsAsync();
+   registerForPushNotificationsAsync();
     } else {
       console.log('⏸️ [NOTIFICATION] Registration not needed or already in progress');
     }
@@ -407,20 +364,18 @@ export const NotificationProvider = ({ children }) => {
 
   // Cleanup listeners on unmount
   useEffect(() => {
-    console.log('🔧 [NOTIFICATION] Setting up cleanup for component unmount');
-    return () => {
-      console.log('🧹 [NOTIFICATION] Component unmounting - cleaning up listeners');
+  return () => {
       removeNotificationListeners();
     };
   }, []);
 
   // Log state changes
   useEffect(() => {
-    console.log('📊 [NOTIFICATION] State update - expoPushToken:', expoPushToken || 'Not set');
+    console.log('📊 [NOTIFICATION] State update - expoPushToken:');
   }, [expoPushToken]);
 
   useEffect(() => {
-    console.log('📊 [NOTIFICATION] State update - notification:', notification ? 'New notification received' : 'No notification');
+    console.log('📊 [NOTIFICATION] State update - notification:');
   }, [notification]);
 
   useEffect(() => {

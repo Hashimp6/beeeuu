@@ -12,7 +12,6 @@ const OfferReelPage = () => {
   const navigate = useNavigate();
   // Add null checks for location
   const coords = location?.location?.coordinates || null;
-  console.log("loc", coords);
   const [allOffers, setAllOffers] = useState([]); // Store all loaded offers
 const [hasMore, setHasMore] = useState(true);
 const [isLoadingMore, setIsLoadingMore] = useState(false);

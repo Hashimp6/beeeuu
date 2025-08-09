@@ -453,7 +453,6 @@ const searchQuery = async (req, res) => {
   
 const checkStoreNameAvailability = async (req, res) => {
   try {
-    console.log("reached");
     
     const { name } = req.query;
 

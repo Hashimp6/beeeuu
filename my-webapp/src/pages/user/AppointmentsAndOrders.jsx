@@ -44,7 +44,6 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
       setLoading(true);
       setError(null);
       
-      console.log(`Fetching ${type} for user:`, userData._id);
 
       const endpoint = type === 'appointments' 
         ? `${SERVER_URL}/appointments/user/${userData._id}`
@@ -61,7 +60,6 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
         const responseData = await response.json();
         const items = responseData[type] || [];
         setData(items);
-        console.log(`Fetched ${items.length} ${type}`);
       } else if (response.status === 404) {
         setData([]);
       } else {
@@ -379,7 +377,6 @@ const UserAppointmentsOrders = ({ type,setHistory }) => {
    
 
     const handleCancelAppointment = async (appointmentId) => {
-      console.log("Clicked cancel for:", appointmentId,token);
       if (!appointmentId || !token) {
         alert("Missing appointment ID or auth token.");
         return;

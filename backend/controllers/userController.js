@@ -33,7 +33,7 @@ const cleanupStorage = () => {
 const initiateRegistration = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-console.log("name is",name);
+
 
     // Check for missing fields
     if (!name || !email || !password) {
@@ -70,8 +70,7 @@ console.log("name is",name);
 
     // Send OTP email
     await sendMail(email, otp);
-    console.log("OTP sent:", otp); // For development only, remove in production
-
+   
     // Clean up expired registrations
     cleanupStorage();
 
@@ -170,8 +169,7 @@ const resendOTP = async (req, res) => {
 
     // Send new OTP
     await sendMail(email, otp);
-    console.log("OTP resent:", otp); // For development only, remove in production
-
+ 
     res.status(200).json({
       message: "OTP resent successfully."
     });
@@ -220,7 +218,6 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-console.log("uokkk ",token);
 
     // Return user data (excluding password)
     const userData = user.toObject();
@@ -531,7 +528,6 @@ const updateLocation = async (req, res) => {
     
     const { userId } = req.params;
     const { coordinates,locationName } = req.body;
-    console.log("strytf",coordinates,locationName);
 
     if (!coordinates || coordinates.length !== 2) {
       return res.status(400).json({ message: "Invalid coordinates. Format: [longitude, latitude]" });
@@ -579,7 +575,7 @@ const cleanupResetTokens = () => {
 // Initiate forgot password - send reset link via email
 const forgotPassword = async (req, res) => {
   try {
-    console.log("usttt",req.body);
+
     const { email } = req.body;
 
     if (!email) {
@@ -591,7 +587,7 @@ const forgotPassword = async (req, res) => {
 
     // Check if user exists (but don't reveal if email doesn't exist for security)
     const user = await User.findOne({ email });
-    console.log("usr",user);
+
     
     // Always return success message for security (don't reveal if email exists)
     if (!user) {
@@ -616,9 +612,6 @@ const forgotPassword = async (req, res) => {
     
     // Send password reset email
     await sendPasswordResetEmail(email, resetLink, user.username);
-    
-    console.log("Password reset link:", resetLink); // For development only
-    console.log("Reset token:", resetToken); // For development only
 
     // Clean up expired tokens
     cleanupResetTokens();
@@ -688,7 +681,6 @@ const verifyResetToken = async (req, res) => {
 // Reset password with token
 const resetPassword = async (req, res) => {
   try {
-    console.log("krr", req.body);
     const { token, email, newPassword } = req.body;
 
     if (!token || !email || !newPassword) {

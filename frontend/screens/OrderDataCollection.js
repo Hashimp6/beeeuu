@@ -30,7 +30,6 @@ const OrderDetails = () => {
   const storeId = store.storeId || store._id;
   const products = cart?.[storeId]?.products || [];
   const { user, token } = useAuth() || {};
-console.log("authuser",user);
 
   // Form states
   const [isLoading, setIsLoading] = useState(false);
@@ -266,9 +265,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
   const transactionNote = products.length === 1 
     ? `Payment for ${products[0].productId?.name || products[0].name || 'Product'}`
     : `Payment for ${products.length} items from ${merchantName}`;
-  
-  console.log("merchant upi", merchantUPI);
-  
+
   let deepLink = '';
   
   switch (paymentMethod) {
@@ -287,8 +284,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
       break;
   }
   
-  console.log(`🔗 Generated ${paymentMethod.toUpperCase()} Deep Link:`, deepLink);
-  return deepLink;
+return deepLink;
 };
 
   // Handle payment app opening
@@ -297,8 +293,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
       const deepLink = generatePaymentDeepLink(paymentMethod);
       
       if (deepLink) {
-        console.log(`🔗 Attempting to open ${paymentMethod} with link:`, deepLink);
-        
+    
         const supported = await Linking.canOpenURL(deepLink);
         if (supported) {
           await Linking.openURL(deepLink);
@@ -320,7 +315,6 @@ const generatePaymentDeepLink = (paymentMethod) => {
             try {
               const altSupported = await Linking.canOpenURL(altLink);
               if (altSupported) {
-                console.log(`🔗 Using alternative deep link:`, altLink);
                 await Linking.openURL(altLink);
                 
                 Toast.show({
@@ -334,8 +328,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
                 return true;
               }
             } catch (altError) {
-              console.log('Alternative link failed:', altError);
-              continue;
+             continue;
             }
           }
           
@@ -449,8 +442,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
 
   // Handle order placement
   const handlePlaceOrder = async () => {
-    console.log("Order placement started", selectedPayment);
-    
+ 
     setIsPlacingOrder(true);
     
     // Step 1: Validate all inputs
@@ -477,10 +469,8 @@ const generatePaymentDeepLink = (paymentMethod) => {
     // Razorpay Payment Flow
     if (selectedPayment === "razorpay") {
       try {
-        console.log("Starting Razorpay payment");
-        const totalAmount = parseFloat(calculateTotal());
-        console.log("Total amount:", totalAmount);
-        
+      const totalAmount = parseFloat(calculateTotal());
+      
         // Step 1: Create Razorpay order
         const res = await axios.post(`${SERVER_URL}/stores/razorpay/create-order`, {
           amount: totalAmount * 100, // Convert to paise
@@ -511,15 +501,13 @@ const generatePaymentDeepLink = (paymentMethod) => {
           theme: { color: '#3399cc' }
         };
         
-        console.log("✅ Opening Razorpay checkout");
-        
+    
         // Step 3: Open Razorpay checkout
         RazorpayCheckout.open(options)
           .then(async (data) => {
             // Payment successful
-            console.log("✅ Razorpay payment successful:", data);
-            
-            try {
+           
+            try  {
               // Step 4: Verify payment
               const verifyRes = await axios.post(`${SERVER_URL}/stores/razorpay/verify-payment`, {
                 razorpay_order_id: data.razorpay_order_id,
@@ -592,8 +580,7 @@ const generatePaymentDeepLink = (paymentMethod) => {
           })
           .catch((error) => {
             // Payment failed or cancelled
-            console.log("❌ Razorpay payment error:", error);
-            Toast.show({
+          Toast.show({
               type: 'error',
               text1: '❌ Payment Failed',
               text2: error.description || 'Payment was cancelled',

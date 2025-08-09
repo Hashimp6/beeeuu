@@ -25,9 +25,7 @@ const updatePastAppointments = async () => {
         $set: { status: 'completed' }
       }
     );
-
-    console.log(`Updated ${result.modifiedCount} past appointments to completed status`);
-    return result;
+  return result;
   } catch (error) {
     console.log('Error updating past appointments:', error);
   }
@@ -101,7 +99,6 @@ const getUserAppointments = async (req, res) => {
 
     // Get total count for pagination
     const totalCount = await Appointment.countDocuments(query);
-console.log("Appoi",appointments);
 
     res.status(200).json({
       message: "Appointments fetched successfully",
@@ -157,16 +154,13 @@ const updateAppointmentStatus = async (req, res) => {
     // 🔔 SEND NOTIFICATIONS BASED ON STATUS CHANGE
     try {
       if (oldStatus === 'pending' && newStatus === 'confirmed') {
-        console.log('📱 Sending appointment acceptance notification...');
         await notifyAppointmentAccepted(appointment);
       } 
       else if (oldStatus === 'pending' && newStatus === 'cancelled') {
-        console.log('📱 Sending appointment decline notification...');
-        await notifyAppointmentDeclined(appointment);
+      await notifyAppointmentDeclined(appointment);
       }
       else if (newStatus === 'cancelled' && oldStatus !== 'pending') {
-        console.log('📱 Sending appointment cancellation notification...');
-        // Determine who cancelled (you might need to pass this info in request)
+       // Determine who cancelled (you might need to pass this info in request)
         const cancelledBy = req.body.cancelledBy || 'customer'; // Default to customer
         await notifyAppointmentCancelled(appointment, cancelledBy);
       }
@@ -198,8 +192,7 @@ const updateAppointmentStatus = async (req, res) => {
 const createAppointment = async (req, res) => {
   try {
     const appointmentData = req.body;
-    console.log('Creating appointment:', appointmentData);
-    
+ 
     // Validate required fields
     const requiredFields = ['user', 'store', 'product', 'date','time'];
     for (let field of requiredFields) {
@@ -223,8 +216,7 @@ const createAppointment = async (req, res) => {
 
     // 🔔 SEND NOTIFICATION TO STORE OWNER
     try {
-      console.log('📱 Sending appointment request notification...');
-      await notifyAppointmentRequest(populatedAppointment);
+     await notifyAppointmentRequest(populatedAppointment);
     } catch (notificationError) {
       console.error('⚠️ Notification failed but appointment created:', notificationError);
       // Don't fail the entire request if notification fails
@@ -245,10 +237,7 @@ const handlePaymentUpdate = async (req, res) => {
   try {
     const { appointmentId } = req.params;
     const { paymentType, amount, paymentMethod = 'UPI' } = req.body;
-
-    console.log('Processing payment update:', { appointmentId, paymentType, amount });
-
-    const appointment = await Appointment.findById(appointmentId)
+ const appointment = await Appointment.findById(appointmentId)
       .populate('user', 'username')
       .populate('store', 'name');
     
@@ -272,7 +261,6 @@ const handlePaymentUpdate = async (req, res) => {
 
     // 🔔 SEND PAYMENT NOTIFICATION TO STORE OWNER
     try {
-      console.log('📱 Sending payment notification...');
       await notifyPaymentReceived(appointment, amount, paymentType);
     } catch (notificationError) {
       console.error('⚠️ Payment notification failed:', notificationError);
@@ -324,8 +312,6 @@ const getAppointmentsByStatus = async (req, res) => {
   try {
     const { id } = req.params; // store ID
     const { status } = req.query;
-    console.log("Getting appointments by status:", id, status);
-
     if (!id) {
       return res.status(400).json({ message: "Store ID is required" });
     }
@@ -375,9 +361,7 @@ const manualUpdatePastAppointments = async (req, res) => {
 const updateAdvancePayment = async (req, res) => {
   const { appointmentId } = req.params;
   const { transactionId, amountPaid } = req.body;
-  console.log("body",req.body);
-  
-
+ 
   if (!transactionId || !amountPaid) {
     return res.status(400).json({
       success: false,
@@ -464,7 +448,6 @@ const getAdvancePaymentAppointments = async (req, res) => {
         message: "No appointments with advance payment found for this store."
       });
     }
-console.log("apps",appointments);
 
     res.status(200).json({
       success: true,

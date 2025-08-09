@@ -834,8 +834,7 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
   
 const handleNotifyReady = async (orderId) => {
   try {
-    console.log("theid",orderId);
-    
+
     await axios.post(`${SERVER_URL}/orders/${orderId}/notify-ready`,{
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1261,8 +1260,7 @@ useEffect(() => {
     // Set the audio element and mark as ready
     audioRef.current = { play: createChimeSound };  // ✅ CHANGED: Use audioRef instead of setAudioElement
     setAudioReady(true); // ✅ NEW: Mark audio as ready
-    console.log('🔊 Audio system initialized');
-  } else {
+ } else {
     setAudioReady(false);
   }
 }, [soundEnabled]);
@@ -1349,7 +1347,6 @@ const playNotificationSound = () => {
     try {
       if (audioRef.current.play && typeof audioRef.current.play === 'function') {
         audioRef.current.play();
-        console.log('🔊 Playing notification sound');
       }
     } catch (error) {
       console.log('Error playing sound:', error);
@@ -1362,8 +1359,7 @@ const playNotificationSound = () => {
 // Start persistent notification
 const startPersistentNotification = () => {
   if (notificationTimer || !soundEnabled || !audioReady) {
-    console.log('🔇 Notification not started - timer:', !!notificationTimer, 'sound:', soundEnabled, 'audioReady:', audioReady);
-    return;
+   return;
   }
   
   // Play immediately
@@ -1376,7 +1372,6 @@ const startPersistentNotification = () => {
   
   setNotificationTimer(timer);
   setHasNewOrders(true);
-  console.log('🔔 Started persistent notification');
 };
 
 // Stop notification
@@ -1385,7 +1380,6 @@ const stopNotification = () => {
     clearInterval(notificationTimer);
     setNotificationTimer(null);
     setHasNewOrders(false);
-    console.log('🔕 Stopped notification');
   }
 };
 
@@ -1437,8 +1431,7 @@ if (currentPendingCount > 0) {
   if (!hasNewOrders) {
     // Wait a bit for audio to be ready if it's not yet
     if (!audioReady && soundEnabled) {
-      console.log('⏳ Audio not ready yet, waiting...');
-      setTimeout(() => {
+     setTimeout(() => {
         if (audioReady) {
           startPersistentNotification();
         }
@@ -1510,8 +1503,7 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                 
                 // If no pending orders remain, stop the notification
                 if (remainingPendingOrders.length === 0) {
-                  console.log('🔕 No more pending orders, stopping notification');
-                  stopNotification();
+                 stopNotification();
                 }
                 
                 return updatedOrders;

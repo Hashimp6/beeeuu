@@ -34,8 +34,7 @@ const PaymentConfirmationComponent = ({ storeId,type }) => {
       if (type === 'order' ) {
         // Fetch orders
         const ordersRes = await axios.get(`${SERVER_URL}/orders/pending-non-cod/${storeId}`);
-        console.log("Orders data:", ordersRes.data.data);
-        
+      
         const ordersWithType = (ordersRes.data.data || []).map(order => ({
           ...order,
           type: 'order'
@@ -45,12 +44,10 @@ const PaymentConfirmationComponent = ({ storeId,type }) => {
       }
       
       if (type === 'appointment' ) {
-        console.log("type is appointment");
-        
+     
         // Fetch appointments
         const appointmentsRes = await axios.get(`${SERVER_URL}/appointments/store/${storeId}/advance-payments`);
-        console.log("Appointments data:", appointmentsRes.data.data);
-        
+       
         const appointmentsWithType = (appointmentsRes.data.data || []).map(appointment => ({
           ...appointment,
           type: 'appointment'
@@ -94,8 +91,7 @@ const PaymentConfirmationComponent = ({ storeId,type }) => {
           onPress: async () => {
             try {
               setConfirmingPayment(item._id);
-              console.log("Item ID:", item._id, "Type:", item.type);
-              
+             
               let apiUrl;
               if (isAppointment) {
                 // For appointments, use the advance payments API

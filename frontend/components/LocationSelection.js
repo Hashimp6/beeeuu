@@ -106,7 +106,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
       if (data.status === 'OK') {
          setSuggestions(data.predictions);
       } else if (data.status === 'ZERO_RESULTS') {
-        console.log('📭 Zero results');
+    
         setSuggestions([]);
       } else {
        setError(`Location search failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
@@ -181,8 +181,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
       
       // Update local storage with new location data
       await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-      console.log("Uppp",updatedUser);
-      
+  
       setUser(updatedUser)
       // Try to update server if we have userId and token
       if (userData._id && userData.token) {
@@ -235,8 +234,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           coordinates, 
           item.description
         );
-        console.log("ggg",updatedUser);
-        
+     
         setUser(updatedUser); 
         // Close the modal and pass back the selected location data
         onClose(updatedUser);
@@ -307,7 +305,6 @@ const LocationSelectionModal = ({ visible, onClose }) => {
           },
           locationName
         );
-        console.log("fss",updatedUser);
         
         setUser(updatedUser); 
         // Close the modal and pass back the selected location data

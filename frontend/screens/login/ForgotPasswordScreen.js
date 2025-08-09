@@ -25,8 +25,7 @@ const ForgotPasswordScreen = () => {
   const navigation = useNavigation();
 
   const handleForgotPassword = async () => {
-    console.log("clicked");
-    if (!email) {
+ if (!email) {
       Toast.show({
         type: 'error',
         text1: 'Email Required',
@@ -50,8 +49,7 @@ const ForgotPasswordScreen = () => {
 
     try {
 
-    console.log("forgot option clicked",email);
-      const response = await axios.post(`${SERVER_URL}/users/forgot-password`, {
+ const response = await axios.post(`${SERVER_URL}/users/forgot-password`, {
         email,
       });
     

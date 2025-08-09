@@ -11,11 +11,9 @@ const { sendChatNotification } = require("../services/notificationService");
 const sendMessage = async (req, res) => {
   try {
     const { receiverId, text, appointmentData } = req.body;
-    console.log("dtasdad",req.body,"recieverId",receiverId);
-    
+ 
     const senderId = req.user.id;
-    console.log("sender",senderId);
-
+   
     if (!receiverId) {
       return res.status(400).json({
         success: false,
@@ -181,8 +179,7 @@ const getConversationMessages = async (req, res) => {
           }
         ]
       });
-      console.log('Full conversation:', JSON.stringify(conversation, null, 2));
-
+   
     if (!conversation) {
       return res.status(404).json({
         success: false,
@@ -316,7 +313,6 @@ const getUserConversations = async (req, res) => {
         updatedAt: conversation.updatedAt || conversation._id.getTimestamp()
       };
     });
-console.log("listss are ",formattedConversations);
 
     res.json({ success: true, conversations: formattedConversations });
   } catch (error) {
@@ -330,7 +326,6 @@ const createConversation = async (req, res) => {
   try {
     const { receiverId } = req.body;
     const senderId = req.user.id;
-console.log("drr",senderId,receiverId);
 
     if (!receiverId) {
       return res.status(400).json({

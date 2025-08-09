@@ -19,7 +19,6 @@ const updateUPI = async (req, res) => {
     if (!updatedStore) {
       return res.status(404).json({ message: "Store not found" });
     }
-    console.log("doone");
     res.status(200).json({
         success:true,
       message: "UPI updated successfully",

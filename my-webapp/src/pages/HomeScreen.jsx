@@ -86,7 +86,7 @@ const HomeLayout = () => {
       
 
     const openLocationModal = () => {
-        console.log("model opening");
+
         
         setShowModal(true);
     };
@@ -100,17 +100,17 @@ const HomeLayout = () => {
     };
 
     const navigateToHome = () => {
-        console.log("Navigating to /home");
+
         setIsDrawerOpen(false);
     };
 
     const navigateToCategory = () => {
-        console.log("Navigating to category");
+
         setIsDrawerOpen(false);
     };
 
     const navigateToContact = () => {
-        console.log("Navigating to contact");
+      
         setIsDrawerOpen(false);
     };
 

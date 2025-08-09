@@ -53,7 +53,6 @@ const categoryOptions = ['All', 'Hotel',' Restaurant', 'Beauty', 'Bakery', 'Groc
       if (userLocation && userLocation.latitude && userLocation.longitude) {
         latitude = userLocation.latitude;
         longitude = userLocation.longitude;
-        console.log("Using location from props:", latitude, longitude);
       } else {
         const storedUserJson = await AsyncStorage.getItem('user');
         if (!storedUserJson) {
@@ -83,8 +82,7 @@ const categoryOptions = ['All', 'Hotel',' Restaurant', 'Beauty', 'Bakery', 'Groc
         ...(selectedCategory !== 'All' && { category: selectedCategory })
       };
 
-      console.log('API Request params:', params);
-
+   
       // Make API call to get nearby stores with filters
       const response = await axios.get(`${SERVER_URL}/stores/nearby`, { params });
       
@@ -125,9 +123,7 @@ const categoryOptions = ['All', 'Hotel',' Restaurant', 'Beauty', 'Bakery', 'Groc
 
   // Effects
   useEffect(() => {
-    console.log('Location updated:', userLocation);
-    console.log('Trigger value:', locationUpdateTrigger);
-    fetchNearbyStores(1, true);
+   fetchNearbyStores(1, true);
   }, [userLocation, locationUpdateTrigger]);
 
   // Refetch when filters change

@@ -66,7 +66,6 @@ const registerStore = async (req, res) => {
              type: "Point",
              coordinates: [locationData.lng, locationData.lat] // [longitude, latitude] order
            };
-           console.log(`Geocoded ${place} to: ${locationData.lat}, ${locationData.lng}`);
          } else {
            console.warn(`Could not geocode address: ${place}`);
          }
@@ -184,9 +183,6 @@ const registerStore = async (req, res) => {
     try {
       const { storeId } = req.params;
       const updateData = { ...req.body };
-      console.log("idstor",storeId);
-      
-      
       // Handle image update if file is provided
       if (req.file && req.file.path) {
         updateData.profileImage = req.file.path;
@@ -253,8 +249,7 @@ const registerStore = async (req, res) => {
               type: "Point",
               coordinates: [locationData.lng, locationData.lat] // [longitude, latitude] order
             };
-            console.log(`Geocoded updated place ${updateData.place} to: ${locationData.lat}, ${locationData.lng}`);
-          } else {
+        } else {
             console.warn(`Could not geocode updated address: ${updateData.place}`);
           }
         } catch (error) {
@@ -431,8 +426,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 const checkStoreNameAvailability = async (req, res) => {
   try {
-    console.log("reached");
-    
+  
     const { name } = req.query;
 
     if (!name) {
@@ -494,17 +488,7 @@ const getNearbyStores = async (req, res) => {
       });
     }
 
-    console.log('Fetching nearby stores with params:', {
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      radius: parseFloat(radius),
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sortBy,
-      sortOrder,
-      category,
-      search
-    });
+  
 
     // Build aggregation pipeline
     let pipeline = [];
@@ -653,8 +637,7 @@ const getNearbyStores = async (req, res) => {
       }
     };
 
-    console.log(`Found ${totalStores} stores within ${radius}km`);
-
+   
     res.status(200).json({
       success: true,
       data: responseData
@@ -805,7 +788,6 @@ const getNearbyStoresSimple = async (req, res) => {
 };
 const findStoreByName = async (req, res) => {
   try {
-    console.log("ptm", req.params);
 
     let { name } = req.params;
 
@@ -820,7 +802,6 @@ const findStoreByName = async (req, res) => {
 
     const store = await Store.findOne({ storeName: regex });
 
-    console.log("ffns", store);
 
     if (!store) {
       return res.status(404).json({ message: 'Store not found' });
@@ -883,9 +864,6 @@ const updateServiceType = async (req, res) => {
 const updatePaymentType = async (req, res) => {
   const { storeId } = req.params;
   const { paymentType } = req.body;
-  console.log("bs",req.body);
-  
-
   if (!Array.isArray(paymentType)) {
     return res.status(400).json({ message: 'paymentType must be an array' });
   }
@@ -975,7 +953,7 @@ const createRazorpayOrder = async (req, res) => {
 
     const key_id = decrypt(store.razorpay.key_id || '');
     const key_secret = decrypt(store.razorpay.key_secret || '');
-console.log("jeee",key_id,key_secret);
+
 
     const razorpayInstance = new Razorpay({
       key_id,

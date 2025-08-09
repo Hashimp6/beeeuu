@@ -49,7 +49,6 @@ const StoreOrders = ({ route, navigation }) => {
       const apiUrl = `${SERVER_URL}/orders/store/${storeId}/status`;
       const params = { status };
       
-      console.log('Fetching orders for status:', status, 'storeId:', storeId);
 
       const response = await axios.get(apiUrl, {
         params,
@@ -61,12 +60,10 @@ const StoreOrders = ({ route, navigation }) => {
       });
       
       if (response.status === 200) {
-        console.log('Orders response:', response.data);
-        
+  
         const ordersData = response.data.orders || [];
         setOrders(ordersData);
-        console.log(`Fetched ${ordersData.length} orders`);
-      } else {
+    } else {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error) {

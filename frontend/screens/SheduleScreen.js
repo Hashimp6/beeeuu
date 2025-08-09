@@ -40,9 +40,7 @@ const AppointmentScheduler = () => {
 
   // Initialize when component mounts
   useEffect(() => {
-    console.log("strdxxxxd", otherUser);
-    console.log("User data:", user); // For debugging
-    
+  
     setSelectedDate(new Date());
     setSelectedTime(null);
     setCurrentMonth(new Date());
@@ -158,8 +156,7 @@ const AppointmentScheduler = () => {
       };
   
       try {
-        console.log("app drs",appointmentData);
-        // Send appointment data to create appointment message
+       // Send appointment data to create appointment message
         const response = await axios.post(`${SERVER_URL}/messages/send`, {
           receiverId: otherUser._id,
           appointmentData: JSON.stringify(appointmentData)
@@ -171,7 +168,7 @@ const AppointmentScheduler = () => {
         });
         
         if (response.data) {  
-          console.log("✅ Appointment message sent", response.data);
+          console.log("✅ Appointment message sent");
         } else {
           console.log(" Appointment error");
         }

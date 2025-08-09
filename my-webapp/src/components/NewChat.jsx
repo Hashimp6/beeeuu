@@ -38,8 +38,7 @@ const ChatListScreen = ({ onChatSelect, onNewChat }) => {
       const response = await axios.get(`${SERVER_URL}/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-     console.log("fetched conv ",response.data.conversations);
-      
+ 
       setConversations(response.data.conversations);
       setLoading(false);
       setRefreshing(false);
@@ -276,15 +275,13 @@ const ChatDetailScreen = ({ conversationData, onBack }) => {
     useEffect(() => {
       if (!socket || !conversationId) return;
   
-      console.log('Setting up socket connection for:', conversationId);
-      
+   
       // Join the conversation room
       socket.emit('join', { conversationId });
       
       // Set up message listener
       const handleNewMessage = (data) => {
-        console.log('Received new message:', data);
-        if (data.conversationId === conversationId) {
+       if (data.conversationId === conversationId) {
           const newMessage = {
             _id: data.message._id?.toString() || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             text: data.message.text,
@@ -319,8 +316,7 @@ const ChatDetailScreen = ({ conversationData, onBack }) => {
       
       // Cleanup function
       return () => {
-        console.log('Cleaning up socket connection for:', conversationId);
-        socket.off('new-message', handleNewMessage);
+       socket.off('new-message', handleNewMessage);
         socket.emit('leave', { conversationId });
       };
     }, [socket, conversationId]); // Only depend on socket and conversationId
@@ -332,8 +328,7 @@ const ChatDetailScreen = ({ conversationData, onBack }) => {
         const response = await axios.get(`${SERVER_URL}/messages/conversations/${chatId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log("messages", response.data.messages);
-        
+     
         setMessages(response.data.messages);
         scrollToBottom();
       } catch (error) {

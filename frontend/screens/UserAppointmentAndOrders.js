@@ -49,9 +49,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
     if (!validateRequiredData()) return;
 
     try {
-      console.log('Fetching appointments for user:', user._id);
-
-      const response = await axios.get(
+    const response = await axios.get(
         `${SERVER_URL}/appointments/user/${user._id}`,
         {
           headers: {
@@ -65,8 +63,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
       if (response.status === 200) {
         const appointmentsData = response.data.appointments || [];
         setAppointments(appointmentsData);
-        console.log(`Fetched ${appointmentsData.length} appointments`);
-      }
+     }
     } catch (error) {
       console.error('Error fetching appointments:', error);
       if (error.response?.status === 404) {
@@ -81,8 +78,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
     if (!validateRequiredData()) return;
 
     try {
-      console.log('Fetching orders for user:', user._id);
-
+     
       const response = await axios.get(
         `${SERVER_URL}/orders/store/${user._id}`,
         {
@@ -97,8 +93,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
       if (response.status === 200) {
         const ordersData = response.data.orders || [];
         setOrders(ordersData);
-        console.log(`Fetched ${ordersData.length} orders`);
-      }
+     }
     } catch (error) {
       console.error('Error fetching orders:', error);
       if (error.response?.status === 404) {
@@ -316,8 +311,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
       } else {
         requestBody.order = itemId;
       }
-  console.log("reqbody",requestBody);
-  
+ 
       const response = await axios.post(
         endpoint,
         requestBody,

@@ -398,7 +398,7 @@ const getNearbyOffers = async (req, res) => {
     
     const totalCount = totalOffers[0]?.total || 0;
     const hasMore = (parseInt(skip) + offers.length) < totalCount;
-    // console.log("ffrs",offers);
+
     
     res.json({
       success: true,
@@ -839,8 +839,7 @@ const cleanupExpiredOffers = async () => {
     }).select('_id');
 
     if (expiredOffers.length === 0) {
-      console.log('No expired offers to clean up');
-      return { deletedCount: 0 };
+    return { deletedCount: 0 };
     }
 
     // Delete expired offers
@@ -854,9 +853,7 @@ const cleanupExpiredOffers = async () => {
       { seenOffers: { $in: expiredOfferIds } },
       { $pull: { seenOffers: { $in: expiredOfferIds } } }
     );
-
-    console.log(`Cleaned up ${deleteResult.deletedCount} expired offers`);
-    return { deletedCount: deleteResult.deletedCount };
+ return { deletedCount: deleteResult.deletedCount };
 
   } catch (error) {
     console.error("Cleanup expired offers error:", error);

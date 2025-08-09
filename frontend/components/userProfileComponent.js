@@ -190,7 +190,7 @@ const UserProfileComponent = ({ store }) => {
     }
 
     try {
-      console.log("Saving form data:", formData);
+      
       
       // Prepare data for update - only send non-empty fields
       const updateData = {
@@ -204,16 +204,14 @@ const UserProfileComponent = ({ store }) => {
       if (trimmedAddress) {
         updateData.address = trimmedAddress;
       }
-      
-      console.log("Update data being sent:", updateData);
+  
       
       const response = await axios.put(`${SERVER_URL}/users/change-address`, updateData);
-      console.log("Update response:", response.data);
+     
   
       if (response.status === 200) {
         // Fixed: Get the user data from the correct response structure
         const updatedUserFromResponse = response.data.user;
-        console.log("updated",updatedUserFromResponse);
         
         if (updatedUserFromResponse) {
           // Update local user info immediately
@@ -222,7 +220,6 @@ const UserProfileComponent = ({ store }) => {
           // Fixed: Use setUser instead of setuser with better error handling
           if (setUser && typeof setUser === 'function') {
             setUser(updatedUserFromResponse);
-            console.log("Global user context updated successfully");
           } else {
             console.warn("setUser function not available from useAuth - check AuthContext");
           }

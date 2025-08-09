@@ -128,7 +128,6 @@ const ServiceManagementPage = ({ store }) => {
           params: { date, category },
           timeout: 15000
         });
-        console.log("tickets,",response.data.tickets);
         
         if (response.data && Array.isArray(response.data.tickets)) {
           return response.data.tickets;

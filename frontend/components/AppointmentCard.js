@@ -18,13 +18,9 @@ const AppointmentCard = ({
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   
   // Debug: Log initial data
-  console.log('=== AppointmentCard Debug ===');
-  console.log('appointmentData:', appointmentData);
-  console.log('user:', user);
-  
+
   if (!appointmentData || !user) {
-    console.log('❌ Missing data - appointmentData:', !!appointmentData, 'user:', !!user);
-    return null;
+  return null;
   }
 
   // FIXED: Determine if current user is the sender (customer) or receiver (store owner)
@@ -68,8 +64,7 @@ const AppointmentCard = ({
   // Get store UPI and generate deep link
   const getStoreUPIAndGenerateLink = async (paymentMethod) => {
     try {
-      console.log('🔍 Fetching store UPI details...');
-      
+
       // Get store ID from appointment data
       const storeId = appointmentData.store?._id || appointmentData.store;
       
@@ -82,15 +77,13 @@ const AppointmentCard = ({
         return null;
       }
 
-      console.log('🏪 Fetching UPI for store ID:', storeId);
-      
+   
       // Fetch UPI from backend
       const upiResponse = await axios.get(`${SERVER_URL}/stores/${storeId}/upi`);
       const recipientUPI = upiResponse.data?.upi;
       
       
-      console.log('💳 Store UPI fetched:', recipientUPI);
-      
+    
       if (!recipientUPI) {
         Alert.alert(
           'UPI Not Available',
@@ -146,7 +139,6 @@ const AppointmentCard = ({
         
         if (canOpen) {
           await Linking.openURL(paymentData.deepLink);
-          console.log(`✅ Successfully opened ${method}`);
         } else {
           Alert.alert(
             `${method === 'phonepe' ? 'PhonePe' : 'Google Pay'} Not Found`,
@@ -180,8 +172,7 @@ const AppointmentCard = ({
     setIsSubmittingPayment(true);
 
     try {
-      console.log('💳 Submitting payment with transaction ID:', transactionId,selectedPaymentMethod,advanceAmount);
-      
+     
       const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
       const advanceAmount = Math.ceil(totalCost * 0.3);
       
@@ -194,8 +185,7 @@ const AppointmentCard = ({
         status: 'advance-recieved' // Update status to advance-recieved
       });
 
-      console.log('✅ Payment updated successfully:', response.data);
-      
+    
       // Call payment callback if provided (for additional handling)
       if (onPayment) {
         await onPayment(appointmentData._id, 'advance', advanceAmount, {
@@ -248,8 +238,7 @@ const AppointmentCard = ({
 
   // SIMPLIFIED: Universal status update function
   const updateAppointmentStatus = async (newStatus, actionName) => {
-    console.log(`🔄 ${actionName} appointment:`, appointmentData._id, 'to status:', newStatus);
-    
+ 
     Alert.alert(
       `${actionName} Appointment`,
       `Are you sure you want to ${actionName.toLowerCase()} this appointment?`,
@@ -260,13 +249,10 @@ const AppointmentCard = ({
           style: newStatus === 'cancelled' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              console.log(`✅ ${actionName} appointment:`, appointmentData._id);
-              
+             
               const response = await axios.patch(
                 `${SERVER_URL}/appointments/mark-advance/${appointmentData._id}` );
-              
-              console.log(`✅ Appointment ${actionName.toLowerCase()} successfully:`, response.data);
-              
+            
               // Update the appointment state immediately
               if (onAppointmentUpdate) {
                 onAppointmentUpdate(appointmentData._id, { status: newStatus });
@@ -303,36 +289,23 @@ const AppointmentCard = ({
     const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
     const advanceAmount = Math.ceil(totalCost * 0.3);
     
-    console.log('💰 Pay button pressed');
-    console.log('Total cost:', totalCost);
-    console.log('Advance amount (30%):', advanceAmount);
-    
+ 
     setShowPaymentModal(true);
   };
 
   const renderActionButtons = () => {
     const { status } = appointmentData;
-    
-    console.log('--- Button Rendering Logic ---');
-    console.log('Current status:', status);
-    console.log('isUserSender:', isUserSender);
-    console.log('isUserReceiver:', isUserReceiver);
-    console.log('appointmentData.cost:', appointmentData.cost);
-    console.log('appointmentData.amountPaid:', appointmentData.amountPaid);
   
     // If appointment is cancelled, show no buttons
     if (status === 'cancelled') {
-      console.log('🚫 No buttons - status is cancelled');
-      return null;
+    return null;
     }
   
     // FOR SENDERS (CUSTOMERS)
     if (isUserSender) {
-      console.log('👤 User is SENDER (Customer)');
-      
+     
       if (status === 'pending') {
-        console.log('⏳ Showing CANCEL button for pending sender');
-        return (
+       return (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.cancelButton]} 
@@ -344,17 +317,12 @@ const AppointmentCard = ({
           </View>
         );
       } else if (status === 'confirmed') {
-        console.log('✅ Showing PAY + CANCEL buttons for confirmed sender');
-        const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
+      const totalCost = appointmentData.cost || appointmentData.product?.price || 0;
         const amountPaid = appointmentData.amountPaid || 0;
         const remainingAmount = totalCost - amountPaid;
         const hasUnpaidAmount = remainingAmount > 0;
         
-        console.log('Total cost:', totalCost);
-        console.log('Amount paid:', amountPaid);
-        console.log('Remaining amount:', remainingAmount);
-        console.log('Has unpaid amount:', hasUnpaidAmount);
-        
+     
         return (
           <View style={styles.buttonContainer}>
             {hasUnpaidAmount && (
@@ -377,7 +345,6 @@ const AppointmentCard = ({
           </View>
         );
       } else if (status === 'advance-recieved') {
-        console.log('💰 Advance received - showing limited options');
         return (
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
@@ -422,10 +389,7 @@ const AppointmentCard = ({
       console.log('🏪 User is RECEIVER but status is not pending:', status);
     }
   
-    // No buttons for other cases
-    console.log('🔇 No buttons shown - no conditions met');
-    console.log('Final check - isUserSender:', isUserSender, 'isUserReceiver:', isUserReceiver, 'status:', status);
-    return null;
+  return null;
   };
 
   // Payment Modal Component

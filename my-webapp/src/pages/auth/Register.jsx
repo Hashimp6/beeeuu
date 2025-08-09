@@ -170,7 +170,7 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
   
     try {
       setIsLoading(true);
-      console.log("fine", name, email, password);
+ 
   
       const response = await axios.post(`${SERVER_URL}/users/register`, {
         name: name.trim(),
@@ -179,7 +179,7 @@ const RegisterPage = ({ onNavigateToOTP, onNavigateToLogin }) => {
       });
   
       const data = response.data;
-      console.log("hhh", data);
+
   
       if (response.status === 200 && data.message) {
         toast.success('Registration successful! Check your email for OTP.');

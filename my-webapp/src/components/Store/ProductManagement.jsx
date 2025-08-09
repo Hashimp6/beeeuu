@@ -31,8 +31,7 @@ const AddProductForm = ({
   loading = false,
   fetchProducts = () => {}
 }) => {
-  console.log("storecategory",storeCategory);
-  
+
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [product, setProduct] = useState({
@@ -235,8 +234,7 @@ const AddProductForm = ({
   
       const method = editingProduct ? 'put' : 'post';
       
-      console.log("Form Data Preview:");
-      for (let [key, value] of formData.entries()) {
+    for (let [key, value] of formData.entries()) {
         if (key === "images" && value instanceof File) {
           console.log(`${key}:`, value.name, value.type, value.size);
         } else {
@@ -254,8 +252,7 @@ const AddProductForm = ({
         },
       });
   
-      console.log('Product saved:', response.data);
-  
+    
       toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
   
       // Refresh the product list
@@ -625,7 +622,6 @@ const storeId=store._id
       });
 
       const data = response.data;
-      console.log('Fetched products:', data);
       setProducts(response.data)
 
     } catch (err) {

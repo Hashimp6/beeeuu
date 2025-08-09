@@ -48,8 +48,7 @@ const StoreGallery = ({ navigation }) => {
         if (!storedToken) {
           throw new Error('No token found');
         }
-        console.log("token is ", storedToken);
-        setToken(storedToken);
+      setToken(storedToken);
       } catch (err) {
         setError(err.message);
       }
@@ -73,9 +72,7 @@ const StoreGallery = ({ navigation }) => {
       setLoading(true);
       setError('');
       const sellerId = storeDetails._id;
-console.log("idselr",sellerId,token);
-
-      const response = await axios.get(`${SERVER_URL}/gallery/${sellerId}`, {
+   const response = await axios.get(`${SERVER_URL}/gallery/${sellerId}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -83,8 +80,7 @@ console.log("idselr",sellerId,token);
       });
 
       const data = response.data;
-      console.log('Fetched gallery:', data);
-      setGallery(data.data?.images || []);
+   setGallery(data.data?.images || []);
 
     } catch (err) {
       console.error('Error fetching gallery:', err);
@@ -134,12 +130,10 @@ console.log("idselr",sellerId,token);
         allowsMultipleSelection: false,
       });
 
-      console.log('Image picker result:', result);
-
+   
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
-        console.log('Selected image:', selectedImage);
-        
+      
         setImageData(prev => ({ 
           ...prev, 
           imageUri: selectedImage.uri 
@@ -174,16 +168,13 @@ console.log("idselr",sellerId,token);
         });
       }
 
-      console.log("gallery data", formData);
-      
       const imageId = editingImage?._id;
       const url = editingImage 
         ? `${SERVER_URL}/gallery/${storeDetails._id}/image/${imageId}`
         : `${SERVER_URL}/gallery`;
 
       const method = editingImage ? 'put' : 'post';
-      console.log("gallery request", url, method);
-
+ 
       const response = await axios({
         method,
         url,
@@ -193,8 +184,6 @@ console.log("idselr",sellerId,token);
           'Content-Type': 'multipart/form-data',
         },
       });
-
-      console.log('Image saved:', response.data);
 
       Alert.alert(
         'Success',
@@ -314,8 +303,7 @@ console.log("idselr",sellerId,token);
                 source={{ uri: imageData.imageUri }} 
                 style={styles.previewImage}
                 onError={(error) => {
-                  console.log('Image load error:', error);
-                  Alert.alert('Error', 'Failed to load image');
+              Alert.alert('Error', 'Failed to load image');
                 }}
               />
               <TouchableOpacity 

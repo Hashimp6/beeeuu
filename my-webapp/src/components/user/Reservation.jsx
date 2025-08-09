@@ -60,7 +60,7 @@ const CustomerBookingPage = () => {
       try {
         const res = await fetch(`${SERVER_URL}/booking/tickets/${user._id}/${store._id}`);
         const data = await res.json();
-  console.log("jjj",data,);
+
   
         if (res.ok) {
           setTicket(data.ticket);

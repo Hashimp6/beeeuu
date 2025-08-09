@@ -52,8 +52,7 @@ const registerForPushNotificationsAsync = async () => {
         projectId,
       })).data;
       
-      console.log('Expo Push Token:', token);
-    } catch (e) {
+ } catch (e) {
       token = `${e}`;
       console.error('Error getting push token:', e);
     }
@@ -67,13 +66,10 @@ const registerForPushNotificationsAsync = async () => {
 const setupNotificationListeners = (navigation) => {
   // Listener for notifications received while app is running
   notificationListener = Notifications.addNotificationReceivedListener(notification => {
-    console.log('Notification received:', notification);
-  });
+});
 
   // Listener for when user taps on notification
-  responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-    console.log('Notification tapped:', response);
-    
+  responseListener = Notifications.addNotificationResponseReceivedListener(response => { 
     const { data } = response.notification.request.content;
     
     if (data.type === 'chat' && data.conversationId) {

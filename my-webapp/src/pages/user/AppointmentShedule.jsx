@@ -197,7 +197,6 @@ const phoneInputRef = useRef(null);
     };
 
     try {
-      console.log("app drs",appointmentData,token);
       
       const response = await axios.post(
         `${SERVER_URL}/messages/send`,
@@ -216,7 +215,6 @@ const phoneInputRef = useRef(null);
       const data = response.data;
 
       if (response.data.success) {
-        console.log("✅ Appointment message sent", data);
         
         setIsSubmitting(false);
         setShowConfirmation(true);
@@ -234,7 +232,6 @@ const phoneInputRef = useRef(null);
           }
         }, 3000);
       } else {
-        console.log("❌ Appointment error", data);
         setIsSubmitting(false);
         toast.error('Failed to send appointment. Please try again.');
       }

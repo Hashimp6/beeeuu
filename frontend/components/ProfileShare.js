@@ -36,7 +36,7 @@ class ProfileShareHandler {
 
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
-          console.log('Shared with activity type:', result.activityType);
+          console.log('Shared with activity type:');
         } else {
           console.log('Store profile shared successfully');
         }

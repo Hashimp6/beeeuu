@@ -7,9 +7,7 @@ const Gallery = require('../models/galleryModel');
 const createGalleryPost = async (req, res) => {
   try {
     const { seller, caption } = req.body;
-    console.log("hhh",seller, caption);
-    
-
+   
     // Check if file was uploaded
     if (!req.file) {
       return res.status(400).json({
@@ -82,7 +80,6 @@ const updateGalleryImage = async (req, res) => {
     const { seller } = req.params;
     const { caption } = req.body;
     const imageId = req.params.imageId;
-console.log("rec",seller,caption,imageId);
 
     // Find gallery by seller
     const gallery = await Gallery.findOne({ seller });
@@ -138,7 +135,6 @@ console.log("rec",seller,caption,imageId);
 const getGalleryBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
-    console.log("glry", sellerId);
     const gallery = await Gallery.findOne({ seller: sellerId });
 
     if (!gallery) {

@@ -5,9 +5,7 @@ const expo = new Expo();
 
 const sendPushNotification = async (pushTokens, title, body, data = {}) => {
   try {
-    console.log('🚀 Starting push notification process...');
-    console.log('📱 Push tokens received:', pushTokens);
-    
+
     // Ensure pushTokens is an array
     const tokensArray = Array.isArray(pushTokens) ? pushTokens : [pushTokens];
     
@@ -25,8 +23,7 @@ const sendPushNotification = async (pushTokens, title, body, data = {}) => {
       return false;
     }
 
-    console.log('✅ Valid tokens:', validTokens);
-
+ 
     // Create messages for all valid tokens
     const messages = validTokens.map(token => ({
       to: token,
@@ -38,8 +35,7 @@ const sendPushNotification = async (pushTokens, title, body, data = {}) => {
       channelId: 'default',
     }));
 
-    console.log('📤 Sending messages:', messages);
-
+  
     // Send notifications in chunks (Expo recommends max 100 per batch)
     const chunks = expo.chunkPushNotifications(messages);
     const tickets = [];
@@ -48,14 +44,12 @@ const sendPushNotification = async (pushTokens, title, body, data = {}) => {
       try {
         const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
         tickets.push(...ticketChunk);
-        console.log('✅ Chunk sent successfully:', ticketChunk);
-      } catch (error) {
+     } catch (error) {
         console.error('❌ Error sending chunk:', error);
       }
     }
 
-    console.log('📋 All tickets:', tickets);
-
+ 
     // Check for errors in tickets
     const errorTickets = tickets.filter(ticket => ticket.status === 'error');
     if (errorTickets.length > 0) {

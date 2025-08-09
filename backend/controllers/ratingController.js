@@ -36,7 +36,7 @@ const addRating = async (req, res) => {
       if (!appointment) return res.status(400).json({ message: 'Appointment ID is required for appointment rating.' });
 
       const appointmentData = await Appointment.findById(appointment);
-      console.log("appdara",appointmentData);
+    
       
       if (!appointmentData || appointmentData.user.toString() !== userId || appointmentData.status !== 'completed') {
         return res.status(403).json({ message: 'You are not allowed to rate this appointment.' });

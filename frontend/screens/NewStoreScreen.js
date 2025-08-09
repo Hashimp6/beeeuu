@@ -29,8 +29,7 @@ const NewStore = () => {
   
   // Get params
   const { editMode = false, storeData = {} } = route.params || {};
-  console.log("datastt", storeData);
-
+  
   // Form state - Initialize with existing data if in edit mode
   const [storeName, setStoreName] = useState(storeData.storeName || storeData.name || '');
   const [description, setDescription] = useState(storeData.description || '');
@@ -417,8 +416,7 @@ const NewStore = () => {
           image: null
         }));
         
-        console.log('Image selected for upload');
-      }
+     }
     } catch (error) {
       Alert.alert('Error', 'Failed to select image');
       console.error(error);
@@ -515,8 +513,7 @@ const NewStore = () => {
       formData.append('socialMedia', JSON.stringify(socialMedia));
   
       const storeId = storeData._id;
-      console.log("storid", storeData._id);
-      
+    
       const endpoint = editMode 
         ? `${SERVER_URL}/stores/${storeId}` 
         : `${SERVER_URL}/stores/register`;

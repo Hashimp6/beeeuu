@@ -253,9 +253,6 @@ const GalleryManagement = ({ storeId }) => {
         throw new Error('Store details not available');
       }
 
-     
-      console.log("seller ID:", storeId, token);
-
       const response = await axios.get(`${SERVER_URL}/gallery/${storeId}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -263,7 +260,6 @@ const GalleryManagement = ({ storeId }) => {
         },
       });
 
-      console.log('Fetched gallery:', response.data.data.images);
       setGallery(response.data.data.images);
 
     } catch (err) {
@@ -295,16 +291,13 @@ if (imageData.imageFile) {
       }
       
 
-      console.log("gallery data", formData);
-
       const imageId = editingImage?._id;
       const url = editingImage 
         ? `${SERVER_URL}/gallery/${storeId}/image/${imageId}`
         : `${SERVER_URL}/gallery`;
 
       const method = editingImage ? 'put' : 'post';
-      console.log("gallery request", url, method);
-
+   
       const response = await axios({
         method,
         url,
@@ -315,8 +308,7 @@ if (imageData.imageFile) {
         },
       });
 
-      console.log('Image saved:', response.data);
-      
+    
       // Refresh gallery after successful upload
       await fetchGallery();
       
@@ -343,8 +335,6 @@ if (imageData.imageFile) {
           },
         });
 
-        console.log('Image deleted:', response.data);
-        
         // Remove from local state
         setGallery(prev => prev.filter(img => img._id !== imageId));
         

@@ -33,8 +33,7 @@ const OtpVerificationScreen = () => {
       Alert.alert("Error", "Email information is missing");
       navigation.navigate("Register");
     }
-    console.log("OTP Verification for email:", email);
-  }, [email, navigation]);
+ }, [email, navigation]);
 
   const handleVerifyOtp = async () => {
     if (!otp) {
@@ -46,8 +45,7 @@ const OtpVerificationScreen = () => {
       const result = await verifyOTP(email, otp);
 
       if (result.success) {
-        console.log("OTP verification successful");
-        // The AuthContext will automatically set the user and token
+       // The AuthContext will automatically set the user and token
         // Navigation will be handled by AppNavigator once isAuthenticated becomes true
       } else {
         Alert.alert("Error", result.message || "OTP verification failed");

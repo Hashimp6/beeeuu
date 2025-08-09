@@ -53,8 +53,7 @@ const SellerProfile = ({ navigation }) => {
         if (!storedToken) {
           throw new Error('No token found');
         }
-        console.log("token is ", storedToken);
-        setToken(storedToken);
+      setToken(storedToken);
       } catch (err) {
         setError(err.message);
       }
@@ -97,7 +96,6 @@ const SellerProfile = ({ navigation }) => {
       });
 
       const data = response.data;
-      console.log('Fetched products:', data);
       setStore({ products: data || [] });
 
     } catch (err) {
@@ -148,13 +146,9 @@ const SellerProfile = ({ navigation }) => {
         allowsMultipleSelection: false,
       });
 
-      console.log('Image picker result:', result);
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
-        console.log('Selected image:', selectedImage);
-        
-        setProduct(prev => ({ 
+       setProduct(prev => ({ 
           ...prev, 
           imageUri: selectedImage.uri 
         }));
@@ -205,16 +199,13 @@ const SellerProfile = ({ navigation }) => {
         });
       }
 
-      console.log("FormData prepared", formData);
-      
       const productId = editingProduct?._id;
       const url = editingProduct 
         ? `${SERVER_URL}/products/${productId}`
         : `${SERVER_URL}/products/add`;
 
       const method = editingProduct ? 'put' : 'post';
-      console.log("API call:", method, url);
-
+    
       const response = await axios({
         method,
         url,
@@ -225,8 +216,7 @@ const SellerProfile = ({ navigation }) => {
         },
       });
 
-      console.log('Product saved:', response.data);
-
+    
       Alert.alert(
         'Success',
         `Product ${editingProduct ? 'updated' : 'added'} successfully!`,
@@ -436,8 +426,7 @@ const SellerProfile = ({ navigation }) => {
           source={{ uri: product.imageUri }}
           style={styles.previewImage}
           onError={(error) => {
-            console.log('Image load error:', error);
-            Alert.alert('Error', 'Failed to load image');
+        Alert.alert('Error', 'Failed to load image');
           }}
         />
         <TouchableOpacity

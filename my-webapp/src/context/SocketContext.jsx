@@ -43,7 +43,7 @@ export const SocketProvider = ({ children }) => {
       
       // Socket event listeners
       newSocket.on('connect', () => {
-        console.log('Socket connected');
+       
         // Join user's personal room for direct messages
         if (user.id) {
           newSocket.emit('join', { userId: user.id });
