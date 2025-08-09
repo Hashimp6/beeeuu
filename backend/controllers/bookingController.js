@@ -187,38 +187,43 @@ const getConfirmedTicketNumber = async (req, res) => {
   }
 };
 
-
 const getCurrentTicketsByType = async (req, res) => {
   const { storeId } = req.params;
 
   try {
-    const today = new Date().setHours(0, 0, 0, 0);
+    // Define start and end of today
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
 
-    // Current called tickets
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Current called walk-in ticket
     const walkInTicket = await Ticket.findOne({
       storeId,
-      date: today,
+      date: { $gte: startOfDay, $lte: endOfDay },
       type: 'walk-in',
       status: { $in: ['confirmed', 'ready'] }
     })
     .sort({ createdAt: 1 })
     .lean();
 
+    // Current called online ticket
     const onlineTicket = await Ticket.findOne({
       storeId,
-      date: today,
+      date: { $gte: startOfDay, $lte: endOfDay },
       type: 'online',
       status: { $in: ['confirmed', 'ready'] }
     })
     .sort({ createdAt: 1 })
     .lean();
 
-    // Last and next ticket numbers
+    // Helper to get last and next ticket number by type
     const getLastAndNextTicketNumber = async (type) => {
       const lastTicket = await Ticket.findOne({
         storeId,
         type,
-        date: today,
+        date: { $gte: startOfDay, $lte: endOfDay }
       })
       .sort({ ticketNumber: -1 })
       .lean();
@@ -243,13 +248,12 @@ const getCurrentTicketsByType = async (req, res) => {
         ...onlineNumbers,
       }
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-
 
   
   module.exports = {

@@ -3,6 +3,7 @@ import { Clock, Users, CreditCard, CheckCircle, XCircle, Phone, User, AlertCircl
 import { useLocation } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
+import axios from 'axios';
 
 const CustomerBookingPage = () => {
     const {user}=useAuth()
@@ -24,12 +25,15 @@ const CustomerBookingPage = () => {
   const location = useLocation();
   const store = location.state?.store;
 
-
   const fetchCurrentBookings = async () => {
     try {
+      console.log("id", store);
+  
       setIsRefreshing(true);
-      const response = await fetch(`${SERVER_URL}/booking/current/${store._id}`);
-      const data = await response.json();
+      const response = await axios.get(`${SERVER_URL}/booking/current/${store._id}`);
+      const data = response.data;
+      console.log("bokk", data);
+  
       setCurrentBookings(data);
       setLastUpdated(new Date());
     } catch (error) {
@@ -48,7 +52,7 @@ const CustomerBookingPage = () => {
     
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
-  }, [store._id, SERVER_URL]);
+  }, [store._id]);
 
 
   const handleManualRefresh = () => {
@@ -60,10 +64,13 @@ const CustomerBookingPage = () => {
       try {
         const res = await fetch(`${SERVER_URL}/booking/tickets/${user._id}/${store._id}`);
         const data = await res.json();
+console.log("ticket",data.ticket);
 
   
         if (res.ok) {
           setTicket(data.ticket);
+          console.log("hss",data.ticket);
+          
         } else {
           setTicket(null); // No ticket found
         }
@@ -146,6 +153,7 @@ const CustomerBookingPage = () => {
       });
 
       const data = await response.json();
+console.log("online",data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create ticket');
@@ -329,7 +337,7 @@ Redirecting to payment...`);
               </div>
 
               {/* Number of People (for both online ticketing and table booking) */}
-              {(selectedOption === 'onlineTicketing' || selectedOption === 'tableBooking') && (
+              {/* {(selectedOption === 'onlineTicketing' || selectedOption === 'tableBooking') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Users className="w-4 h-4 inline mr-2" />
@@ -346,7 +354,7 @@ Redirecting to payment...`);
                     ))}
                   </select>
                 </div>
-              )}
+              )} */}
 
               {/* Date (only for table booking) */}
               {selectedOption === 'tableBooking' && (
@@ -453,6 +461,7 @@ Redirecting to payment...`);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50">
       {/* Header Section */}
+
       <div className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
@@ -464,10 +473,12 @@ Redirecting to payment...`);
             </p>
           </div>
         </div>
-        {/* Online Ticket Card */}
-
 
       </div>
+      
+      
+      
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="bg-white shadow-xl border border-gray-200 rounded-2xl p-6">
@@ -494,7 +505,7 @@ Redirecting to payment...`);
                       <p><strong>Phone:</strong> {ticket.phone}</p>
                       <div className="flex items-center space-x-2 mt-2">
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          currentBookings.online.status === 'confirmed' 
+                          ticket.status === 'confirmed' 
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
