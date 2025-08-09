@@ -187,57 +187,92 @@ const getConfirmedTicketNumber = async (req, res) => {
   }
 };
 
+
+const getISTStartOfDay = () => {
+  const now = new Date();
+  
+  // Get current IST time
+  const istTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+  
+  // Set to start of day
+  istTime.setHours(0, 0, 0, 0);
+  
+  return istTime;
+};
+
 const getCurrentTicketsByType = async (req, res) => {
   const { storeId } = req.params;
-
+  
   try {
-    // Define start and end of today
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // Current called walk-in ticket
+    // Get IST day range (Indian timezone)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC +5:30
+    const istTime = new Date(now.getTime() + istOffset);
+    
+    // Get IST date components
+    const year = istTime.getUTCFullYear();
+    const month = istTime.getUTCMonth();
+    const date = istTime.getUTCDate();
+    
+    // Create start and end of IST day (stored as UTC)
+    const startOfDay = new Date(Date.UTC(year, month, date, 0, 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(year, month, date, 23, 59, 59, 999));
+    
+    // Convert back to server timezone for query
+    const startOfDayLocal = new Date(startOfDay.getTime() - istOffset);
+    const endOfDayLocal = new Date(endOfDay.getTime() - istOffset);
+    
+    console.log('IST Today:', istTime);
+    console.log('Querying tickets created between (server time):', startOfDayLocal, 'and', endOfDayLocal);
+    console.log('This represents IST day from 00:00 to 23:59');
+    
+    // Debug: Check what tickets exist for this store
+    const allTicketsToday = await Ticket.find({
+      storeId,
+      createdAt: { $gte: startOfDayLocal, $lte: endOfDayLocal }
+    }).lean();
+    
+    console.log(`Found ${allTicketsToday.length} tickets for store ${storeId} in IST today`);
+    
+    // Current called tickets (created in IST today)
     const walkInTicket = await Ticket.findOne({
       storeId,
-      date: { $gte: startOfDay, $lte: endOfDay },
+      createdAt: { $gte: startOfDayLocal, $lte: endOfDayLocal },
       type: 'walk-in',
       status: { $in: ['confirmed', 'ready'] }
     })
     .sort({ createdAt: 1 })
     .lean();
-
-    // Current called online ticket
+    
     const onlineTicket = await Ticket.findOne({
       storeId,
-      date: { $gte: startOfDay, $lte: endOfDay },
+      createdAt: { $gte: startOfDayLocal, $lte: endOfDayLocal },
       type: 'online',
       status: { $in: ['confirmed', 'ready'] }
     })
     .sort({ createdAt: 1 })
     .lean();
-
-    // Helper to get last and next ticket number by type
+    
+    // Last and next ticket numbers (from IST today)
     const getLastAndNextTicketNumber = async (type) => {
       const lastTicket = await Ticket.findOne({
         storeId,
         type,
-        date: { $gte: startOfDay, $lte: endOfDay }
+        createdAt: { $gte: startOfDayLocal, $lte: endOfDayLocal },
       })
       .sort({ ticketNumber: -1 })
       .lean();
-
+      
       const lastTicketNumber = lastTicket ? lastTicket.ticketNumber : 0;
       return {
         lastTicketNumber,
         nextTicketNumber: lastTicketNumber + 1,
       };
     };
-
+    
     const walkInNumbers = await getLastAndNextTicketNumber('walk-in');
     const onlineNumbers = await getLastAndNextTicketNumber('online');
-
+    
     res.json({
       walkIn: {
         currentTicket: walkInTicket,
@@ -248,12 +283,12 @@ const getCurrentTicketsByType = async (req, res) => {
         ...onlineNumbers,
       }
     });
-
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error details:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
   
   module.exports = {
