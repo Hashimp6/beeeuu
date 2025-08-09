@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Clock, Users, CreditCard, CheckCircle, XCircle, Phone, User, AlertCircle, Calendar, RefreshCw, DollarSign, MapPin, ArrowLeft, Loader } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
+import { useAuth } from '../../context/UserContext';
 
 const CustomerBookingPage = () => {
-  // React hooks must be called at the top level, before any conditional returns
-  const [selectedOption, setSelectedOption] = useState(null);
+    const {user}=useAuth()
+    const [ticket, setTicket] = useState(null);
+   const [selectedOption, setSelectedOption] = useState(null);
+   const [currentBookings, setCurrentBookings] = useState(null);
+   const [isRefreshing, setIsRefreshing] = useState(false);
+   const [lastUpdated, setLastUpdated] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -18,8 +23,60 @@ const CustomerBookingPage = () => {
   // Get store data from location state (as in your original code)
   const location = useLocation();
   const store = location.state?.store;
-  
 
+
+  const fetchCurrentBookings = async () => {
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`${SERVER_URL}/booking/current/${store._id}`);
+      const data = await response.json();
+      setCurrentBookings(data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching current bookings:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchCurrentBookings();
+    
+    // Set up polling to refresh every 5 seconds for real-time updates
+    const interval = setInterval(fetchCurrentBookings, 10000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, [store._id, SERVER_URL]);
+
+
+  const handleManualRefresh = () => {
+    fetchCurrentBookings();
+  };
+
+  useEffect(() => {
+    const fetchTicketNumber = async () => {
+      try {
+        const res = await fetch(`${SERVER_URL}/booking/tickets/${user._id}/${store._id}`);
+        const data = await res.json();
+  console.log("jjj",data,);
+  
+        if (res.ok) {
+          setTicket(data.ticket);
+        } else {
+          setTicket(null); // No ticket found
+        }
+      } catch (err) {
+        console.error("Error fetching ticket:", err);
+        setTicket(null);
+      }
+    };
+  
+    if (user && store) {
+      fetchTicketNumber();
+    }
+  }, [user, store]);
   if (!store) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -146,6 +203,7 @@ const CustomerBookingPage = () => {
         // Prepare data for online ticket creation
         const ticketData = {
           storeId: store._id || store.id, // Use the store ID from your store object
+         userId:user._id,
           name: formData.name.trim(),
           phone: formData.phone.trim(),
           numberOfPeople: formData.numberOfPeople
@@ -406,45 +464,163 @@ Redirecting to payment...`);
             </p>
           </div>
         </div>
+        {/* Online Ticket Card */}
+
+
       </div>
 
-      {/* Currently Serving Ticket Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="bg-white shadow-xl border border-gray-200 rounded-2xl p-6">
-          <div className="flex justify-between items-center mb-6">
+          {/* User's Ticket Display */}
+          {ticket ? (
+            <div className="relative bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg shadow-md px-4 py-5 w-full max-w-[220px] mx-auto">
+              {/* Decorative ticket edges */}
+              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+              <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+              
+              {/* Ticket Title */}
+              <div className="flex items-center justify-center mb-2">
+                <Clock className="w-4 h-4 text-teal-700 mr-1" />
+                <h3 className="text-sm font-semibold text-teal-800">Your Ticket</h3>
+              </div>
+
+              {/* Ticket Number */}
+              <div className="text-center">
+                <span className="block text-gray-600 text-xs">Ticket Number</span>
+                <span className="text-3xl font-extrabold text-teal-900 tracking-wider">#{ticket.ticketNumber}</span>
+                <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1">
+                      <p><strong>Name:</strong> {ticket.name}</p>
+                      <p><strong>People:</strong> {ticket.numberOfPeople}</p>
+                      <p><strong>Phone:</strong> {ticket.phone}</p>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          currentBookings.online.status === 'confirmed' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {ticket.status}
+                        </span>
+                        {ticket.isPaid && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                            Paid: ₹{ticket.paymentAmount}
+                          </span>
+                        )}
+                      </div>
+                    </div> 
+                    </div>
+
+              {/* Footer */}
+              <div className="mt-2 border-t border-teal-300 pt-1 text-center">
+                <span className="text-[10px] text-teal-700">Show this at the counter</span>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 max-w-[220px] mx-auto">
+              <p className="text-sm font-medium">No confirmed ticket</p>
+              <p className="text-xs mt-1">Book now to get your ticket</p>
+            </div>
+          )}
+
+          {/* Header with refresh button and status */}
+          <div className="flex justify-between items-center mt-6 mb-6">
             <h2 className="text-2xl font-bold text-gray-800">🎫 Currently Serving</h2>
-            <button
-              onClick={() => window.location.reload()} // simple refresh
-              className="flex items-center space-x-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              {/* Auto-update indicator */}
+            
+              
+              {/* Manual refresh button */}
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="flex items-center space-x-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Online Ticket Card */}
-            <div className="bg-teal-50 border border-teal-200 rounded-xl p-6 flex flex-col items-start justify-between">
-              <div className="flex items-center space-x-3 mb-4">
-                <Clock className="w-6 h-6 text-teal-600" />
-                <h3 className="text-xl font-semibold text-gray-800">Online Ticket</h3>
-              </div>
-              <div className="text-5xl font-bold text-teal-700 mb-2">
-                #{Math.floor(Math.random() * 30) + 70}
-              </div>
-              <p className="text-sm text-gray-600">Currently being served</p>
+          {/* Last updated time */}
+          {lastUpdated && (
+            <div className="text-center mb-4">
+              <p className="text-xs text-gray-400">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
             </div>
+          )}
 
-            {/* Walk-in Ticket Card */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex flex-col items-start justify-between">
-              <div className="flex items-center space-x-3 mb-4">
-                <MapPin className="w-6 h-6 text-yellow-600" />
-                <h3 className="text-xl font-semibold text-gray-800">Walk-in Ticket</h3>
-              </div>
-              <div className="text-5xl font-bold text-yellow-700 mb-2">
-                #{Math.floor(Math.random() * 30) + 120}
-              </div>
-              <p className="text-sm text-gray-600">Currently being served</p>
+          {/* Current serving tickets grid */}
+        {/* Current serving tickets grid */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {/* Online Ticket Card */}
+  <div className="bg-teal-50 border border-teal-200 rounded-xl p-6 flex flex-col">
+    <div className="flex items-center space-x-3 mb-4">
+      <Clock className="w-6 h-6 text-teal-600" />
+      <h3 className="text-xl font-semibold text-gray-800">Online Ticket</h3>
+    </div>
+    
+    <div className="flex-grow">
+      {currentBookings?.online?.currentTicket ? (
+        <>
+          <div className="text-5xl font-bold text-teal-700 mb-2">
+            #{currentBookings.online.currentTicket.ticketNumber}
+          </div>
+          <p className="text-sm text-gray-600 mb-1">Currently being served</p>
+          
+          
+          <p className="text-xs text-gray-500">
+            Next possible ticket to issue: #{currentBookings.online.nextTicketNumber}
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="text-3xl font-bold text-gray-400 mb-2">No Queue</div>
+          <p className="text-sm text-gray-500">No online bookings currently being served</p>
+        </>
+      )}
+    </div>
+  </div>
+
+  {/* Walk-in Ticket Card */}
+  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 flex flex-col">
+    <div className="flex items-center space-x-3 mb-4">
+      <MapPin className="w-6 h-6 text-yellow-600" />
+      <h3 className="text-xl font-semibold text-gray-800">Walk-in Ticket</h3>
+    </div>
+    
+    <div className="flex-grow">
+      {currentBookings?.walkIn?.currentTicket ? (
+        <>
+          <div className="text-5xl font-bold text-yellow-700 mb-2">
+            #{currentBookings.walkIn.currentTicket.ticketNumber}
+          </div>
+          <p className="text-sm text-gray-600 mb-1">Currently being served</p>
+
+      
+          <p className="text-xs text-gray-500">
+            Next possible ticket to issue: #{currentBookings.walkIn.nextTicketNumber}
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="text-3xl font-bold text-gray-400 mb-2">No Queue</div>
+          <p className="text-sm text-gray-500">No walk-in bookings currently being served</p>
+        </>
+      )}
+    </div>
+  </div>
+</div>
+
+
+          {/* Connection status indicator */}
+          <div className="mt-6 text-center">
+            <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs ${
+              isRefreshing ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isRefreshing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'
+              }`}></div>
+              <span>{isRefreshing ? 'Updating...' : 'Live updates active'}</span>
             </div>
           </div>
         </div>

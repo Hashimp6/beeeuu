@@ -3,7 +3,7 @@ const Ticket = require("../models/ReservationModel");
 
 const createOnlineTicketing = async (req, res) => {
     try {
-      const { storeId, name, phone, numberOfPeople } = req.body;
+      const { storeId,userId, name, phone, numberOfPeople } = req.body;
   
       const store = await Store.findById(storeId);
       if (!store) return res.status(404).json({ message: "Store not found" });
@@ -21,13 +21,14 @@ const createOnlineTicketing = async (req, res) => {
         date: today
       }).sort({ ticketNumber: -1 });
   
-      const nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 1001;
+      const nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 101;
   
       const isPaid = store.onlineTicketing.type === "paid";
       const paymentAmount = isPaid ? store.onlineTicketing.price : 0;
   
       const newTicket = await Ticket.create({
         storeId,
+        userId,
         type: "online",
         name,
         phone,
@@ -70,7 +71,7 @@ const createOnlineTicketing = async (req, res) => {
         date: today
       }).sort({ ticketNumber: -1 });
   
-      const nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 101;
+      const nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 1001;
   
       const isPaid = store.walkingTicketing.type === "paid";
       const paymentAmount = isPaid ? store.walkingTicketing.price : 0;
@@ -162,11 +163,100 @@ const getTicketsByStoreDateCategory = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const getConfirmedTicketNumber = async (req, res) => {
+  try {
+    const { userId, storeId } = req.params;
+
+    // Find the ticket with confirmed status for this user and store
+    const ticket = await Ticket.findOne({
+      userId: userId,
+      storeId: storeId,
+      status: "confirmed"
+    })
+
+    if (!ticket) {
+      return res.status(404).json({ message: "No confirmed ticket found for this user in this store" });
+    }
+
+    res.status(200).json({
+     ticket:ticket
+    });
+  } catch (error) {
+    console.error("Error fetching confirmed ticket number:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+const getCurrentTicketsByType = async (req, res) => {
+  const { storeId } = req.params;
+
+  try {
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    // Current called tickets
+    const walkInTicket = await Ticket.findOne({
+      storeId,
+      date: today,
+      type: 'walk-in',
+      status: { $in: ['confirmed', 'ready'] }
+    })
+    .sort({ createdAt: 1 })
+    .lean();
+
+    const onlineTicket = await Ticket.findOne({
+      storeId,
+      date: today,
+      type: 'online',
+      status: { $in: ['confirmed', 'ready'] }
+    })
+    .sort({ createdAt: 1 })
+    .lean();
+
+    // Last and next ticket numbers
+    const getLastAndNextTicketNumber = async (type) => {
+      const lastTicket = await Ticket.findOne({
+        storeId,
+        type,
+        date: today,
+      })
+      .sort({ ticketNumber: -1 })
+      .lean();
+
+      const lastTicketNumber = lastTicket ? lastTicket.ticketNumber : 0;
+      return {
+        lastTicketNumber,
+        nextTicketNumber: lastTicketNumber + 1,
+      };
+    };
+
+    const walkInNumbers = await getLastAndNextTicketNumber('walk-in');
+    const onlineNumbers = await getLastAndNextTicketNumber('online');
+
+    res.json({
+      walkIn: {
+        currentTicket: walkInTicket,
+        ...walkInNumbers,
+      },
+      online: {
+        currentTicket: onlineTicket,
+        ...onlineNumbers,
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 
   
   module.exports = {
     createOnlineTicketing,
     createWalkingTicketing,
     updateTicketStatus,
-    getTicketsByStoreDateCategory 
+    getTicketsByStoreDateCategory,
+    getConfirmedTicketNumber,
+    getCurrentTicketsByType
   };

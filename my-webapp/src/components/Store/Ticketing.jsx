@@ -793,19 +793,15 @@ const TicketRow = ({ ticket, category }) => {
           <div className="text-center">
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="p-4 bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl shadow-xl">
-                <Settings size={40} />
+                <Calendar size={40} />
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-teal-200 bg-clip-text text-transparent">
-                  Service Management
+                  Reservations Tickets
                 </h1>
-                <p className="text-teal-200 text-sm mt-1">{store.name || 'Store'}</p>
-              </div>
+                </div>
             </div>
-            <p className="text-gray-300 max-w-3xl mx-auto text-lg leading-relaxed">
-              Comprehensive control center for managing your business services. Activate, configure, and monitor 
-              ticketing, live customer tracking, and reservation systems with ease.
-            </p>
+      
           </div>
         </div>
       </div>
