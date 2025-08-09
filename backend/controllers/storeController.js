@@ -1110,6 +1110,65 @@ const updateSecurityPassword = async (req, res) => {
   }
 };
 
+const updateOnlineTicketing = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const updateData = req.body;
+
+    const store = await Store.findByIdAndUpdate(
+      storeId,
+      { onlineTicketing: updateData },
+      { new: true }
+    );
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json({ message: "Online Ticketing Updated", store });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+// 👇 Update Walking Ticketing
+const updateWalkingTicketing = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const updateData = req.body;
+
+    const store = await Store.findByIdAndUpdate(
+      storeId,
+      { walkingTicketing: updateData },
+      { new: true }
+    );
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json({ message: "Walking Ticketing Updated", store });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+// 👇 Update Table Booking
+const updateTableBooking = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const updateData = req.body;
+
+    const store = await Store.findByIdAndUpdate(
+      storeId,
+      { tableBooking: updateData },
+      { new: true }
+    );
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json({ message: "Table Booking Updated", store });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
   module.exports = {
     
     registerStore,
@@ -1133,5 +1192,8 @@ const updateSecurityPassword = async (req, res) => {
   createRazorpayOrder,
   activeStatus,
   updateProtectedPages,
-  updateSecurityPassword
+  updateSecurityPassword,
+  updateOnlineTicketing,
+  updateWalkingTicketing,
+  updateTableBooking,
   };

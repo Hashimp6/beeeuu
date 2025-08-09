@@ -21,7 +21,10 @@ const {
   verifyRazorpayPayment,
   activeStatus,
   updateProtectedPages,
-  updateSecurityPassword
+  updateSecurityPassword,
+  updateOnlineTicketing,
+  updateWalkingTicketing,
+  updateTableBooking
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -37,12 +40,20 @@ router.get("/nearby",getNearbyStores);
  router.put('/update-upi/:storeId',updateUPI);
  router.put('/:storeId/security', updateProtectedPages);
  router.put('/:storeId/security-password', updateSecurityPassword);
+ router.put("/:storeId/online-ticketing", updateOnlineTicketing);
+
+// 👇 Route to update walking ticketing
+router.put("/:storeId/walking-ticketing", updateWalkingTicketing);
+
+// 👇 Route to update table booking
+router.put("/:storeId/table-booking", updateTableBooking);
+
  //for store analetics
 router.get("/store-analetics/:storeId", getStoreAnalytics);
 //for revenue
 router.get('/revenue/:storeId', getStoreRevenue);
 // Apply authentication middleware to all routes
-// PUT /stores/:storeId/service-type
+// // PUT /stores/:storeId/service-type
 router.put('/:storeId/service-type', updateServiceType);
 
 // PUT /stores/:storeId/payment-type

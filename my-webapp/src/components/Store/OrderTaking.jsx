@@ -52,7 +52,7 @@ const RestaurantOrderScreen = ({ store }) => {
     const [showCart, setShowCart] = useState(false);
     const [customerName, setCustomerName] = useState("");
     const [tableNumber, setTableNumber] = useState("");
-  
+    const [phoneNumber, setPhoneNumber] = useState("");
     const categoryRefs = useRef({});
   
     // Fetch products from API
@@ -204,7 +204,7 @@ const RestaurantOrderScreen = ({ store }) => {
         orderType: "dine-in",
         customerName: customerName.trim() || "Customer",
         deliveryAddress: `Table No: ${tableNumber.trim()}`,
-        phoneNumber: "0000000000", 
+        phoneNumber: phoneNumber.trim() || "0000000000",
         paymentMethod: "cod",
         transactionId: null,
         status: "pending",
@@ -226,6 +226,7 @@ const RestaurantOrderScreen = ({ store }) => {
           setShowCart(false);
           setTableNumber("");
           setCustomerName("");
+          setPhoneNumber("");
           
           // Example redirect: navigate("/orders");
         }
@@ -498,6 +499,18 @@ const RestaurantOrderScreen = ({ store }) => {
                           required
                         />
                       </div>
+                      <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
+  <input
+    type="tel"
+    value={phoneNumber}
+    onChange={(e) => setPhoneNumber(e.target.value)}
+    className="w-full p-3 border border-gray-300 rounded-lg focus:border-teal-500 focus:outline-none text-sm"
+    placeholder="Enter 10-digit mobile number"
+    required
+  />
+</div>
+
                     </div>
 
                     <div className="flex justify-between items-center py-2 border-t border-gray-100">

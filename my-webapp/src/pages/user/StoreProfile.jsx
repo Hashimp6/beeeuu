@@ -669,21 +669,33 @@ const handleTouchEnd = () => {
   </div>
 </div>
 
-  {/* Action Buttons - Stack on mobile */}
-  <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
-    <button
-      onClick={handleChatClick}
-      className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
-    >
-      Start Conversation
-    </button>
-    <button
-      onClick={() => openPhone(enhancedStore?.phone)}
-      className="bg-teal-500 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
-    >
-      Call Now
-    </button>
-  </div>
+<div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mb-6 lg:mb-8">
+        <button
+          onClick={handleChatClick}
+          className="bg-white text-teal-600 px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+        >
+          Start Conversation
+        </button>
+
+        <button
+          onClick={() => openPhone(enhancedStore?.phone)}
+          className="bg-teal-500 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-teal-400 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+        >
+          Call Now
+        </button>
+
+        <button
+  onClick={() => {
+    navigate("/booking", {
+      state: { store }  // 👈 Pass entire store object
+    });
+  }}
+  className="bg-green-600 text-white px-6 py-3 lg:px-8 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-green-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+>
+  Booking
+</button>
+
+      </div>
 
   {/* Social Media Links */}
   <div className="flex items-center justify-center lg:justify-start gap-4 mt-4">

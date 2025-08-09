@@ -26,7 +26,24 @@ const storeSchema = new mongoose.Schema({
     enum: ['basic', 'premium', 'golden'],
     default: 'basic'
   },
-
+  onlineTicketing: {
+    active: { type: Boolean, default: false },
+    type: { type: String, enum: ['free', 'paid'], default: 'free' },
+    price: { type: Number, default: 0 },
+    refundable: { type: Boolean, default: false },
+  },
+  walkingTicketing: {
+    active: { type: Boolean, default: false },
+    type: { type: String, enum: ['free', 'paid'], default: 'free' },
+    price: { type: Number, default: 0 },
+    refundable: { type: Boolean, default: false },
+  },
+  tableBooking: {
+    active: { type: Boolean, default: false },
+    type: { type: String, enum: ['free', 'paid'], default: 'free' },
+    price: { type: Number, default: 0 },
+    refundable: { type: Boolean, default: false },
+  },
   validTill: {
     type: Date,
     default: null

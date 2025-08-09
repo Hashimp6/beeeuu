@@ -9,7 +9,8 @@ import {
   MessageCircle,
   LogOut,
   Tag,
-  CreditCard
+  CreditCard,
+  CalendarCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
@@ -24,6 +25,7 @@ import OfferManagement from '../../components/Store/OfferManagement';
 import SubscriptionController from '../../components/Store/Subscription';
 import StoreSettings from '../../components/Store/StoreSettings';
 import RestaurantOrderScreen from '../../components/Store/OrderTaking';
+import ServiceManagementPage from '../../components/Store/Ticketing';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -427,6 +429,7 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
   ? [
       { id: 'overview', label: 'Overview', icon: Home },
       { id: 'Create', label: 'Create', icon: Plus },
+      { id: 'Reservation', label: 'Reservation', icon: CalendarCheck },
       { id: 'Offers', label: 'Offers', icon: Tag },
       { id: 'appointments', label: 'Appointments', icon: Calendar },
       { id: 'orders', label: 'Orders', icon: Package },
@@ -725,6 +728,9 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
 
 {activeTab === 'subscription' && isPageAccessible('subscription') && (
   <SubscriptionController store={store}/>
+)}
+{activeTab === 'Reservation' && isPageAccessible('Reservation') && (
+  <ServiceManagementPage store={store}/>
 )}
 
 {activeTab === 'settings' && isPageAccessible('settings') && (
