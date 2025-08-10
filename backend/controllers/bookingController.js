@@ -1,5 +1,6 @@
 const Store = require("../models/storeModel");
 const Ticket = require("../models/ReservationModel");
+const ReservationSlot = require('../models/TimeSlotModel');
 
 const createOnlineTicketing = async (req, res) => {
     try {
@@ -290,6 +291,43 @@ const getCurrentTicketsByType = async (req, res) => {
 };
 
 
+
+
+
+const updateSlots = async (req, res) => {
+  try {
+    const { storeId, monday, tuesday, wednesday, thursday, friday, saturday, sunday } = req.body;
+
+    const updatedSlots = await ReservationSlot.findOneAndUpdate(
+      { storeId },
+      { monday, tuesday, wednesday, thursday, friday, saturday, sunday },
+      { new: true, upsert: true } // creates if not exists
+    );
+
+    res.status(200).json({ success: true, data: updatedSlots });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+const getSlotsByStore = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const slots = await ReservationSlot.findOne({ storeId });
+
+    if (!slots) {
+      return res.status(404).json({ success: false, message: 'Slots not found for this store' });
+    }
+
+    res.status(200).json({ success: true, data: slots });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
   
   module.exports = {
     createOnlineTicketing,
@@ -297,5 +335,7 @@ const getCurrentTicketsByType = async (req, res) => {
     updateTicketStatus,
     getTicketsByStoreDateCategory,
     getConfirmedTicketNumber,
-    getCurrentTicketsByType
+    getCurrentTicketsByType,
+    updateSlots,
+  getSlotsByStore,
   };

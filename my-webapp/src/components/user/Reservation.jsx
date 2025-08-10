@@ -4,9 +4,11 @@ import { useLocation } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const CustomerBookingPage = () => {
     const {user}=useAuth()
+    const [store, setStore] = useState(null);
     const [ticket, setTicket] = useState(null);
    const [selectedOption, setSelectedOption] = useState(null);
    const [currentBookings, setCurrentBookings] = useState(null);
@@ -23,7 +25,23 @@ const CustomerBookingPage = () => {
 
   // Get store data from location state (as in your original code)
   const location = useLocation();
-  const store = location.state?.store;
+  const tempStore = location.state?.store;
+  const storeId=tempStore._id
+
+  const fetchStoreDetails = async () => {
+    try {
+      const response = await axios.get(`${SERVER_URL}/stores/${storeId}`);
+    setStore(response.data.store);
+    } catch (error) {
+      console.error("Error fetching store data:", error);
+      toast.error("Failed to fetch store information.");
+    }
+  };
+   useEffect(() => {
+    if (storeId) {
+      fetchStoreDetails();
+    }
+  }, [storeId]);
 
   const fetchCurrentBookings = async () => {
     try {
@@ -52,7 +70,7 @@ const CustomerBookingPage = () => {
     
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
-  }, [store._id]);
+  }, [store]);
 
 
   const handleManualRefresh = () => {

@@ -1,5 +1,5 @@
 const express = require("express");
-const { createOnlineTicketing, createWalkingTicketing, updateTicketStatus, getTicketsByStoreDateCategory, getConfirmedTicketNumber, getCurrentTicketsByType } = require("../controllers/bookingController");
+const { createOnlineTicketing, createWalkingTicketing, updateTicketStatus, getTicketsByStoreDateCategory, getConfirmedTicketNumber, getCurrentTicketsByType, updateSlots, getSlotsByStore } = require("../controllers/bookingController");
 const router = express.Router();
 
 // Create online ticket
@@ -19,5 +19,9 @@ router.get("/current/:storeId", getCurrentTicketsByType);
 
 
 router.get("/tickets/:userId/:storeId", getConfirmedTicketNumber);
+
+router.put('/slots', updateSlots);
+
+router.get('/slots/:storeId', getSlotsByStore);
 
 module.exports = router;

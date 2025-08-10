@@ -3,6 +3,8 @@ import { ToggleLeft, ToggleRight, Ticket, Users, Calendar, Settings, Check, X, A
 import axios from 'axios';
 import { SERVER_URL } from '../../Config';
 import toast from 'react-hot-toast';
+import SlotManager from './TimeSlots';
+import SlotPicker from './TimeSlots';
 
 const ServiceManagementPage = ({ store }) => {
   const [services, setServices] = useState({
@@ -14,6 +16,7 @@ const ServiceManagementPage = ({ store }) => {
   const [walkingName, setWalkingName] = useState('');
   const [walkingPhone, setWalkingPhone] = useState('');
   const [walkingPersons, setWalkingPersons] = useState(1);
+  const [showModal, setShowModal] = useState(false);
   const [addingWalking, setAddingWalking] = useState(false);
   const [showTicketingModal, setShowTicketingModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
@@ -128,7 +131,7 @@ const ServiceManagementPage = ({ store }) => {
           params: { date, category },
           timeout: 15000
         });
-        
+
         if (response.data && Array.isArray(response.data.tickets)) {
           return response.data.tickets;
         }
@@ -829,15 +832,35 @@ const TicketRow = ({ ticket, category }) => {
           />
           
           <ServiceCard
-            title="Table Reservation"
-            icon={Calendar}
-            active={services.reservation.active}
-            onToggle={() => handleServiceToggle('reservation')}
-            isLoading={loading.reservation}
-          />
-        </div>
+    title="Table Reservation"
+    icon={Calendar}
+    active={services.reservation.active}
+    onToggle={() => handleServiceToggle('reservation')}
+    isLoading={loading.reservation}
+  />
 
-      
+</div>
+
+<div className="max-w-4xl mx-auto px-4">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* Heading */}
+      <h2 className="text-2xl font-bold text-gray-900">
+        Manage Time Slot for Table Reservation
+      </h2>
+
+      {/* Edit Slots Button */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm font-medium"
+      >
+        <Settings size={18} />
+        Edit Slots
+      </button>
+    </div>
+  </div>
+</div>
+
 
         {/* Booking Tickets Section */}
         <div className="mb-8">
@@ -979,6 +1002,21 @@ const TicketRow = ({ ticket, category }) => {
           </div>
         </div>
       )}
+      {showModal && (
+  <div 
+    className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4"
+    onClick={() => setShowModal(false)}
+  >
+    <div 
+      className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <SlotPicker isModal={true} onClose={() => setShowModal(false)} store={store}  />
+    </div>
+  </div>
+)}
+
+   
           {/* Tickets Grid */}
           {!ticketsLoading && !ticketsError && (
             <div className="grid lg:grid-cols-3 gap-6">
