@@ -358,21 +358,19 @@ const groupedProducts = isRestaurant
 
         {/* Buttons */}
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.bookButton} 
-            onPress={handleShare}
-          >
-            <Text style={styles.buttonText}>Share Me</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-    style={styles.chatButton}
-    onPress={handleChatNow}
-  >
-    <Text style={styles.chatButtonText}>Chat Now</Text>
+  <TouchableOpacity style={[styles.actionButton, styles.shareButton]} onPress={handleShare}>
+    <Text style={styles.actionButtonText}>Share Me</Text>
   </TouchableOpacity>
-  
-        </View>
+
+  <TouchableOpacity style={[styles.actionButton, styles.chatButton]} onPress={handleChatNow}>
+    <Text style={[styles.actionButtonText, styles.chatButtonText]}>Chat Now</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity style={[styles.actionButton, styles.bookingButton]} onPress={() => navigation.navigate('Booking', { store })}>
+    <Text style={styles.actionButtonText}>Booking</Text>
+  </TouchableOpacity>
+</View>
+
       </View>
       {!store?.isActive && (
   <View style={styles.inactiveContainer}>
@@ -756,6 +754,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 4,
   },
+  bookNowButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginLeft: 8
+  },
+  bookNowButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
   noDataIcon: {
     fontSize: 60,
   },
@@ -801,50 +812,48 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    marginTop: 4,
+    marginTop: 10,
     width: '100%',
     justifyContent: 'space-between',
   },
-  bookButton: {
-    backgroundColor: '#155366',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+  
+  actionButton: {
     flex: 1,
-    marginRight: 8,
-    alignItems: 'center',
-    shadowColor: '#155366',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-  chatButton: {
-    backgroundColor: '#fff',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flex: 1,
-    marginLeft: 8,
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#155366',
-    shadowColor: '#155366',
+    marginHorizontal: 4,
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 3,
   },
-  buttonText: {
+  
+  shareButton: {
+    backgroundColor: '#155366',
+  },
+  
+  chatButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#155366',
+  },
+  
+  bookingButton: {
+    backgroundColor: '#4CAF50',
+  },
+  
+  actionButtonText: {
+    fontWeight: 'bold',
+    fontSize: 14,
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
   },
+  
   chatButtonText: {
-    color: '#155366',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: '#155366', // Override for Chat Now
   },
+  
   tabRow: {
     flexDirection: 'row',
     marginHorizontal: 20,

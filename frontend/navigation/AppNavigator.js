@@ -33,6 +33,7 @@ import StoreOffers from '../screens/store/ManageOfferScreen';
 import AddOfferComponent from '../screens/store/AddOfferScreen';
 import SubscriptionPlansScreen from '../components/Subscribtion';
 import RazorpayCheckout from '../screens/store/RazorpayCheckout';
+import CustomerBookingPage from '../screens/user/Reservation';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -170,6 +171,11 @@ const AppNavigator = () => {
            <Stack.Screen
             name="NewOffer"
             component={AddOfferComponent}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
+            name="Booking"
+            component={CustomerBookingPage}
             options={{ headerShown: false }}
           />
           <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlansScreen} />
