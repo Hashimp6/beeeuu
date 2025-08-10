@@ -10,7 +10,7 @@ const ServiceManagementPage = ({ store }) => {
   const [services, setServices] = useState({
     ticketing: { active: false, type: 'free', price: '', refundable: false },
     liveWalking: { active: false, type: 'free', price: '', refundable: false },
-    reservation: { active: false }
+    reservation: {active: false, type: 'free', price: '', refundable: false  }
   });
   const [showAddWalkingForm, setShowAddWalkingForm] = useState(false);
   const [walkingName, setWalkingName] = useState('');
@@ -20,12 +20,18 @@ const ServiceManagementPage = ({ store }) => {
   const [addingWalking, setAddingWalking] = useState(false);
   const [showTicketingModal, setShowTicketingModal] = useState(false);
   const [showWalkingModal, setShowWalkingModal] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
   const [tempTicketingSettings, setTempTicketingSettings] = useState({
     type: 'free',
     price: '',
     refundable: false
   });
   const [tempWalkingSettings, setTempWalkingSettings] = useState({
+    type: 'free',
+    price: '',
+    refundable: false
+  });
+  const [tempTableSettings, setTempTableSettings] = useState({
     type: 'free',
     price: '',
     refundable: false
@@ -70,7 +76,10 @@ const ServiceManagementPage = ({ store }) => {
           refundable: store.walkingTicketing?.refundable || false
         },
         reservation: {
-          active: store.tableBooking?.active || false
+          active: store.tableBooking?.active || false,
+          type: store.tableBooking?.type || 'free',
+          price: store.tableBooking?.price || '',
+          refundable: store.tableBooking?.refundable || false
         }
       });
     }
@@ -117,38 +126,62 @@ const ServiceManagementPage = ({ store }) => {
     }
   }, [error, success]);
 
+
+  const handleTableConfirm = async () => {
+    const isValid = tempTableSettings.type === 'free' || 
+                   (tempTableSettings.type === 'paid' && tempTableSettings.price && parseFloat(tempTableSettings.price) > 0);
+    
+    if (!isValid) {
+      setError('Please enter a valid price for paid table reservations.');
+      return;
+    }
+  
+    const success = await updateServiceStatus('reservation', {
+      active: true,
+      ...tempTableSettings,
+      price: tempTableSettings.type === 'paid' ? tempTableSettings.price : ''
+    });
+  
+    if (success) {
+      setShowTableModal(false);
+      setTempTableSettings({ type: 'free', price: '', refundable: false });
+    }
+  };
+
   // Fetch booking tickets
-  const fetchBookingTickets = async (date = selectedDate) => {
+ // Fetch booking tickets
+const fetchBookingTickets = async (date = selectedDate) => {
     if (!store?._id) return;
   
     setTicketsLoading(true);
     setTicketsError(null);
   
     try {
-      // helper to fetch a specific category
       const fetchCategory = async (category) => {
         const response = await axios.get(`${SERVER_URL}/booking/${store._id}`, {
           params: { date, category },
           timeout: 15000
         });
-
-        if (response.data && Array.isArray(response.data.tickets)) {
-          return response.data.tickets;
-        }
-        return [];
+        return Array.isArray(response.data?.tickets) ? response.data.tickets : [];
       };
   
-      // fetch both categories in parallel
-      const [onlineTickets, walkingTickets] = await Promise.all([
+      const fetchTableReservations = async () => {
+        const res = await axios.get(`${SERVER_URL}/booking/table/store/${store._id}`);
+        console.log("res",res);
+        
+        return Array.isArray(res.data) ? res.data : [];
+      };
+  
+      const [onlineTickets, walkingTickets, tableReservations] = await Promise.all([
         fetchCategory("online"),
-        fetchCategory("walk-in")
+        fetchCategory("walk-in"),
+        fetchTableReservations()
       ]);
   
-      // if you have reservation tickets coming from somewhere else, handle that too
       setBookingTickets({
         online: onlineTickets,
         walking: walkingTickets,
-        reservation: [] // if needed, fetch separately
+        reservation: tableReservations
       });
   
     } catch (error) {
@@ -171,14 +204,39 @@ const ServiceManagementPage = ({ store }) => {
   };
   
   
+  const updateTableStatusAPI = async (reservationId, newStatus) => {
+    try {
+      const response = await axios.patch(
+        `${SERVER_URL}/booking/table/${reservationId}/status`,
+        { status: newStatus },
+        { timeout: 15000 }
+      );
+      toast.success(`Table reservation marked as "${newStatus}"`);
+      fetchBookingTickets(selectedDate);
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update reservation status");
+      throw error;
+    }
+  };
+  
 
   // Fetch tickets when component mounts or date changes
   useEffect(() => {
-    if (store?._id) {
-      fetchBookingTickets();
-    }
-  }, [store?._id, selectedDate]);
-
+    if (!store?._id) return;
+  
+    // Fetch immediately
+    fetchBookingTickets(selectedDate);
+  
+    // Interval fetch
+    const intervalId = setInterval(() => {
+      fetchBookingTickets(selectedDate); // Always pass current selectedDate
+    }, 20000);
+  
+    return () => clearInterval(intervalId);
+  }, [store?._id, selectedDate]); // Re-run when selectedDate changes
+  
+  
   // Handle date change
   const handleDateChange = (newDate) => {
     setSelectedDate(newDate);
@@ -304,8 +362,16 @@ const ServiceManagementPage = ({ store }) => {
         await updateServiceStatus('liveWalking', { active: false });
       }
     } else if (service === 'reservation') {
-      await updateServiceStatus('reservation', { active: !services.reservation.active });
-    }
+        if (!services.reservation.active) {
+            setTempTableSettings({
+              type: services.reservation.type || 'free',
+              price: services.reservation.price || '',
+              refundable: services.reservation.refundable || false
+            });
+            setShowTableModal(true);
+          } else {
+            await updateServiceStatus('reservation', { active: false });
+          } }
   };
 
   const handleTicketingConfirm = async () => {
@@ -357,6 +423,9 @@ const ServiceManagementPage = ({ store }) => {
     } else if (modalType === 'walking') {
       setShowWalkingModal(false);
       setTempWalkingSettings({ type: 'free', price: '', refundable: false });
+    } else if (modalType === 'table') {
+      setShowTableModal(false);
+      setTempTableSettings({ type: 'free', price: '', refundable: false });
     }
   };
 
@@ -516,6 +585,9 @@ const TicketRow = ({ ticket, category }) => {
               {getStatusBadge(ticket.status)}
             </div>
             <div className="font-medium text-gray-900 text-sm truncate">
+              Time :{ticket.timeSlot || 'Today'}
+            </div>
+            <div className="font-medium text-gray-900 text-sm truncate">
               {ticket.name || ticket.customerName || 'Unknown'}
             </div>
             <div className=" text-gray-500 mt-1">
@@ -528,11 +600,28 @@ const TicketRow = ({ ticket, category }) => {
                 📱 {ticket.phone}
               </div>
             )}
+              {ticket.note && (
+              <div className="text-xs text-gray-500 mt-1">
+                📱 {ticket.note}
+              </div>
+            )}
           </div>
   
           {/* Right side - Action buttons */}
           <div className="flex gap-2 ml-3">
-          {ticket.status === 'confirmed' && (
+          {category === 'reservation' && ticket.status !== 'completed' && (
+  <>
+    <button
+      className="bg-green-500 text-white px-3 py-1 rounded"
+      onClick={() => updateTableStatusAPI(ticket._id, 'completed')}
+    >
+      Done
+    </button>
+
+  </>
+)}
+
+          {category !== 'reservation' &&ticket.status === 'confirmed' && (
             <>
               <button
                 className="bg-green-500 text-white px-3 py-1 rounded"
@@ -549,7 +638,7 @@ const TicketRow = ({ ticket, category }) => {
             </>
           )}
 
-          {ticket.status === 'pending' && (
+          {category !== 'reservation' &&ticket.status === 'pending' && (
             <button
               className="bg-green-500 text-white px-3 py-1 rounded"
               onClick={() => updateTicketStatusAPI(ticket._id, 'completed')}
@@ -832,12 +921,14 @@ const TicketRow = ({ ticket, category }) => {
           />
           
           <ServiceCard
-    title="Table Reservation"
-    icon={Calendar}
-    active={services.reservation.active}
-    onToggle={() => handleServiceToggle('reservation')}
-    isLoading={loading.reservation}
-  />
+  title="Table Reservation"
+  icon={Calendar}
+  active={services.reservation.active}
+  onToggle={() => handleServiceToggle('reservation')}
+  details={getServiceDetails('reservation')}
+  isLoading={loading.reservation}
+  hasConfiguration={true}
+/>
 
 </div>
 
@@ -1037,12 +1128,12 @@ const TicketRow = ({ ticket, category }) => {
               />
               
               <TicketsSection
-                title="Table Reservations"
-                tickets={bookingTickets.reservation}
-                category="reservation"
-                icon={Calendar}
-                emptyMessage="No reservations for this date"
-              />
+  title="Table Reservations"
+  tickets={bookingTickets.reservation}
+  category="reservation"
+  icon={Calendar}
+  emptyMessage="No table reservations yet."
+/>
             </div>
           )}
         </div>
@@ -1068,6 +1159,15 @@ const TicketRow = ({ ticket, category }) => {
         title="Live Walking Customers"
         type="walking"
       />
+      <ConfigurationModal
+  show={showTableModal}
+  onClose={() => handleModalCancel('table')}
+  onConfirm={handleTableConfirm}
+  settings={tempTableSettings}
+  setSettings={setTempTableSettings}
+  title="Table Reservation"
+  type="table"
+/>
 
     </div>
   );

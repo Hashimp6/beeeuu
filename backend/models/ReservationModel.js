@@ -45,7 +45,6 @@ const ticketSchema = new mongoose.Schema({
   ticketNumber: {
     type: Number,
     required: true,
-    unique: true,
   },
 
   status: {
@@ -69,5 +68,7 @@ const ticketSchema = new mongoose.Schema({
     default: Date.now,
   }
 });
+
+  ticketSchema.index({ storeId: 1, date: 1, ticketNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("Ticket", ticketSchema);

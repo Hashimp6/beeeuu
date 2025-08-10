@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, Users, CreditCard, CheckCircle, XCircle, Phone, User, AlertCircle, Calendar, RefreshCw, DollarSign, MapPin, ArrowLeft, Loader } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const CustomerBookingPage = () => {
+    const navigate = useNavigate();
     const {user}=useAuth()
     const [store, setStore] = useState(null);
     const [ticket, setTicket] = useState(null);
+    const [tableTicket, setTableTicket] = useState(null);
    const [selectedOption, setSelectedOption] = useState(null);
    const [currentBookings, setCurrentBookings] = useState(null);
    const [isRefreshing, setIsRefreshing] = useState(false);
    const [lastUpdated, setLastUpdated] = useState(null);
+   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     numberOfPeople: 1,
     date: '',
-    timeSlot: ''
+    timeSlot: '',
+      note: ''
   });
 
   // Get store data from location state (as in your original code)
@@ -45,12 +49,12 @@ const CustomerBookingPage = () => {
 
   const fetchCurrentBookings = async () => {
     try {
-      console.log("id", store);
+     
   
       setIsRefreshing(true);
       const response = await axios.get(`${SERVER_URL}/booking/current/${store._id}`);
       const data = response.data;
-      console.log("bokk", data);
+
   
       setCurrentBookings(data);
       setLastUpdated(new Date());
@@ -77,31 +81,59 @@ const CustomerBookingPage = () => {
     fetchCurrentBookings();
   };
 
-  useEffect(() => {
-    const fetchTicketNumber = async () => {
-      try {
-        const res = await fetch(`${SERVER_URL}/booking/tickets/${user._id}/${store._id}`);
-        const data = await res.json();
-console.log("ticket",data.ticket);
+  const fetchTimeSlots = async () => {
+    try {
+      const response = await axios.get(`${SERVER_URL}/booking/slots/${store._id}`);
+     
+      setAvailableTimeSlots(response.data.data); // Change this line - access the nested data
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      setAvailableTimeSlots({}); // Set empty object as fallback
+    }
+  };
 
+  useEffect(() => {
+    if (store?._id) {
+      fetchTimeSlots();
+    }
+  }, [store]);
   
-        if (res.ok) {
-          setTicket(data.ticket);
-          console.log("hss",data.ticket);
-          
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userId =user._id
+        // 1️⃣ Fetch Ticket Number
+        const res1 = await fetch(`${SERVER_URL}/booking/tickets/${userId}/${store._id}`);
+        const data1 = await res1.json();
+        if (res1.ok) {
+          setTicket(data1.ticket);
         } else {
-          setTicket(null); // No ticket found
+          setTicket(null);
         }
+  
+        // 2️⃣ Fetch Table Ticket
+        const res2 = await fetch(`${SERVER_URL}/booking/table/${userId}`);
+        const data2 = await res2.json();
+        console.log(data2);
+        
+        if (res2.ok) {
+          setTableTicket(data2); // <-- make sure you have a setTableTicket state
+        } else {
+          setTableTicket(null);
+        }
+  
       } catch (err) {
-        console.error("Error fetching ticket:", err);
+        console.error("Error fetching data:", err);
         setTicket(null);
+        setTableTicket(null);
       }
     };
   
     if (user && store) {
-      fetchTicketNumber();
+      fetchData();
     }
   }, [user, store]);
+  
   if (!store) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -114,21 +146,31 @@ console.log("ticket",data.ticket);
     );
   }
 
-  // Generate time slots
-  const timeSlots = [
-    '10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM', '8:00 PM', '10:00 PM'
-  ];
+  
 
   // Get date options (today and tomorrow)
   const getDateOptions = () => {
+   
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const options = [];
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     
-    return [
-      { value: today.toISOString().split('T')[0], label: 'Today' },
-      { value: tomorrow.toISOString().split('T')[0], label: 'Tomorrow' }
-    ];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayName = dayNames[date.getDay()];
+      
+     
+      if (availableTimeSlots[dayName] && availableTimeSlots[dayName].length > 0) {
+        options.push({
+          value: date.toISOString().split('T')[0],
+          label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+          dayName: dayName
+        });
+      }
+    }
+    
+    return options;
   };
 
   const bookingOptions = [
@@ -171,7 +213,7 @@ console.log("ticket",data.ticket);
       });
 
       const data = await response.json();
-console.log("online",data);
+
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create ticket');
@@ -211,6 +253,8 @@ console.log("online",data);
   };
 
   const handleSubmit = async () => {
+    console.log("hlooo");
+    
     // Basic validation
     if (!formData.name || !formData.phone) {
       alert('Please fill in all required fields');
@@ -259,23 +303,41 @@ Please save your ticket number for reference!`);
           timeSlot: ''
         });
 
-      } else if (selectedOption === 'tableBooking') {
-        // For table booking, you might want to create a different API endpoint
-        // For now, showing a placeholder
-        const option = bookingOptions.find(opt => opt.key === selectedOption);
-        alert(`Table Reservation Confirmed!
-        
-Name: ${formData.name}
-Phone: ${formData.phone}
-People: ${formData.numberOfPeople}
-Date: ${formData.date}
-Time: ${formData.timeSlot}
-Total: ₹${option.data.price}
+    } else if (selectedOption === 'tableBooking') {
+        const bookingData = {
+          storeId: store._id || store.id,
+          userId: user._id,
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          numberOfPeople: formData.numberOfPeople,
+          reservationDate: formData.date,
+          timeSlot: formData.timeSlot,
+          note: formData.note||"" // Added note
+        };
 
-Redirecting to payment...`);
-        
-        setSelectedOption(null);
+      
+        try {
+          const { data } = await axios.post(`${SERVER_URL}/booking/table/add`, bookingData);
+      
+          // If booking was successful
+          toast.success('Table booked successfully!');
+       
+          // Optionally reset form
+          setFormData({
+            name: '',
+            phone: '',
+            numberOfPeople: 1,
+            date: '',
+            timeSlot: '',
+            note: ''
+          });
+          handleBack()
+        } catch (error) {
+          console.error('Booking Error:', error);
+          toast.error(error.response?.data?.message || 'Failed to book table. Please try again.');
+        }
       }
+      
     } catch (error) {
       // Handle API errors
       alert(`Error: ${error.message || 'Failed to create booking. Please try again.'}`);
@@ -286,6 +348,7 @@ Redirecting to payment...`);
 
   const handleBack = () => {
     setSelectedOption(null);
+    fetchStoreDetails()
   };
 
   if (selectedOption) {
@@ -355,7 +418,7 @@ Redirecting to payment...`);
               </div>
 
               {/* Number of People (for both online ticketing and table booking) */}
-              {/* {(selectedOption === 'onlineTicketing' || selectedOption === 'tableBooking') && (
+              {(selectedOption === 'onlineTicketing' || selectedOption === 'tableBooking') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <Users className="w-4 h-4 inline mr-2" />
@@ -372,7 +435,7 @@ Redirecting to payment...`);
                     ))}
                   </select>
                 </div>
-              )} */}
+              )}
 
               {/* Date (only for table booking) */}
               {selectedOption === 'tableBooking' && (
@@ -398,27 +461,48 @@ Redirecting to payment...`);
                 </div>
               )}
 
-              {/* Time Slot (only for table booking) */}
-              {selectedOption === 'tableBooking' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-2" />
-                    Time Slot *
-                  </label>
-                  <select
-                    required
-                    value={formData.timeSlot}
-                    onChange={(e) => handleInputChange('timeSlot', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    disabled={isLoading}
-                  >
-                    <option value="">Select a time slot</option>
-                    {timeSlots.map(slot => (
-                      <option key={slot} value={slot}>{slot}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+             {/* Time Slot (only for table booking) */}
+{selectedOption === 'tableBooking' && formData.date && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      <Clock className="w-4 h-4 inline mr-2" />
+      Time Slot *
+    </label>
+    <select
+      required
+      value={formData.timeSlot}
+      onChange={(e) => handleInputChange('timeSlot', e.target.value)}
+      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+      disabled={isLoading}
+    >
+      <option value="">Select a time slot</option>
+      {(() => {
+        const selectedDate = new Date(formData.date);
+        const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][selectedDate.getDay()];
+        return availableTimeSlots[dayName]?.map(slot => (
+          <option key={slot} value={slot}>{slot}</option>
+        )) || [];
+      })()}
+    </select>
+  </div>
+)}
+{/* Note Field */}
+{selectedOption === 'tableBooking' && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      Additional Note (Optional)
+    </label>
+    <textarea
+      value={formData.note}
+      onChange={(e) => handleInputChange('note', e.target.value)}
+      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+      placeholder="Any special requests or instructions?"
+      rows={3}
+      disabled={isLoading}
+    />
+  </div>
+)}
+
 
               {/* Price Summary */}
               <div className="bg-teal-50 rounded-lg p-4 border border-teal-200">
@@ -501,54 +585,118 @@ Redirecting to payment...`);
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="bg-white shadow-xl border border-gray-200 rounded-2xl p-6">
           {/* User's Ticket Display */}
-          {ticket ? (
-            <div className="relative bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg shadow-md px-4 py-5 w-full max-w-[220px] mx-auto">
-              {/* Decorative ticket edges */}
-              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
-              <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
-              
-              {/* Ticket Title */}
-              <div className="flex items-center justify-center mb-2">
-                <Clock className="w-4 h-4 text-teal-700 mr-1" />
-                <h3 className="text-sm font-semibold text-teal-800">Your Ticket</h3>
-              </div>
+          {/* Ticket Section */}
+<div className="flex flex-wrap gap-6 justify-center">
+  {/* User's Ticket */}
+  {ticket ? (
+    <div className="relative bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg shadow-md px-4 py-5 w-full sm:w-[220px]">
+      {/* Decorative ticket edges */}
+      <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+      <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+      
+      {/* Ticket Title */}
+      <div className="flex items-center justify-center mb-2">
+        <Clock className="w-4 h-4 text-teal-700 mr-1" />
+        <h3 className="text-sm font-semibold text-teal-800">Your Ticket</h3>
+      </div>
 
-              {/* Ticket Number */}
-              <div className="text-center">
-                <span className="block text-gray-600 text-xs">Ticket Number</span>
-                <span className="text-3xl font-extrabold text-teal-900 tracking-wider">#{ticket.ticketNumber}</span>
-                <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1">
-                      <p><strong>Name:</strong> {ticket.name}</p>
-                      <p><strong>People:</strong> {ticket.numberOfPeople}</p>
-                      <p><strong>Phone:</strong> {ticket.phone}</p>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          ticket.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {ticket.status}
-                        </span>
-                        {ticket.isPaid && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-                            Paid: ₹{ticket.paymentAmount}
-                          </span>
-                        )}
-                      </div>
-                    </div> 
-                    </div>
+      {/* Ticket Number */}
+      <div className="text-center">
+        <span className="block text-gray-600 text-xs">Ticket Number</span>
+        <span className="text-3xl font-extrabold text-teal-900 tracking-wider">
+          #{ticket.ticketNumber}
+        </span>
+        <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1">
+          <p><strong>Name:</strong> {ticket.name}</p>
+          <p><strong>People:</strong> {ticket.numberOfPeople}</p>
+          <p><strong>Phone:</strong> {ticket.phone}</p>
+          <div className="flex items-center space-x-2 mt-2">
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${
+                ticket.status === 'confirmed'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}
+            >
+              {ticket.status}
+            </span>
+            {ticket.isPaid && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                Paid: ₹{ticket.paymentAmount}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
-              {/* Footer */}
-              <div className="mt-2 border-t border-teal-300 pt-1 text-center">
-                <span className="text-[10px] text-teal-700">Show this at the counter</span>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 max-w-[220px] mx-auto">
-              <p className="text-sm font-medium">No confirmed ticket</p>
-              <p className="text-xs mt-1">Book now to get your ticket</p>
-            </div>
-          )}
+      {/* Footer */}
+      <div className="mt-2 border-t border-teal-300 pt-1 text-center">
+        <span className="text-[10px] text-teal-700">Show this at the counter</span>
+      </div>
+    </div>
+  ) : (
+    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 w-full sm:w-[220px]">
+      <p className="text-sm font-medium">No confirmed ticket</p>
+      <p className="text-xs mt-1">Book now to get your ticket</p>
+    </div>
+  )}
+
+  {/* Table Reservation */}
+  {tableTicket && tableTicket.length > 0 ? (
+    tableTicket.map((reservation) => (
+      <div
+        key={reservation._id}
+        className="relative bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg shadow-md px-4 py-5 w-full sm:w-[280px]"
+      >
+        {/* Decorative edges */}
+        <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+        <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+
+        {/* Title */}
+        <div className="flex items-center justify-center mb-2">
+          <Users className="w-4 h-4 text-indigo-700 mr-1" />
+          <h3 className="text-sm font-semibold text-indigo-800">Your Table Reservation</h3>
+        </div>
+
+        {/* Details */}
+        <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-1">
+          <p><strong>Name:</strong> {reservation.name}</p>
+          <p><strong>People:</strong> {reservation.numberOfPeople}</p>
+          <p><strong>Phone:</strong> {reservation.phone}</p>
+          <p><strong>Date:</strong> {new Date(reservation.reservationDate).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> {reservation.timeSlot || "Not specified"}</p>
+          {reservation.note && <p><strong>Note:</strong> {reservation.note}</p>}
+          <div className="flex items-center space-x-2 mt-2">
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${
+                reservation.status === 'confirmed'
+                  ? 'bg-green-100 text-green-700'
+                  : reservation.status === 'pending'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {reservation.status}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-2 border-t border-indigo-300 pt-1 text-center">
+          <span className="text-[10px] text-indigo-700">Show this at the venue</span>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 w-full sm:w-[280px]">
+      <p className="text-sm font-medium">No table reservations</p>
+      <p className="text-xs mt-1">Reserve a table to see it here</p>
+    </div>
+  )}
+</div>
+
+
+
 
           {/* Header with refresh button and status */}
           <div className="flex justify-between items-center mt-6 mb-6">
