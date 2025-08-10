@@ -3,53 +3,60 @@ const Ticket = require("../models/ReservationModel");
 const ReservationSlot = require('../models/TimeSlotModel');
 
 const createOnlineTicketing = async (req, res) => {
-    try {
-      const { storeId,userId, name, phone, numberOfPeople } = req.body;
-  
-      const store = await Store.findById(storeId);
-      if (!store) return res.status(404).json({ message: "Store not found" });
-  
-      if (!store.onlineTicketing.active) {
-        return res.status(400).json({ message: "Online ticketing is not active for this store" });
-      }
-  
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-  
-      const lastTicket = await Ticket.findOne({
-        storeId,
-        type: "online",
-        date: today
-      }).sort({ ticketNumber: -1 });
-  
-      const nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 101;
-  
-      const isPaid = store.onlineTicketing.type === "paid";
-      const paymentAmount = isPaid ? store.onlineTicketing.price : 0;
-  
-      const newTicket = await Ticket.create({
-        storeId,
-        userId,
-        type: "online",
-        name,
-        phone,
-        numberOfPeople,
-        isPaid,
-        paymentAmount,
-        ticketNumber: nextTicketNumber,
-        date: today
-      });
-  
-      res.status(201).json({
-        message: "Online ticket created successfully",
-        ticket: newTicket
-      });
-  
-    } catch (error) {
-      console.error("Error creating online ticket:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
+  try {
+    const { storeId, userId, name, phone, numberOfPeople } = req.body;
+
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    if (!store.onlineTicketing.active) {
+      return res.status(400).json({ message: "Online ticketing is not active for this store" });
     }
-  };
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get the last ticket number for today
+    let lastTicket = await Ticket.findOne({ storeId, date: today })
+      .sort({ ticketNumber: -1 })
+      .lean();
+
+    let nextTicketNumber = lastTicket ? lastTicket.ticketNumber + 1 : 101;
+
+    // Check if the number already exists — if so, find the next available
+    let exists = await Ticket.exists({ storeId, date: today, ticketNumber: nextTicketNumber });
+    while (exists) {
+      nextTicketNumber++;
+      exists = await Ticket.exists({ storeId, date: today, ticketNumber: nextTicketNumber });
+    }
+
+    const isPaid = store.onlineTicketing.type === "paid";
+    const paymentAmount = isPaid ? store.onlineTicketing.price : 0;
+
+    const newTicket = await Ticket.create({
+      storeId,
+      userId,
+      type: "online",
+      name,
+      phone,
+      numberOfPeople,
+      isPaid,
+      paymentAmount,
+      ticketNumber: nextTicketNumber,
+      date: today
+    });
+
+    res.status(201).json({
+      message: "Online ticket created successfully",
+      ticket: newTicket
+    });
+
+  } catch (error) {
+    console.error("Error creating online ticket:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
   
   // ====== Create Walk-in Ticket ======
   const createWalkingTicketing = async (req, res) => {

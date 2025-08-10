@@ -202,7 +202,7 @@ const CustomerBookingPage = () => {
   ];
 
   // API call function for creating online tickets
-  const createOnlineTicket = async (ticketData) => {
+  const  createOnlineTicket = async (ticketData) => {
     try {
       const response = await fetch(`${SERVER_URL}/booking/online`, {
         method: 'POST',
@@ -253,64 +253,98 @@ const CustomerBookingPage = () => {
   };
 
   const handleSubmit = async () => {
+    console.log("hlooo");
+    
     // Basic validation
     if (!formData.name || !formData.phone) {
       alert('Please fill in all required fields');
       return;
     }
-  
+    
     if (selectedOption === 'tableBooking' && (!formData.date || !formData.timeSlot)) {
       alert('Please select date and time for table reservation');
       return;
     }
-  
-    const option = bookingOptions.find(opt => opt.key === selectedOption);
-    const totalPrice = option.data.price * formData.numberOfPeople;
-  
-    // If paid booking, open UPI payment first
-    if (option.data.type === 'paid' && store.upi) {
-      const upiUrl = `upi://pay?pa=${store.upi}&pn=${encodeURIComponent(store.storeName)}&am=${totalPrice}&cu=INR`;
-      window.location.href = upiUrl; // Opens UPI payment apps
-      toast.success("Complete the payment in your UPI app, then come back here.");
-      return; // Stop here, you can let user manually confirm payment before booking
-    }
-  
+
     setIsLoading(true);
+    
     try {
       if (selectedOption === 'onlineTicketing') {
+        // Prepare data for online ticket creation
         const ticketData = {
-          storeId: store._id,
-          userId: user._id,
+          storeId: store._id || store.id, // Use the store ID from your store object
+         userId:user._id,
           name: formData.name.trim(),
           phone: formData.phone.trim(),
           numberOfPeople: formData.numberOfPeople
         };
+
+        // Call the API
         const response = await createOnlineTicket(ticketData);
-        alert(`🎫 Ticket Created Successfully! Ticket Number: #${response.ticket.ticketNumber}`);
+        
+        // Success - show ticket details
+        alert(`🎫 Ticket Created Successfully!
+        
+Ticket Number: #${response.ticket.ticketNumber}
+Name: ${response.ticket.name}
+Phone: ${response.ticket.phone}
+People: ${response.ticket.numberOfPeople}
+${response.ticket.isPaid ? `Amount: ₹${response.ticket.paymentAmount}` : 'Free Ticket'}
+
+Please save your ticket number for reference!`);
+
+        // Reset form and go back to main view
         setSelectedOption(null);
-      } else if (selectedOption === 'tableBooking') {
+        setFormData({
+          name: '',
+          phone: '',
+          numberOfPeople: 1,
+          date: '',
+          timeSlot: ''
+        });
+
+    } else if (selectedOption === 'tableBooking') {
         const bookingData = {
-          storeId: store._id,
+          storeId: store._id || store.id,
           userId: user._id,
           name: formData.name.trim(),
           phone: formData.phone.trim(),
           numberOfPeople: formData.numberOfPeople,
           reservationDate: formData.date,
           timeSlot: formData.timeSlot,
-          note: formData.note || ""
+          note: formData.note||"" // Added note
         };
-        await axios.post(`${SERVER_URL}/booking/table/add`, bookingData);
-        toast.success('Table booked successfully!');
-        setSelectedOption(null);
+
+      
+        try {
+          const { data } = await axios.post(`${SERVER_URL}/booking/table/add`, bookingData);
+      
+          // If booking was successful
+          toast.success('Table booked successfully!');
+       
+          // Optionally reset form
+          setFormData({
+            name: '',
+            phone: '',
+            numberOfPeople: 1,
+            date: '',
+            timeSlot: '',
+            note: ''
+          });
+          handleBack()
+        } catch (error) {
+          console.error('Booking Error:', error);
+          toast.error(error.response?.data?.message || 'Failed to book table. Please try again.');
+        }
       }
+      
     } catch (error) {
-      console.error('Booking Error:', error);
-      toast.error(error.response?.data?.message || 'Failed to book. Please try again.');
+      // Handle API errors
+      alert(`Error: ${error.message || 'Failed to create booking. Please try again.'}`);
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   const handleBack = () => {
     setSelectedOption(null);
@@ -319,7 +353,7 @@ const CustomerBookingPage = () => {
 
   if (selectedOption) {
     const option = bookingOptions.find(opt => opt.key === selectedOption);
-    const totalPrice = option.data.price ;
+    const totalPrice = option.data.price * formData.numberOfPeople;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50">
@@ -490,16 +524,6 @@ const CustomerBookingPage = () => {
                   </p>
                 )}
               </div>
-              {option.data.type === 'paid' && store.upi && (
-  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-    <p className="text-sm font-medium text-yellow-700">
-      Pay via UPI: <span className="font-bold">{store.upi}</span>
-    </p>
-    <p className="text-xs text-gray-600">
-      Amount: ₹{totalPrice} — Scan QR in your UPI app or click Proceed to Payment.
-    </p>
-  </div>
-)}
 
               {/* Submit Button */}
               <button
