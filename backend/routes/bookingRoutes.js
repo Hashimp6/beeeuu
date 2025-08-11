@@ -1,5 +1,5 @@
 const express = require("express");
-const { createOnlineTicketing, createWalkingTicketing, updateTicketStatus, getTicketsByStoreDateCategory, getConfirmedTicketNumber, getCurrentTicketsByType, updateSlots, getSlotsByStore } = require("../controllers/bookingController");
+const { createOnlineTicketing, updateTicketStatus, getTicketsByStoreDateCategory, getConfirmedTicketNumber, getCurrentTicketsByType, updateSlots, getSlotsByStore, getConfirmedTicketWithUser, createWalkInTicketing } = require("../controllers/bookingController");
 const { addReservation, getReservationsByUser, getReservationsByStore, deleteReservation, changeReservationStatus } = require("../controllers/tableReservation");
 const router = express.Router();
 
@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/online", createOnlineTicketing);
 
 // Create walk-in ticket
-router.post("/walk-in", createWalkingTicketing);
+router.post("/walk-in", createWalkInTicketing);
 
 // Update ticket status
 router.put("/:ticketId/status", updateTicketStatus);
@@ -20,6 +20,7 @@ router.get("/current/:storeId", getCurrentTicketsByType);
 
 
 router.get("/tickets/:userId/:storeId", getConfirmedTicketNumber);
+router.get("/tickets/:userId", getConfirmedTicketWithUser);
 
 router.put('/slots', updateSlots);
 

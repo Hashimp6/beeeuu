@@ -32,6 +32,13 @@ const CustomerBookingPage = () => {
   const tempStore = location.state?.store;
   const storeId=tempStore._id
 
+
+  useEffect(() => {
+    if (!user) {
+      // If no user found, redirect to login page
+      navigate('/login');
+    }
+  }, [user, navigate]);
   const fetchStoreDetails = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/stores/${storeId}`);

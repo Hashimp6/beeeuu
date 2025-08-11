@@ -38,6 +38,26 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
   };
 
   useEffect(() => {
+    if (history === 'reservation' && user?._id) {
+      const fetchReservationData = async () => {
+        try {
+          const ticketRes = await axios.get(`${SERVER_URL}/booking/tickets/${user._id}`);
+          console.log('Ticket:', ticketRes.data);
+  
+          const tableRes = await axios.get(`${SERVER_URL}/booking/table/${user._id}`);
+          console.log('Table:', tableRes.data);
+        } catch (err) {
+          console.error('Error fetching reservation data:', err);
+        }
+      };
+  
+      fetchReservationData();
+    }
+  }, [history, user]);
+
+  
+  
+  useEffect(() => {
     setShow(select);
   }, [select]);
 
@@ -364,6 +384,7 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
     if (history === 'order' || history === 'orders') {
       return 'orders';
     }
+  
     return null;
   };
 

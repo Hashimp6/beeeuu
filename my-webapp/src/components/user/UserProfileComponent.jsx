@@ -20,7 +20,8 @@ import {
   Camera,
   CheckCircle,
   Eye,
-  Store
+  Store,
+  Ticket
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
@@ -271,6 +272,7 @@ const UserProfileComponent = ({  setHistory }) => {
       primary: "bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white shadow-lg shadow-teal-500/25",
       secondary: "bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 shadow-lg shadow-gray-500/25",
       danger: "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25",
+      black: "bg-black hover:bg-gray-900 text-white shadow-lg shadow-black/50",
       ghost: "bg-white/80 hover:bg-white text-teal-600 border border-teal-200 shadow-lg shadow-teal-500/10"
     };
 
@@ -387,6 +389,12 @@ const UserProfileComponent = ({  setHistory }) => {
                 onClick={() => setHistory('appointments')}
                 variant="primary"
               />
+         <ActionButton
+  icon={Ticket}
+  text="Reservation and Tickets"
+  onClick={() => setHistory('reservation')}
+  variant="black"
+/>
               <ActionButton
                 icon={FileText}
                 text="My Orders"

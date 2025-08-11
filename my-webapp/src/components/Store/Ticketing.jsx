@@ -56,7 +56,11 @@ const ServiceManagementPage = ({ store }) => {
   const [ticketsError, setTicketsError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    // Ensure we get the date in local timezone, not UTC
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // Format: YYYY-MM-DD
   });
 
   // Initialize services from store data on component mount
@@ -150,25 +154,33 @@ const ServiceManagementPage = ({ store }) => {
 
   // Fetch booking tickets
  // Fetch booking tickets
-const fetchBookingTickets = async (date = selectedDate) => {
+ const fetchBookingTickets = async (date = selectedDate) => {
     if (!store?._id) return;
   
     setTicketsLoading(true);
     setTicketsError(null);
   
     try {
+      // Debug: Log what date we're sending
+      console.log("Fetching tickets for date:", date);
+      console.log("Store ID:", store._id);
+  
       const fetchCategory = async (category) => {
         const response = await axios.get(`${SERVER_URL}/booking/${store._id}`, {
-          params: { date, category },
+          params: { 
+            date: date, // Make sure this is in YYYY-MM-DD format
+            category 
+          },
           timeout: 15000
         });
+        
+        console.log(`${category} response:`, response.data);
         return Array.isArray(response.data?.tickets) ? response.data.tickets : [];
       };
   
       const fetchTableReservations = async () => {
         const res = await axios.get(`${SERVER_URL}/booking/table/store/${store._id}`);
-        console.log("res",res);
-        
+        console.log("Table reservations response:", res.data);
         return Array.isArray(res.data) ? res.data : [];
       };
   
@@ -178,6 +190,12 @@ const fetchBookingTickets = async (date = selectedDate) => {
         fetchTableReservations()
       ]);
   
+      console.log("Final booking tickets:", {
+        online: onlineTickets,
+        walking: walkingTickets,
+        reservation: tableReservations
+      });
+  
       setBookingTickets({
         online: onlineTickets,
         walking: walkingTickets,
@@ -186,6 +204,8 @@ const fetchBookingTickets = async (date = selectedDate) => {
   
     } catch (error) {
       console.error("Error fetching booking tickets:", error);
+      console.error("Error response:", error.response?.data);
+      
       let errorMessage = 'Failed to load booking tickets. ';
       if (error.code === 'ECONNABORTED') {
         errorMessage += 'Request timed out.';
@@ -239,7 +259,10 @@ const fetchBookingTickets = async (date = selectedDate) => {
   
   // Handle date change
   const handleDateChange = (newDate) => {
+    console.log("Date changed to:", newDate);
     setSelectedDate(newDate);
+    // Immediately fetch tickets for the new date
+    fetchBookingTickets(newDate);
   };
 
   const updateTicketStatusAPI = async (ticketId, newStatus) => {
