@@ -515,6 +515,17 @@ const UserProfileComponent = ({ store }) => {
 
               <TouchableOpacity 
                 style={styles.actionItem}
+                onPress={() => navigation.navigate("UsersReservations",{ user: userInfo})}
+              >
+                <View style={styles.actionItemLeft}>
+                  <View style={[styles.actionDot, { backgroundColor: '#10b981' }]} />
+                  <Text style={styles.actionItemText}>Reservation</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.actionItem}
                 onPress={() => navigation.navigate("UsersAppointments",{ user: userInfo,
                   status: "order"})}
               >

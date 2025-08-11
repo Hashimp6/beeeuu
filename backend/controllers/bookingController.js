@@ -314,7 +314,7 @@ const getConfirmedTicketWithUser = async (req, res) => {
       userId: userId,
       status: "confirmed",
       dateString: todayDateString
-    });
+    }).populate("storeId", "storeName");
 
     if (!ticket) {
       return res.status(404).json({ 

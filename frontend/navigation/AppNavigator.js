@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 
 // Import screens
+import UserReservationsScreen from '../components/UserReservation';
 import OtpVerificationScreen from '../screens/OtpScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
@@ -186,6 +187,11 @@ const AppNavigator = () => {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="UsersReservations"
+            component={UserReservationsScreen}
+            options={{ headerShown: false }}
+          />
+           <Stack.Screen
             name="SellerProfile"
             component={SellerProfile}
             options={{ headerShown: false }}

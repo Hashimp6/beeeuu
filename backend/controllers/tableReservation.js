@@ -39,7 +39,7 @@ const getReservationsByUser = async (req, res) => {
     const reservations = await Reservation.find({
       userId,
       reservationDate: { $gte: startOfDay, $lte: endOfDay },
-    }).populate("storeId", "name address");
+    }).populate("storeId", "storeName place");
 
     res.status(200).json(reservations);
   } catch (error) {

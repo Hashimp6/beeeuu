@@ -7,6 +7,7 @@ import { SERVER_URL } from '../../Config';
 import { useNavigate } from 'react-router-dom';
 import UserProfileComponent from './UserProfileComponent';
 import UserAppointmentsOrders from '../../pages/user/AppointmentsAndOrders';
+import UserReservationComponent from './UserReservation';
 
 const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest = false }) => {
   const { user, token, setUser, setToken, location, isAuthenticated } = useAuth(); 
@@ -647,26 +648,30 @@ const MainAreaComponent = ({ selectedFilters, onFiltersChange, select, isGuest =
       )}
 
       {/* Main Content Area */}
-      {history && getAppointmentOrderType() ? (
-        // When showing appointments/orders, create proper flex container
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Scrollable Appointments/Orders */}
-        <div className="flex-1 h-[calc(98vh-64px)] overflow-y-auto px-4 py-0 bg-gray-50">
-          <UserAppointmentsOrders 
-            type={getAppointmentOrderType()} 
-            setHistory={setHistory} 
-          />
-        </div>
-      
-        {/* Fixed Profile Section */}
-        <div className="hidden xl:flex w-[380px] border-l border-gray-200 bg-white">
-          <div className="fixed right-0 top-[64px] w-[380px] h-[calc(100vh-64px)] overflow-y-auto shadow-md p-4">
-            <UserProfileComponent setHistory={setHistory} />
-          </div>
-        </div>
+      {history === 'reservation' ? (
+  // Show reservation component
+  <div className="flex-1 h-[calc(98vh-64px)] overflow-y-auto bg-gray-50">
+    <UserReservationComponent setHistory={setHistory} />
+  </div>
+) : history && getAppointmentOrderType() ? (
+  // When showing appointments/orders, create proper flex container
+  <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    {/* Scrollable Appointments/Orders */}
+    <div className="flex-1 h-[calc(98vh-64px)] overflow-y-auto px-4 py-0 bg-gray-50">
+      <UserAppointmentsOrders 
+        type={getAppointmentOrderType()} 
+        setHistory={setHistory} 
+      />
+    </div>
+  
+    {/* Fixed Profile Section */}
+    <div className="hidden xl:flex w-[380px] border-l border-gray-200 bg-white">
+      <div className="fixed right-0 top-[64px] w-[380px] h-[calc(100vh-64px)] overflow-y-auto shadow-md p-4">
+        <UserProfileComponent setHistory={setHistory} />
       </div>
-      
-      ) : (
+    </div>
+  </div>
+) :(
         // Default view with stores
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Center Content */}
