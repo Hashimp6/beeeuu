@@ -40,8 +40,7 @@ const UserReservationsScreen = ({ navigation, route }) => {
         axios.get(`${SERVER_URL}/booking/table/${userInfo._id}`)
       ]);
 
-      console.log('Ticket:', ticketRes.data);
-      console.log('Table:', tableRes.data);
+
 
       setReservations({
         tickets: ticketRes.data?.ticket ? [ticketRes.data.ticket] : [],

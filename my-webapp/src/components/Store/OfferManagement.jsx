@@ -411,8 +411,14 @@ const AddOfferForm = ({
                 </div>
               </div>
   
-              {/* Discount Type */}
-              <div>
+            
+            </div>
+  
+            {/* Discount & Pricing */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-600 mb-4">Discount & Pricing (Optional)</h3>
+                {/* Discount Type */}
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Discount Type *
                 </label>
@@ -425,33 +431,10 @@ const AddOfferForm = ({
                   <option value="fixed">Fixed Amount</option>
                 </select>
               </div>
-            </div>
-  
-            {/* Discount & Pricing */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-600 mb-4">Discount & Pricing (Optional)</h3>
-              
-              {/* Discount Value */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Discount Value
-                </label>
-                <input
-                  type="text"
-                  value={offerData.discountValue}
-                  onChange={(e) => handleInputChange('discountValue', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                    errors.discountValue ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder={offerData.discountType === 'percentage' ? 'Enter %' : 'Enter amount'}
-                  min="0"
-                  max={offerData.discountType === 'percentage' ? "100" : undefined}
-                />
-                {errors.discountValue && <p className="text-red-500 text-xs mt-1">{errors.discountValue}</p>}
-              </div>
+             
   
               {/* Pricing Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Original Price
@@ -485,6 +468,24 @@ const AddOfferForm = ({
                   />
                   {errors.offerPrice && <p className="text-red-500 text-xs mt-1">{errors.offerPrice}</p>}
                 </div>
+              </div>
+               {/* Discount Value */}
+               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount Value
+                </label>
+                <input
+                  type="text"
+                  value={offerData.discountValue}
+                  onChange={(e) => handleInputChange('discountValue', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                    errors.discountValue ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder={offerData.discountType === 'percentage' ? 'Enter %' : 'Enter amount'}
+                  min="0"
+                  max={offerData.discountType === 'percentage' ? "100" : undefined}
+                />
+                {errors.discountValue && <p className="text-red-500 text-xs mt-1">{errors.discountValue}</p>}
               </div>
   
           

@@ -72,13 +72,13 @@ const SellerProfile = () => {
     };
 
     const handleOrder = (product) => {
-      if (!store?.isActive) {
+      if (!store?.isActive || store?.subscription === 'basic') {
         Toast.show({
           type: 'error',
-          text1: 'Store Closed',
-          text2: 'This shop is currently closed. Please try later.',
+          text1: 'Sorry!',
+          text2: 'You can’t add to cart right now. Please try later.',
         });
-        return; // Don't proceed
+        return; // Stop here
       }
     
       // If store is active, proceed as normal

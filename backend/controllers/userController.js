@@ -185,7 +185,7 @@ const resendOTP = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    const normalizedEmail = email.toLowerCase();
     // Check for required fields
     if (!email || !password) {
       return res.status(400).json({ 
@@ -195,7 +195,7 @@ const login = async (req, res) => {
     }
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ normalizedEmail });
     if (!user) {
       return res.status(401).json({ 
         success: false,

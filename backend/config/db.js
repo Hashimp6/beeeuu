@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const startSubscriptionCron = require("../utils/subscriptionCron");
 
 const connectDB = async () => {
   try {
@@ -9,6 +10,7 @@ const connectDB = async () => {
     });
     
     console.log("MongoDB connected successfully");
+    startSubscriptionCron();
     return true;
   } catch (err) {
     console.error("MongoDB connection error:", err.message);

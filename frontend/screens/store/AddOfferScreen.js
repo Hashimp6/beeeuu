@@ -369,21 +369,7 @@ const formatToDDMMYYYY = (isoDate) => {
             </View>
           </View>
 
-          {/* Discount Value */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>
-              Discount Value {formData.discountType === 'percentage' ? '(%)' : '(₹)'}
-            </Text>
-            <TextInput
-              style={styles.textInput}
-              value={formData.discountValue}
-              onChangeText={(value) => handleInputChange('discountValue', value)}
-              placeholder={formData.discountType === 'percentage' ? '10' : '50'}
-              placeholderTextColor="#9ca3af"
-              keyboardType="numeric"
-            />
-          </View>
-
+          
           {/* Price Fields Row */}
           <View style={styles.row}>
             <View style={styles.halfWidth}>
@@ -410,6 +396,21 @@ const formatToDDMMYYYY = (isoDate) => {
             </View>
             
           </View>
+          {/* Discount Value */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Discount Value {formData.discountType === 'percentage' ? '(%)' : '(₹)'}
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.discountValue}
+              onChangeText={(value) => handleInputChange('discountValue', value)}
+              placeholder={formData.discountType === 'percentage' ? '10' : '50'}
+              placeholderTextColor="#9ca3af"
+              keyboardType="numeric"
+            />
+          </View>
+
           <View style={styles.inputGroup}>
   <Text style={styles.label}>Offer Start Date (DD-MM-YYYY)</Text>
   <TextInput

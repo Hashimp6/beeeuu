@@ -118,8 +118,8 @@ const ProductsGrid = ({
             if (product.type === 'service') {
               handleAppointment(product);
             } else {
-              if (!store?.isActive) {
-                toast.error('Shop is closed. Try again later.');
+              if (!store?.isActive||store?.subscription==='basic') {
+                toast.error('Sorry, u cant order from this shop . Try again later.');
                 return;
               }
               addToCart(product, store);

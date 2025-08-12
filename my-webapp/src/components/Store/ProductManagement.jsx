@@ -38,7 +38,7 @@ const AddProductForm = ({
     name: '',
     description: '',
     category: '',
-    type: '',
+    type: 'product',
     price: '',
     quantity: '',
     imageUris: [], // Changed to array
@@ -54,7 +54,7 @@ const AddProductForm = ({
         name: editingProduct.name || '',
         description: editingProduct.description || '',
         category: editingProduct.category || '',
-        type: editingProduct.type || '',
+        type: editingProduct.type || 'product',
         price: editingProduct.price?.toString() || '',
         quantity: editingProduct.quantity?.toString() || '',
         imageUris: editingProduct.images || [], // Changed to use images array
@@ -65,7 +65,7 @@ const AddProductForm = ({
         name: '',
         description: '',
         category: '',
-        type: '',
+        type: 'product',
         price: '',
         quantity: '',
         imageUris: [],
@@ -79,7 +79,6 @@ const AddProductForm = ({
     const newErrors = {};
     
     if (!product.name.trim()) newErrors.name = 'Product name is required';
-    if (!product.type) newErrors.type = 'Product type is required';
     if (!product.category) newErrors.category = 'Category is required';
     if (!product.price.trim()) newErrors.price = 'Price is required';
     else if (isNaN(parseFloat(product.price)) || parseFloat(product.price) <= 0) {
@@ -87,12 +86,12 @@ const AddProductForm = ({
     }
     
     // Only validate quantity if type is 'product'
-    if (product.type === 'product') {
-      if (!product.quantity.trim()) newErrors.quantity = 'Quantity is required';
-      else if (isNaN(parseInt(product.quantity)) || parseInt(product.quantity) < 0) {
-        newErrors.quantity = 'Please enter a valid quantity';
-      }
-    }
+    // if (product.type === 'product') {
+    //   if (!product.quantity.trim()) newErrors.quantity = 'Quantity is required';
+    //   else if (isNaN(parseInt(product.quantity)) || parseInt(product.quantity) < 0) {
+    //     newErrors.quantity = 'Please enter a valid quantity';
+    //   }
+    // }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -197,12 +196,12 @@ const AddProductForm = ({
     }
 
     // Only validate quantity if type is 'product'
-    if (productData.type === 'product') {
-      if (!productData.quantity || isNaN(productData.quantity) || parseInt(productData.quantity) < 0) {
-        toast.error('Please enter a valid quantity for products');
-        return;
-      }
-    }
+    // if (productData.type === 'product') {
+    //   if (!productData.quantity || isNaN(productData.quantity) || parseInt(productData.quantity) < 0) {
+    //     toast.error('Please enter a valid quantity for products');
+    //     return;
+    //   }
+    // }
   
     setIsLoading(true);
   
@@ -216,9 +215,9 @@ const AddProductForm = ({
       formData.append('price', parseFloat(productData.price).toString());
       
       // Only append quantity if type is 'product'
-      if (productData.type === 'product') {
-        formData.append('quantity', parseInt(productData.quantity).toString());
-      }
+      // if (productData.type === 'product') {
+      //   formData.append('quantity', parseInt(productData.quantity).toString());
+      // }
   
       // Handle multiple images
       if (productData.imageFiles && productData.imageFiles.length > 0) {
@@ -355,23 +354,28 @@ const AddProductForm = ({
        
 
           {/* Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type *
-            </label>
-            <select
-              value={product.type}
-              onChange={handleTypeChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                errors.type ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Select Type</option>
-              <option value="product">Product</option>
-              <option value="service">Service</option>
-            </select>
-            {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
-          </div>
+        {storeCategory !== "restaurant" && storeCategory !== "Restaurant" && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Type *
+    </label>
+    <select
+      value={product.type}
+      onChange={handleTypeChange}
+      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+        errors.type ? 'border-red-500' : 'border-gray-300'
+      }`}
+    >
+      <option value="">Select Type</option>
+      <option value="product">Product</option>
+      <option value="service">Service</option>
+    </select>
+    {errors.type && (
+      <p className="text-red-500 text-xs mt-1">{errors.type}</p>
+    )}
+  </div>
+)}
+
 
           {/* Category */}
           <div>
@@ -534,7 +538,7 @@ const AddProductForm = ({
           </div>
 
           {/* Quantity (only show if type is product) */}
-          {product.type === 'product' && (
+          {product.type === 'product' &&storeCategory !== "restaurant" && storeCategory !== "Restaurant"&& (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Quantity *

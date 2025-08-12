@@ -226,7 +226,7 @@ useEffect(() => {
 
 const categories = [
     { id: 'all', name: 'All Categories', color: 'from-orange-500 to-red-500' },
-    { id: 'Food', name: 'Food & Dining', color: 'from-yellow-500 to-orange-500' },
+    { id: 'Food', name: 'Food & Beverages', color: 'from-yellow-500 to-orange-500' },
     { id: 'Fashion', name: 'Fashion', color: 'from-purple-500 to-pink-500' },
     { id: 'Electronics', name: 'Electronics', color: 'from-blue-500 to-cyan-500' },
     { id: 'Beauty', name: 'Beauty & Wellness', color: 'from-pink-500 to-rose-500' },
@@ -617,6 +617,7 @@ const categories = [
                   </div>
                 </div>
               )}
+              
             </div>
 
             <div className="flex items-center space-x-3 mb-6">
@@ -742,15 +743,7 @@ const categories = [
               </div>
             </div>
 
-            {/* Eye Button to Preview Full Image */}
-            <div className="absolute top-16 left-4 z-30">
-              <button
-                onClick={() => setShowImagePreview(true)}
-                className="p-2 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all border border-white/20"
-              >
-                <Eye className="w-5 h-5 text-white" />
-              </button>
-            </div>
+       
 
             {/* Premium Badge */}
             {currentOffer.isPremium && (
@@ -763,6 +756,9 @@ const categories = [
                 </div>
               </div>
             )}
+   
+
+
 
             {/* Bottom Content */}
             <div className="flex-1 flex items-end pb-14 px-4">
