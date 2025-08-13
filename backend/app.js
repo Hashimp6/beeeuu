@@ -17,6 +17,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const offersRoutes = require('./routes/offersRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const subscriptionRoutes = require('./routes/paymentRoutes');
+const reportsRoutes = require('./routes/analysisRoutes');
 dotenv.config();
 
 const app = express();
@@ -44,4 +45,5 @@ app.use('/category', categoryRoutes);
 app.use('/offers', offersRoutes);
 app.use("/payment", subscriptionRoutes);
 app.use("/booking", bookingRoutes);
+app.use("/reports", reportsRoutes);
 module.exports = app;

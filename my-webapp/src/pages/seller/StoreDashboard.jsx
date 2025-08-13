@@ -10,7 +10,8 @@ import {
   LogOut,
   Tag,
   CreditCard,
-  CalendarCheck
+  CalendarCheck,
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
@@ -26,6 +27,8 @@ import SubscriptionController from '../../components/Store/Subscription';
 import StoreSettings from '../../components/Store/StoreSettings';
 import RestaurantOrderScreen from '../../components/Store/OrderTaking';
 import ServiceManagementPage from '../../components/Store/Ticketing';
+import DailyReportSection from '../../components/Store/DailyReport';
+import { MonthlyReportSection, WeeklyReportSection } from '../../components/Store/WeeklyMonthlyreport';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -38,6 +41,27 @@ const StoreDashboard = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [authenticatedPages, setAuthenticatedPages] = useState(new Set());  
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dailyData, setDailyData] = useState(null);
+  const [weeklyData, setWeeklyData] = useState(null);
+  const [monthlyData, setMonthlyData] = useState(null);
+const [weeklyDataLoading, setWeeklyDataLoading] = useState(false);
+const [monthlyDataLoading, setMonthlyDataLoading] = useState(false);
+const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+const [showMonthlyReport, setShowMonthlyReport] = useState(false);
+const [selectedWeek, setSelectedWeek] = useState(() => {
+  const today = new Date();
+  const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+  const pastDaysOfYear = (today - firstDayOfYear) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+});
+const [selectedWeekYear, setSelectedWeekYear] = useState(new Date().getFullYear());
+
+// Monthly report states
+const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+const [selectedMonthYear, setSelectedMonthYear] = useState(new Date().getFullYear());
+
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+const [dailyDataLoading, setDailyDataLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState([]);
 const [newUpi, setNewUpi] = useState("");
   const [stats, setStats] = useState({
@@ -72,7 +96,42 @@ const [newUpi, setNewUpi] = useState("");
     });
   }, [user]);
 
- 
+ // 2️⃣ Fetch Daily Data when store._id is available
+ const fetchDailyData = async (date = null) => {
+  try {
+    setDailyDataLoading(true);
+    if (!store?._id) return;
+
+    const dateParam = date || selectedDate;
+    const res = await axios.get(
+      `${SERVER_URL}/reports/sales/daily/${store._id}?date=${dateParam}`
+    );
+
+    if (res.data.success) {
+      setDailyData(res.data.data);
+    } else {
+      toast.error("No data found for selected date");
+      setDailyData(null);
+    }
+  } catch (err) {
+    console.error("Error fetching daily sales:", err);
+    toast.error("Error fetching daily sales data");
+    setDailyData(null);
+  } finally {
+    setDailyDataLoading(false);
+  }
+};
+
+// Update the useEffect that fetches daily data
+useEffect(() => {
+  fetchDailyData();
+}, [store?._id, selectedDate]);
+
+const handleDateChange = (newDate) => {
+  setSelectedDate(newDate);
+  fetchDailyData(newDate);
+};
+
   
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -235,6 +294,99 @@ const [newUpi, setNewUpi] = useState("");
       </div>
     );
   };
+
+
+
+  // Fetch Weekly Data Function
+const fetchWeeklyData = async (week = null, year = null) => {
+  try {
+    setWeeklyDataLoading(true);
+    if (!store?._id) return;
+ 
+    const weekParam = week || selectedWeek;
+    const yearParam = year || selectedWeekYear;
+    
+    const res = await axios.get(
+      `${SERVER_URL}/reports/sales/weekly/${store._id}`
+    );
+ 
+    if (res.data.success) {
+   
+      
+      setWeeklyData(res.data.data);
+    } else {
+      toast.error("No weekly data found for selected period");
+      setWeeklyData(null);
+    }
+  } catch (err) {
+    console.error("Error fetching weekly sales:", err);
+    toast.error("Error fetching weekly sales data");
+    setWeeklyData(null);
+  } finally {
+    setWeeklyDataLoading(false);
+  }
+ };
+ 
+ // Fetch Monthly Data Function
+ const fetchMonthlyData = async (month = null, year = null) => {
+  try {
+    setMonthlyDataLoading(true);
+    if (!store?._id) return;
+ 
+    const monthParam = month || selectedMonth;
+    const yearParam = year || selectedMonthYear;
+    
+    const res = await axios.get(
+      `${SERVER_URL}/reports/sales/monthly/${store._id}`
+    );
+ 
+    if (res.data.success) {
+      
+      setMonthlyData(res.data.data);
+    } else {
+      toast.error("No monthly data found for selected period");
+      setMonthlyData(null);
+    }
+  } catch (err) {
+    console.error("Error fetching monthly sales:", err);
+    toast.error("Error fetching monthly sales data");
+    setMonthlyData(null);
+  } finally {
+    setMonthlyDataLoading(false);
+  }
+ };
+ 
+ // Handle Week Changes
+ const handleWeekChange = (newWeek, newYear) => {
+  setSelectedWeek(newWeek);
+  setSelectedWeekYear(newYear);
+  fetchWeeklyData(newWeek, newYear);
+ };
+ 
+ // Handle Month Changes
+ const handleMonthChange = (newMonth, newYear) => {
+  setSelectedMonth(newMonth);
+  setSelectedMonthYear(newYear);
+  fetchMonthlyData(newMonth, newYear);
+ };
+ 
+ // Functions to show/hide reports
+ const handleShowWeeklyReport = () => {
+  setShowWeeklyReport(true);
+  setShowMonthlyReport(false);
+  if (!weeklyData) {
+    fetchWeeklyData();
+  }
+ };
+
+ 
+ const handleShowMonthlyReport = () => {
+  setShowMonthlyReport(true);
+  setShowWeeklyReport(false);
+  if (!monthlyData) {
+    fetchMonthlyData();
+  }
+ };
   const handleUpiUpdate = async () => {
     try {
       const storeId=store._id
@@ -264,165 +416,6 @@ const [newUpi, setNewUpi] = useState("");
   const businessOverviewData = [
     { name: 'Total Appointments', value: stats.todayAppointments || 0, color: '#14b8a6' },
     { name: 'Total Orders', value: (stats.confirmedOrders + stats.deliveredOrders + stats.pendingOrders + stats.cancelledOrders) || 0, color: '#3b82f6' }
-  ];
-  const SimplePieChart = ({ data, title }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
-        <div className="flex items-center justify-center">
-          <div className="relative">
-            <div className="w-48 h-48 rounded-full bg-gray-200 relative overflow-hidden">
-              {data.map((item, index) => {
-                const percentage = (item.value / total) * 100;
-                const angle = (percentage / 100) * 360;
-                return (
-                  <div
-                    key={index}
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                      background: `conic-gradient(${item.color} 0deg ${angle}deg, transparent ${angle}deg 360deg)`,
-                      transform: `rotate(${data.slice(0, index).reduce((sum, prev) => sum + (prev.value / total) * 360, 0)}deg)`
-                    }}
-                  ></div>
-                );
-              })}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">{total}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-6 space-y-2">
-          {data.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }}></div>
-                <span className="text-sm text-gray-600">{item.name}</span>
-              </div>
-              <span className="text-sm font-medium text-gray-900">{item.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-// Replace the MonthlyAnalyticsChart component with this:
-
-const MonthlyAnalyticsChart = ({ data, title }) => {
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  // Check if we have real data
-  const hasData = data && data.length > 0 && data.some(item => item.totalAppointments > 0 || item.totalOrders > 0);
-  
-  if (!hasData) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
-        
-        {/* Empty Chart */}
-        <div className="flex items-end justify-between h-64 space-x-1">
-          {monthNames.map((month, index) => (
-            <div key={index} className="flex flex-col items-center flex-1">
-              <div className="w-full flex space-x-1 items-end h-52">
-                <div className="w-1/2 bg-gray-200 rounded-t-lg"></div>
-                <div className="w-1/2 bg-gray-200 rounded-t-lg"></div>
-              </div>
-              <div className="mt-3 text-center">
-                <div className="text-xs text-gray-500">{month}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* No Data Message */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">You don't have any data yet</p>
-        </div>
-        
-        {/* Legend */}
-        <div className="mt-6 flex justify-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-teal-500 rounded"></div>
-            <span className="text-sm text-gray-600">Appointments</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-blue-500 rounded"></div>
-            <span className="text-sm text-gray-600">Orders</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If we have data, show real chart
-  const maxValue = Math.max(
-    ...data.map(item => Math.max(item.totalAppointments || 0, item.totalOrders || 0))
-  );
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
-      
-      <div className="flex items-end justify-between h-64 space-x-1">
-        {data.map((item, index) => (
-          <div key={index} className="flex flex-col items-center flex-1">
-            <div className="w-full flex space-x-1 items-end h-52">
-              {/* Appointments Bar */}
-              <div className="w-1/2 bg-gray-200 rounded-t-lg relative overflow-hidden">
-                <div 
-                  className="bg-gradient-to-t from-teal-500 to-teal-400 rounded-t-lg transition-all duration-1000 ease-out"
-                  style={{ height: `${maxValue > 0 ? ((item.totalAppointments || 0) / maxValue) * 200 : 0}px` }}
-                ></div>
-              </div>
-              {/* Orders Bar */}
-              <div className="w-1/2 bg-gray-200 rounded-t-lg relative overflow-hidden">
-                <div 
-                  className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-1000 ease-out"
-                  style={{ height: `${maxValue > 0 ? ((item.totalOrders || 0) / maxValue) * 200 : 0}px` }}
-                ></div>
-              </div>
-            </div>
-            <div className="mt-3 text-center">
-              <div className="text-xs text-gray-500">{monthNames[item.month - 1]}</div>
-              <div className="text-xs text-teal-600">A: {item.totalAppointments || 0}</div>
-              <div className="text-xs text-blue-600">O: {item.totalOrders || 0}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      <div className="mt-6 flex justify-center space-x-6">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-teal-500 rounded"></div>
-          <span className="text-sm text-gray-600">Appointments</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-blue-500 rounded"></div>
-          <span className="text-sm text-gray-600">Orders</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-  
-  const appointmentData = [
-    { label: 'Mon', value: 12 },
-    { label: 'Tue', value: 19 },
-    { label: 'Wed', value: 15 },
-    { label: 'Thu', value: 22 },
-    { label: 'Fri', value: 28 },
-    { label: 'Sat', value: 35 },
-    { label: 'Sun', value: 18 }
-  ];
-
-  const statusData = [
-    { name: 'Completed', value: stats.completedAppointments, color: '#14b8a6' },
-    { name: 'Pending', value: stats.pendingAppointments, color: '#f59e0b' },
-    { name: 'Cancelled', value: stats.cancelledAppointments, color: '#ef4444' }
   ];
 
   const sidebarItems = store?.category === "Restaurant"
@@ -678,29 +671,97 @@ const MonthlyAnalyticsChart = ({ data, title }) => {
         </div>
       </div>
     </div>
+   
+  
   </div>
+  
 )}
 
 
-            {/* Tab Content */}
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-  <MonthlyAnalyticsChart data={analyticsData} title="Monthly Orders & Appointments" />
-  <SimplePieChart data={businessOverviewData} title="Business Overview" />
-   <SimplePieChart data={appointmentStatusData} title="Appointment Status" />
-  <SimplePieChart data={orderStatusData} title="Order Status" />
-  <button
-      onClick={() => navigate('/qr')}
-      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl mt-4 transition duration-300"
-    >
-      📲  QR Page
-    </button>
+{activeTab === 'overview' && (
+ <div className="space-y-8">
+   {/* Daily Report - your existing component */}
+   <DailyReportSection 
+     dailyData={dailyData}
+     onDateChange={handleDateChange}
+     isLoading={dailyDataLoading}
+     selectedDate={selectedDate}
+   />
 
-    </div>
-  </div>
+   {/* Report Action Buttons */}
+   <div className="flex flex-wrap gap-4 justify-center">
+     <button
+       onClick={handleShowWeeklyReport}
+       className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+         showWeeklyReport 
+           ? 'bg-blue-600 text-white shadow-lg' 
+           : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-50'
+       }`}
+     >
+       <BarChart3 className="w-5 h-5" />
+       <span>📊 Weekly Report</span>
+     </button>
+     
+     <button
+       onClick={handleShowMonthlyReport}
+       className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
+         showMonthlyReport 
+           ? 'bg-purple-600 text-white shadow-lg' 
+           : 'bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50'
+       }`}
+     >
+       <PieChart className="w-5 h-5" />
+       <span>📈 Monthly Report</span>
+     </button>
+     
+     {(showWeeklyReport || showMonthlyReport) && (
+       <button
+         onClick={() => {
+           setShowWeeklyReport(false);
+           setShowMonthlyReport(false);
+         }}
+         className="px-6 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors flex items-center space-x-2"
+       >
+         <X className="w-5 h-5" />
+         <span>Close Reports</span>
+       </button>
+     )}
+   </div>
+
+   {/* Weekly Report Component */}
+   {showWeeklyReport && (
+     <WeeklyReportSection
+       weeklyData={weeklyData}
+       onWeekChange={handleWeekChange}
+       isLoading={weeklyDataLoading}
+       selectedWeek={selectedWeek}
+       selectedYear={selectedWeekYear}
+     />
+   )}
+
+   {/* Monthly Report Component */}
+   {showMonthlyReport && (
+     <MonthlyReportSection
+       monthlyData={monthlyData}
+       onMonthChange={handleMonthChange}
+       isLoading={monthlyDataLoading}
+       selectedMonth={selectedMonth}
+       selectedYear={selectedMonthYear}
+     />
+   )}
+
+   {/* Charts Row - your existing content */}
+   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+     <button
+       onClick={() => navigate('/qr')}
+       className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl mt-4 transition duration-300"
+     >
+       📲 QR Page
+     </button>
+   </div>
+ </div>
 )}
+   
 
 {activeTab === 'Create' && isPageAccessible('Create') && (
   <RestaurantOrderScreen store={store}/>
