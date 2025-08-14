@@ -195,7 +195,7 @@ const login = async (req, res) => {
     }
 
     // Find user by email
-    const user = await User.findOne({ normalizedEmail });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ 
         success: false,
