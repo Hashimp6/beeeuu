@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 
 const linking = {
   prefixes: [
-    'beeu://', // Keep original custom scheme
+    'serchby://', // Keep original custom scheme
     'https://serchby.com', // Your new domain
     'https://www.serchby.com' // Your new domain with www
   ],
