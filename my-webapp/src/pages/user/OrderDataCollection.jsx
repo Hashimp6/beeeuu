@@ -697,7 +697,7 @@ useEffect(() => {
         <label className="block text-sm font-medium text-teal-700 mb-2">
           {selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
             ? 'Table Number'
-            : 'Address'}
+            : 'Table Number / Address '}
         </label>
         <textarea
           value={address}

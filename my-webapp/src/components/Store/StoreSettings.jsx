@@ -24,6 +24,8 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
       setList([...list, item]);
     }
   };
+  console.log("st cat",store.category);
+  
   const pageOptions = ['overview','Offers','appointments', 'orders', 'product', 'gallery', 'settings']; // Customize based on your app
   const handleUpdateSecuredPages = async () => {
     setUpdatingSecuredPages(true);
@@ -225,9 +227,28 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
               {loading ? 'Saving...' : 'Save Payment Types'}
             </button>
           </div>
-
+          <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
+              {serviceOptions.map((option) => (
+                <label key={option} className="flex items-center space-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedServices.includes(option)}
+                    onChange={() => toggleItem(selectedServices, setSelectedServices, option)}
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+              <button
+                onClick={() => handleUpdateServiceTypes(selectedServices)}
+                disabled={loading}
+                className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                {loading ? 'Saving...' : 'Save Service Types'}
+              </button>
+            </div>
           {/* Service Options Section - Only for Hotel/Restaurant */}
-          {store.category === "Restaurant" && (
+          {/* {store.category === "Restaurant" && (
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
               {serviceOptions.map((option) => (
@@ -248,7 +269,7 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
                 {loading ? 'Saving...' : 'Save Service Types'}
               </button>
             </div>
-          )}
+          )} */}
           <div className="bg-white rounded-xl shadow-lg p-6">
   <h3 className="text-lg font-semibold text-gray-900 mb-4">Protected Pages</h3>
   <p className="text-sm text-gray-600 mb-2">
