@@ -392,7 +392,7 @@ const AddProductForm = ({
   <option value="">Select Category</option>
 
   {/* Render restaurant/hotel options if storeCategory is "Hotel" or "Restaurant" */}
-  {['Hotel', 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
+  {['Hotel', 'restaurant','Restaurent' , 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
     <>
       <option value="signature">signature</option>
       <option value="starter">Starter</option>

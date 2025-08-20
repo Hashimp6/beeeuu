@@ -668,7 +668,7 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
             </View>
           );
         })}
-  
+ 
         {/* Order Details */}
         <View style={styles.infoSection}>
           {/* Store Name */}
@@ -1025,6 +1025,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#155366',
+  },
+  otpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  otpText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 4,
+    fontWeight: 'bold',
   },
   headerActions: {
     flexDirection: 'row',
