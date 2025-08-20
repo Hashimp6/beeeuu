@@ -189,12 +189,6 @@ const ProductsGrid = ({
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black mb-3 sm:mb-4">
           {isRestaurant ? 'Our Menu' : 'Our Products & Services'}
         </h2>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-          {isRestaurant 
-            ? 'Discover our delicious collection of food and beverages, freshly prepared just for you'
-            : 'Discover our premium collection of products and professional services designed to meet your needs'
-          }
-        </p>
       </div>
 
       {/* Products Display */}

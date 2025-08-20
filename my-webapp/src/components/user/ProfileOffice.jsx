@@ -87,8 +87,8 @@ const OffersStories = ({ storeId }) => {
 
   if (!offers.length) {
     return (
-      <div className="w-full p-4">
-        <div className="text-gray-500 text-center py-4">
+      <div className="w-full p-1">
+        <div className="text-gray-500 text-center py-1">
           No offers available
         </div>
       </div>

@@ -61,9 +61,9 @@ const storeSchema = new mongoose.Schema({
     default: 0
   },
   serviceType: {
-    type: [String], 
-    default: []
-  },
+    type: [String],
+    default: ["Eat In", "Take Away / Parcel"]
+  },  
   paymentType: {
     type: [String],
     default: []
