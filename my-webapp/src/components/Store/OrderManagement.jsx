@@ -10,6 +10,7 @@ import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { showErrorToast, showSuccessToast } from '../user/Tost';
 
 const PrintReceipt = ({ order, store, onClose }) => {
   const printRef = useRef();
@@ -810,12 +811,12 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
       const userOtp = prompt('Enter OTP provided by customer:');
   
       if (!userOtp) {
-        toast.error('OTP is required to mark as delivered');
+        showErrorToast('OTP is required to mark as delivered');
         return;
       }
   
       if (userOtp !== order.otp) {
-        toast.error('Incorrect OTP');
+        showErrorToast('Incorrect OTP');
         return;
       }
     }
@@ -823,10 +824,10 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
     setIsUpdating(true);
     try {
       await onStatusChange(order._id, newStatus);
-      toast.success(`Order marked as ${newStatus}`);
+      showSuccessToast(`Order marked as ${newStatus}`);
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update order status');
+      showErrorToast('Failed to update order status');
     } finally {
       setIsUpdating(false);
     }
@@ -840,43 +841,49 @@ const handleNotifyReady = async (orderId) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    toast.success('Customer notified: Order is ready');
+    showSuccessToast('Customer notified: Order is ready');
   } catch (error) {
     console.error('Failed to send ready notification', error);
-    toast.error('Failed to notify customer');
+    showErrorToast('Failed to notify customer');
   }
 };
 
   const handlePaymentStatusChange = async (orderId, newStatus) => {
-    toast((t) => (
-      <span className="flex flex-col gap-2">
+ toast((t) => (
+      <span className="flex flex-col gap-2 relative">
+        {/* ❌ X Button */}
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+        >
+          <X size={14} />
+        </button>
+    
         <span className="text-sm font-medium">
           Confirm marking payment as <b>completed</b>?
         </span>
+    
         <div className="flex justify-end gap-2 mt-2">
           <button
             onClick={async () => {
               toast.dismiss(t.id);
               try {
-              
-                
                 await axios.patch(
                   `${SERVER_URL}/orders/payment/${orderId}`,
-                  { paymentStatus: 'completed' },
+                  { paymentStatus: "completed" },
                   {
                     headers: {
-                      'Content-Type': 'application/json',
+                      "Content-Type": "application/json",
                       Authorization: `Bearer ${token}`,
                     },
                   }
                 );
-                
-                toast.success('Payment marked as completed');
-                // Refresh the orders by calling the parent's status change handler
-                onStatusChange(orderId, null, 'completed');
+    
+                showSuccessToast("Payment marked as completed");
+                onStatusChange(orderId, null, "completed");
               } catch (error) {
-                console.error('Error updating payment status:', error);
-                toast.error('Failed to update payment status');
+                console.error("Error updating payment status:", error);
+                showErrorToast("Failed to update payment status");
               }
             }}
             className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
@@ -891,7 +898,11 @@ const handleNotifyReady = async (orderId) => {
           </button>
         </div>
       </span>
-    ), { duration: Infinity });
+    ), { 
+      duration: 2000,  // ✅ Auto close after 2 seconds
+      position: "top-center",
+    });
+    
   };
   
 
@@ -1276,19 +1287,27 @@ const handleMarkTablePaid = async (orderIds, tableName) => {
   }, 0);
 
   toast((t) => (
-    <span className="flex flex-col gap-2">
+    <span className="flex flex-col gap-2 relative">
+      {/* ❌ X Button */}
+      <button
+        onClick={() => toast.dismiss(t.id)}
+        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+      >
+        <X size={16} />
+      </button>
+  
       <span className="text-sm font-medium">
         Mark all orders for <b>{tableName}</b> as paid?
       </span>
       <span className="text-xs text-gray-600">
         Total Amount: ₹{totalAmount} | {orderIds.length} orders
       </span>
+  
       <div className="flex justify-end gap-2 mt-2">
         <button
           onClick={async () => {
             toast.dismiss(t.id);
             try {
-              // Update all orders for this table
               const updatePromises = orderIds.map(orderId =>
                 axios.patch(
                   `${SERVER_URL}/orders/payment/${orderId}`,
@@ -1301,10 +1320,9 @@ const handleMarkTablePaid = async (orderIds, tableName) => {
                   }
                 )
               );
-
+  
               await Promise.all(updatePromises);
-
-              // Update local state
+  
               setOrders(prev =>
                 prev.map(order =>
                   orderIds.includes(order._id)
@@ -1312,12 +1330,9 @@ const handleMarkTablePaid = async (orderIds, tableName) => {
                     : order
                 )
               );
-
+  
               toast.success(`✅ ${tableName} marked as paid! Total: ₹${totalAmount}`);
-              
-              // Refresh orders to get updated data
               setTimeout(() => fetchOrders(selectedStatus), 1000);
-              
             } catch (error) {
               console.error('Error updating table payments:', error);
               toast.error('Failed to update payments');
@@ -1336,8 +1351,8 @@ const handleMarkTablePaid = async (orderIds, tableName) => {
       </div>
     </span>
   ), { 
-    duration: Infinity,
-    position: 'top-center',
+    duration: 2000,   // ✅ Auto-close after 5 seconds
+    position: "top-center",
   });
 };
 
@@ -1440,7 +1455,7 @@ if (currentPendingCount > 0) {
       startPersistentNotification();
     }
     
-    toast.success(`🔔 You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}!`);
+    showSuccessToast(`🔔 You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}!`);
   }
 } else {
   stopNotification();
@@ -1473,8 +1488,19 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
 
   // Handle order status update
   toast((t) => (
-    <span className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Are you sure you want to change status to <b>{newStatus}</b>?</span>
+    <span className="flex flex-col gap-2 relative">
+      {/* ❌ X Button */}
+      <button
+        onClick={() => toast.dismiss(t.id)}
+        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+      >
+        <X size={14} />
+      </button>
+  
+      <span className="text-sm font-medium">
+        Are you sure you want to change status to <b>{newStatus}</b>?
+      </span>
+  
       <div className="flex justify-end gap-2 mt-2">
         <button
           onClick={async () => {
@@ -1485,43 +1511,43 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                 { status: newStatus },
                 {
                   headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                   },
-                  timeout: 10000
+                  timeout: 10000,
                 }
               );
-              
-              // Update the orders state immediately
-              setOrders(prev => {
-                const updatedOrders = prev.map(order =>
+  
+              // ✅ Update orders immediately
+              setOrders((prev) => {
+                const updatedOrders = prev.map((order) =>
                   order._id === orderId ? { ...order, status: newStatus } : order
                 );
-                
-                // Check if there are any remaining pending orders after this update
-                const remainingPendingOrders = updatedOrders.filter(order => order.status === 'pending');
-                
-                // If no pending orders remain, stop the notification
+  
+                const remainingPendingOrders = updatedOrders.filter(
+                  (order) => order.status === "pending"
+                );
+  
                 if (remainingPendingOrders.length === 0) {
-                 stopNotification();
+                  stopNotification();
                 }
-                
+  
                 return updatedOrders;
               });
-              
-              // Refresh the orders list
+  
+              // ✅ Refresh orders
               await fetchOrders(selectedStatus);
               toast.success(`Status updated to ${newStatus}`);
-              
             } catch (error) {
-              console.error('Error updating order status:', error);
-              toast.error('Failed to update status');
+              console.error("Error updating order status:", error);
+              toast.error("Failed to update status");
             }
           }}
           className="px-2 py-1 text-sm text-white bg-green-600 rounded hover:bg-green-700"
         >
           Yes
         </button>
+  
         <button
           onClick={() => toast.dismiss(t.id)}
           className="px-2 py-1 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
@@ -1531,8 +1557,8 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
       </div>
     </span>
   ), {
-    duration: Infinity,
-    position: 'top-center',
+    duration: 2000,   // ✅ Auto close after 2 seconds
+    position: "top-center",
   });
 };
 

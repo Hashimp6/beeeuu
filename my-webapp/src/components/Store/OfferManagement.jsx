@@ -18,7 +18,7 @@ import {
 import { SERVER_URL } from '../../Config';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
-import toast from 'react-hot-toast';
+import { showErrorToast, showSuccessToast } from '../user/Tost';
 
 // Add/Edit Offer Form Component
 const AddOfferForm = ({ 
@@ -737,7 +737,7 @@ const OfferManagement = ({ storeId }) => {
         },
       });
   
-      toast.success("Offer saved successfully!");
+      showSuccessToast("Offer saved successfully!");
       await fetchOffers();
       setEditingOffer(null); // Reset editing state
       
@@ -746,7 +746,7 @@ const OfferManagement = ({ storeId }) => {
       
     } catch (err) {
       console.error("Error saving offer:", err);
-      toast.error("Failed to save offer");
+      showErrorToast("Failed to save offer");
       
       // Throw error to be caught by form component
       throw new Error("Failed to save offer. Please try again.");

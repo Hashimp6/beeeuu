@@ -3,7 +3,7 @@ import { MapPin, Search, X, Locate, AlertCircle, Loader } from 'lucide-react';
 import { SERVER_URL } from '../Config';
 import axios from 'axios';
 import { useAuth } from '../context/UserContext';
-import toast from 'react-hot-toast';
+import { showErrorToast, showSuccessToast } from './user/Tost';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24';
 
@@ -207,7 +207,7 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         };
         setLocation(locationDetails)
   
-        toast.success('📍 Location updated successfully');
+        showSuccessToast("📍 Location updated successfully");
         return updatedUser;
       } else {
         // ❌ No user logged in
@@ -215,12 +215,12 @@ const LocationSelectionModal = ({ visible, onClose }) => {
         localStorage.setItem('location', JSON.stringify(guestLocationData));
         setLocation(guestLocationData);
         
-        toast.success('📍 Location updated successfully');
+        showSuccessToast("📍 Location updated successfully");
         return guestLocationData;
       }
     } catch (err) {
      
-      toast.error('❌ Failed to update location');
+      showErrorToast("❌ Failed to update location");
       throw new Error('Failed to update location data');
     }
   };

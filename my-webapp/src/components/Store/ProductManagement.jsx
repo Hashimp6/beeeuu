@@ -19,6 +19,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import ProductCard from './ProductCard';
 import ProductDetailsModal from './ProductDetails';
+import { showErrorToast, showSuccessToast } from '../user/Tost';
 
 
 const AddProductForm = ({ 
@@ -105,12 +106,12 @@ const AddProductForm = ({
   const processFiles = (files) => {
     const validFiles = files.filter(file => {
       if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not a valid image file`);
+        showErrorToast(`${file.name} is not a valid image file`);
         return false;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max size is 5MB`);
+        showErrorToast(`${file.name} is too large. Max size is 5MB`);
         return false;
       }
       
@@ -124,7 +125,7 @@ const AddProductForm = ({
     const remainingSlots = 5 - currentTotal;
     
     if (validFiles.length > remainingSlots) {
-      toast.error(`You can only add ${remainingSlots} more images. Maximum 5 images allowed.`);
+      showErrorToast(`You can only add ${remainingSlots} more images. Maximum 5 images allowed.`);
       return;
     }
 
@@ -185,13 +186,13 @@ const AddProductForm = ({
       !productData.type ||
       !productData.category
     ) {
-      toast.error('Please fill in all required fields');
+      showErrorToast('Please fill in all required fields');
       return;
     }
 
     // Validate price
     if (isNaN(productData.price) || parseFloat(productData.price) <= 0) {
-      toast.error('Please enter a valid price');
+      showErrorToast('Please enter a valid price');
       return;
     }
 
@@ -252,7 +253,7 @@ const AddProductForm = ({
       });
   
     
-      toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
+      showSuccessToast(`Product ${editingProduct ? 'updated' : 'added'} successfully!`);
   
       // Refresh the product list
       if (fetchProducts) fetchProducts(); 
@@ -264,7 +265,7 @@ const AddProductForm = ({
     } catch (err) {
       console.error('Error saving product:', err);
       const errorMessage = err.response?.data?.message || 'Failed to save product. Please try again.';
-      toast.error(errorMessage);
+      showErrorToast(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -662,12 +663,12 @@ const handleToggleActive = async (productId, newActiveStatus) => {
     );
 
     // Show success message using toast (since you're already using it)
-    toast.success(response.data.message || 'Product status updated successfully!');
+    showSuccessToast(response.data.message || 'Product status updated successfully!');
     
   } catch (error) {
     console.error('Error toggling product status:', error);
     const errorMessage = error.response?.data?.message || 'Failed to update product status. Please try again.';
-    toast.error(errorMessage);
+    showErrorToast(errorMessage);
   } finally {
     setLoading(false);
   }
@@ -694,52 +695,62 @@ const handleToggleActive = async (productId, newActiveStatus) => {
   };
 
   const handleDeleteProduct = (productId) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col space-y-2">
-          <p className="text-sm font-medium">Are you sure you want to delete this product?</p>
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => toast.dismiss(t.id)}
+    toast((t) => (
+      <div className="flex flex-col space-y-2 relative">
+        {/* ❌ Close (X) Button */}
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+        >
+          <X size={14} />
+        </button>
+    
+        <p className="text-sm font-medium">
+          Are you sure you want to delete this product?
+        </p>
+    
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
             className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 active:scale-95 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={async () => {
-                toast.dismiss(t.id); // Close toast
-                try {
-                  setLoading(true);
-  
-                  await axios.delete(`${SERVER_URL}/products/${productId}`, {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  });
-  
-                  toast.success('Product deleted successfully!');
-                  setProducts((prev) => prev.filter((p) => p._id !== productId));
-                } catch (err) {
-                  console.error('Error deleting product:', err);
-                  const errorMessage =
-                    err.response?.data?.message || 'Failed to delete product. Please try again.';
-                  toast.error(errorMessage);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
+          >
+            Cancel
+          </button>
+    
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id); // Close toast
+              try {
+                setLoading(true);
+    
+                await axios.delete(`${SERVER_URL}/products/${productId}`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                });
+    
+                toast.success("Product deleted successfully!");
+                setProducts((prev) => prev.filter((p) => p._id !== productId));
+              } catch (err) {
+                console.error("Error deleting product:", err);
+                const errorMessage =
+                  err.response?.data?.message ||
+                  "Failed to delete product. Please try again.";
+                toast.error(errorMessage);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+          >
+            Delete
+          </button>
         </div>
-      ),
-      {
-        duration: 10000,
-        position: 'top-center',
-      }
-    );
+      </div>
+    ), {
+      duration: 5000,   // ✅ Auto close after 2 seconds
+      position: "top-center",
+    });
   };
   
 

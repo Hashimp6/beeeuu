@@ -23,6 +23,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
 import { useCart} from '../../context/CartContext';
+import { showErrorToast, showSuccessToast } from '../../components/user/Tost';
 
 const OrderDetails = () => {
   const { user, token } = useAuth();
@@ -87,7 +88,7 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
       setStore(response.data.store);
       } catch (error) {
         console.error("Error fetching store data:", error);
-        toast.error("Failed to fetch store information.");
+        showErrorToast("Failed to fetch store information.");
       }
     };
   
@@ -438,17 +439,17 @@ useEffect(() => {
                 });
  
                 const result =finalRes.data.data
-                toast.success(`✅ Order placed! Order ID: ${finalRes.data.orderId}`);
+                showSuccessToast(`✅ Order placed! Order ID: ${finalRes.data.orderId}`);
                 clearStoreCart(store._id);
                 navigate(`/receipt/${result.orderId}`, { 
                   state: { orderData: result } 
                 });
               } else {
-                toast.error("❌ Razorpay payment verification failed");
+                showErrorToast("❌ Razorpay payment verification failed");
                 setIsPlacingOrder(false);
               }
             } catch (err) {
-              toast.error("❌ Payment verification failed");
+              showErrorToast("❌ Payment verification failed");
               setIsPlacingOrder(false);
             }
           },

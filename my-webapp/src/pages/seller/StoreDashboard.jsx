@@ -16,7 +16,6 @@ import {
 import { useAuth } from '../../context/UserContext';
 import { SERVER_URL } from '../../Config';
 import axios from 'axios';
-import toast from 'react-hot-toast';
 import AppointmentManagement from '../../components/Store/AppointmentManagement';
 import OrderManagement from '../../components/Store/OrderManagement';
 import ProductManagement from '../../components/Store/ProductManagement';
@@ -29,6 +28,7 @@ import RestaurantOrderScreen from '../../components/Store/OrderTaking';
 import ServiceManagementPage from '../../components/Store/Ticketing';
 import DailyReportSection from '../../components/Store/DailyReport';
 import { MonthlyReportSection, WeeklyReportSection } from '../../components/Store/WeeklyMonthlyreport';
+import { showErrorToast, showSuccessToast } from '../../components/user/Tost';
 
 const StoreDashboard = () => {
     const navigate = useNavigate();
@@ -110,12 +110,12 @@ const [newUpi, setNewUpi] = useState("");
     if (res.data.success) {
       setDailyData(res.data.data);
     } else {
-      toast.error("No data found for selected date");
+      showErrorToast("No data found for selected date");
       setDailyData(null);
     }
   } catch (err) {
     console.error("Error fetching daily sales:", err);
-    toast.error("Error fetching daily sales data");
+    showErrorToast("Error fetching daily sales data");
     setDailyData(null);
   } finally {
     setDailyDataLoading(false);
@@ -201,10 +201,10 @@ const handleDateChange = (newDate) => {
       setAuthenticatedPages(prev => new Set([...prev, passwordPrompt.page]));
       setPasswordPrompt({ show: false, page: '' });
       setPasswordInput('');
-      toast.success('Access granted!');
+      showSuccessToast('Access granted!');
     } else {
       // Wrong password
-      toast.error('Incorrect password');
+      showErrorToast('Incorrect password');
       setPasswordInput('');
     }
   };
@@ -246,9 +246,9 @@ const handleDateChange = (newDate) => {
         setPasswordPrompt({ show: false, page: '' });
         setPasswordInput('');
         setSidebarOpen(false);
-        toast.success('Access granted!');
+        showSuccessToast('Access granted!');
       } else {
-        toast.error('Incorrect password');
+        showErrorToast('Incorrect password');
         setPasswordInput('');
       }
     };
@@ -315,12 +315,12 @@ const fetchWeeklyData = async (week = null, year = null) => {
       
       setWeeklyData(res.data.data);
     } else {
-      toast.error("No weekly data found for selected period");
+      showErrorToast("No weekly data found for selected period");
       setWeeklyData(null);
     }
   } catch (err) {
     console.error("Error fetching weekly sales:", err);
-    toast.error("Error fetching weekly sales data");
+    showErrorToast("Error fetching weekly sales data");
     setWeeklyData(null);
   } finally {
     setWeeklyDataLoading(false);
@@ -344,12 +344,12 @@ const fetchWeeklyData = async (week = null, year = null) => {
       
       setMonthlyData(res.data.data);
     } else {
-      toast.error("No monthly data found for selected period");
+      showErrorToast("No monthly data found for selected period");
       setMonthlyData(null);
     }
   } catch (err) {
     console.error("Error fetching monthly sales:", err);
-    toast.error("Error fetching monthly sales data");
+    showErrorToast("Error fetching monthly sales data");
     setMonthlyData(null);
   } finally {
     setMonthlyDataLoading(false);
@@ -583,9 +583,9 @@ const fetchWeeklyData = async (week = null, year = null) => {
             const newStatus = !store?.isActive;
             await axios.put(`${SERVER_URL}/stores/toggle-active/${store._id}`, { isActive: newStatus });
             setStore((prev) => ({ ...prev, isActive: newStatus }));
-            toast.success(`Store turned ${newStatus ? 'ON' : 'OFF'}`);
+            showSuccessToast(`Store turned ${newStatus ? 'ON' : 'OFF'}`);
           } catch (err) {
-            toast.error("Failed to update store status");
+            showErrorToast("Failed to update store status");
             console.error(err);
           }
         }}

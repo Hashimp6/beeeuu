@@ -7,8 +7,8 @@ import { useAuth } from '../../context/UserContext';
 import ProductsGrid from '../../components/user/ProductGrid';
 import ProductDetailModal from '../../components/user/ProductDetails';
 import { useCart } from '../../context/CartContext';
-import toast from 'react-hot-toast';
 import OffersStories from '../../components/user/ProfileOffice';
+import { showErrorToast } from '../../components/user/Tost';
 
 const StoreProfile = () => {
 
@@ -325,7 +325,7 @@ const handleTouchEnd = () => {
 
   const handleAppointment = (product) => {
     if (!store?.isActive) {
-      toast.error("Store is not active right now. Please try later.");
+      showErrorToast("Store is not active right now. Please try later.");
       return;
     }
     
@@ -339,7 +339,7 @@ const handleTouchEnd = () => {
 
   const handleOrderProduct = (product) => {
     if (!store?.isActive) {
-      toast.error("Store is not active right now. Please try later.");
+      showErrorToast("Store is not active right now. Please try later.");
       return;
     }
     addToCart(product, product.store);
@@ -433,7 +433,7 @@ const handleTouchEnd = () => {
         }
       });
     } else {
-      toast.error("No product in cart for this store 🚫");
+      showErrorToast("No product in cart for this store 🚫");
     }
   }}
   className="relative flex items-center gap-1 sm:gap-2 bg-gray-100 text-gray-800 px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-medium text-sm sm:text-base"

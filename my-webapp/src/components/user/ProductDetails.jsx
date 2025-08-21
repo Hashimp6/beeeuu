@@ -2,6 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Heart, ShoppingBag, Calendar, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../../context/CartContext';
+const showToast = (message) => {
+  toast.custom(
+    (t) => (
+      <div
+        className={`${
+          t.visible ? "animate-enter" : "animate-leave"
+        } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex items-center justify-between p-3`}
+      >
+        <span className="text-sm font-medium text-gray-900">✅ {message}</span>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="ml-3 text-gray-400 hover:text-gray-600"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    ),
+    { duration: 1000 } // auto dismiss after 3 seconds
+  );
+};
 
 const ProductDetailModal = ({
   store,
@@ -135,7 +155,8 @@ const ProductDetailModal = ({
                   handleAppointment(product);
                 } else {
                   addToCart(product, store);
-                  toast.success(`${product.name} added to cart 🛒`);
+                  showToast(`${product.name} added to cart 🛒`);
+
             
                   // Animation trigger
                   const btn = e.currentTarget;

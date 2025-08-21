@@ -6,6 +6,7 @@ import { useAuth } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import OfferReelPage from './user/Offers';
+import { showErrorToast } from '../components/user/Tost';
 
 const HomeLayout = () => {
     const navigate = useNavigate();
@@ -34,7 +35,7 @@ const HomeLayout = () => {
                 setLocationPromptShown(true);
                 // Optional: Show a gentler prompt instead of error
                 toast('Select your location to see nearby stores', {
-                    duration: 3000,
+                    duration: 1000,
                     icon: '📍'
                 });
             }
@@ -49,7 +50,7 @@ const HomeLayout = () => {
     const handleSetSelect = () => {
         // Redirect to login if not authenticated
         if (!isAuthenticated) {
-            toast.error('Please login to access your profile');
+            showErrorToast('Please login to access your profile');
             navigate('/login');
             return;
         }
@@ -121,7 +122,7 @@ const HomeLayout = () => {
     const openChat = () => {
         // Redirect to login if not authenticated
         if (!isAuthenticated) {
-            toast.error('Please login to access chat');
+            showErrorToast('Please login to access chat');
             navigate('/login');
             return;
         }

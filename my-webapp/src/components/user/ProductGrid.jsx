@@ -2,7 +2,7 @@
 import React from 'react';
 import { Heart, Star, ShoppingBag, Calendar, ChefHat, Coffee, Cake, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from "./Tost";
 
 const ProductsGrid = ({
   products = [],
@@ -119,11 +119,11 @@ const ProductsGrid = ({
               handleAppointment(product);
             } else {
               if (!store?.isActive||store?.subscription==='basic') {
-                toast.error('Sorry, u cant order from this shop . Try again later.');
+                showErrorToast("Sorry, you can’t order from this shop. Try again later.");
                 return;
               }
               addToCart(product, store);
-              toast.success(`${product.name} added to cart 🛒`);
+              showSuccessToast(`${product.name} added to cart 🛒`);
               
               // Animation trigger
               const btn = e.currentTarget;
