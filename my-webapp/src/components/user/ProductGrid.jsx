@@ -1,6 +1,25 @@
 // src/components/ProductsGrid.jsx
 import React from 'react';
-import { Heart, Star, ShoppingBag, Calendar, ChefHat, Coffee, Cake, Package } from 'lucide-react';
+import { Heart,  Star,
+  ChefHat,
+  Coffee,
+  Cake,
+  Package,
+  Sparkles,
+  Leaf,
+  Flame,
+  Utensils,
+  UtensilsCrossed,
+  Sandwich,
+  Pizza,
+  Beef,
+  CupSoda,
+  Martini,
+  GlassWater,
+  IceCream,
+  Wine,
+  MugHot,
+  IceCream2 ,ShoppingBag, Calendar,} from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { showSuccessToast, showErrorToast } from "./Tost";
 
@@ -23,13 +42,34 @@ const ProductsGrid = ({
 
   // Restaurant categories with icons
   const restaurantCategories = [
-    { key: 'starter', label: 'Starter', icon: Star },
+    { key: 'signature', label: 'Signature', icon: Sparkles },
+    { key: 'today-special', label: 'Today Special', icon: Sparkles },
+    { key: 'starter', label: 'Starters', icon: Star },
     { key: 'main-course', label: 'Main Course', icon: ChefHat },
-    { key: 'drinks', label: 'Drinks', icon: Coffee },
+    { key: 'soups', label: 'Soups', icon: Coffee },
+    { key: 'salads', label: 'Salads', icon: Leaf },
+    { key: 'indian', label: 'Indian / Curry', icon: Flame },
+    { key: 'biryani', label: 'Biryani & Rice', icon: Utensils },
+    { key: 'breads', label: 'Breads / Rotis', icon: Sandwich },
+    { key: 'pasta-noodles', label: 'Pasta & Noodles', icon: UtensilsCrossed },
+    { key: 'snacks', label: 'Snacks / Quick Bites', icon: Pizza },
+    { key: 'sandwiches', label: 'Sandwiches', icon: Sandwich },
+    { key: 'burgers', label: 'Burgers', icon: Beef },
+    { key: 'pizza', label: 'Pizza', icon: Pizza },
+    { key: 'coffee-specials', label: 'Coffee Specials', icon: Coffee },
+    { key: 'tea', label: 'Tea', icon: MugHot },
+    { key: 'coffee', label: 'Coffee', icon: Coffee },
+    { key: 'drinks', label: 'Drinks', icon: CupSoda },
+    { key: 'mocktails', label: 'Mocktails', icon: Martini },
+    { key: 'mojitos', label: 'Mojitos', icon: GlassWater },
+    { key: 'shakes', label: 'Shakes', icon: IceCream },
+    { key: 'smoothies', label: 'Smoothies', icon: Wine },
+    { key: 'falooda', label: 'Falooda', icon: IceCream2 },
     { key: 'desserts', label: 'Desserts', icon: Cake },
-    { key: 'combo-meal', label: 'Combo Meal', icon: Package }
-  ];
+    { key: 'cakes', label: 'Cakes', icon: Cake },
+    { key: 'combo-meal', label: 'Combo Meal', icon: Package },
 
+  ];
   // Group products by category for restaurants (using filtered active products)
   const groupedProducts = isRestaurant ? 
     restaurantCategories.reduce((acc, category) => {

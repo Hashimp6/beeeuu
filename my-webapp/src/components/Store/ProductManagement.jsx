@@ -394,20 +394,66 @@ const AddProductForm = ({
 
   {/* Render restaurant/hotel options if storeCategory is "Hotel" or "Restaurant" */}
   {['Hotel', 'restaurant','Restaurent' , 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
-    <>
-      <option value="signature">signature</option>
-      <option value="starter">Starter</option>
-      <option value="main-course">Main Course</option>
-      <option value="drinks">Drinks</option>
-      <option value="desserts">Desserts</option>
-      <option value="combo-meal">Combo Meal</option>
-      <option value="today-special">Today Special</option>
-    </>
+   <>
+   <option value="signature">Signature</option>
+   <option value="starter">Starters</option>
+   <option value="main-course">Main Course</option>
+   <option value="chinease">Chinese</option>
+   <option value="indian">Indian / Curry</option>
+   <option value="biryani">Biryani & Rice</option>
+   <option value="breads">Breads</option>
+   <option value="pasta-noodles">Pasta & Noodles</option>
+   <option value="soups">Soups</option>
+   <option value="salads">Salads</option>
+   <option value="breakfast">Breakfast</option>
+   <option value="snacks">Snacks / Quick Bites</option>
+   <option value="pizza">Pizza</option>
+   <option value="burgers">Burgers</option>
+   <option value="sandwiches">Sandwiches</option>
+   <option value="coffee-specials">Coffee Specials</option>
+   <option value="tea">Tea</option>
+   <option value="coffee">Coffee</option>
+   <option value="drinks">Drinks</option>
+   <option value="mocktails">Mocktails</option>
+   <option value="mojitos">Mojitos</option>
+   <option value="shakes">Shakes</option>
+   <option value="smoothies">Smoothies</option>
+   <option value="falooda">Falooda</option>
+   <option value="cakes">Cakes</option>
+   <option value="desserts">Desserts</option>
+   <option value="combo-meal">Combo Meal</option>
+   <option value="today-special">Today’s Special</option>
+ </>
+ 
   )}
 
   {/* Otherwise show general categories */}
   {!['Hotel', 'Restaurant', 'Hotel / Restaurant'].includes(storeCategory) && (
-    <>
+    <>  <option value="signature">Signature</option>
+    <option value="starter">Starters</option>
+    <option value="main-course">Main Course</option>
+    <option value="chinease">Chinese</option>
+    <option value="indian">Indian / Curry</option>
+    <option value="biryani">Biryani & Rice</option>
+    <option value="breads">Breads</option>
+    <option value="pasta-noodles">Pasta & Noodles</option>
+    <option value="soups">Soups</option>
+    <option value="salads">Salads</option>
+    <option value="breakfast">Breakfast</option>
+    <option value="snacks">Snacks / Quick Bites</option>
+    <option value="pizza">Pizza</option>
+    <option value="burgers">Burgers</option>
+    <option value="sandwiches">Sandwiches</option>
+    <option value="coffee-specials">Coffee Specials</option>
+    <option value="drinks">Drinks</option>
+    <option value="mocktails">Mocktails</option>
+    <option value="mojitos">Mojitos</option>
+    <option value="shakes">Shakes</option>
+    <option value="smoothies">Smoothies</option>
+    <option value="falooda">Falooda</option>
+    <option value="desserts">Desserts</option>
+    <option value="combo-meal">Combo Meal</option>
+    <option value="today-special">Today’s Special</option>
               <option value="beauty-cosmetics">Beauty & Cosmetics</option>
               <option value="games">Games</option>
               <option value="bakery">Bakery</option>
