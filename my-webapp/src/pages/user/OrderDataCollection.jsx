@@ -107,21 +107,21 @@ const [upiLinkToShow, setUpiLinkToShow] = useState('');
   }, [storeProducts]);
 
 
-useEffect(() => {
-  if (store?.paymentType) {
-    let defaultPayment = '';
+// useEffect(() => {
+//   if (store?.paymentType) {
+//     let defaultPayment = '';
 
-    if (store.paymentType.includes('Razorpay')) {
-      defaultPayment = 'razorpay';
-    } else if (store.paymentType.includes('UPI')) {
-      defaultPayment = 'upi';
-    } else if (store.paymentType.includes('Cash on Delivery')) {
-      defaultPayment = 'cod';
-    }
+//     if (store.paymentType.includes('Razorpay')) {
+//       defaultPayment = 'razorpay';
+//     } else if (store.paymentType.includes('UPI')) {
+//       defaultPayment = 'upi';
+//     } else if (store.paymentType.includes('Cash on Delivery')) {
+//       defaultPayment = 'cod';
+//     }
 
-    setSelectedPayment(defaultPayment);
-  }
-}, [store]);
+//     setSelectedPayment(defaultPayment);
+//   }
+// }, [store]);
 
 const paymentOptions = [
   { id: 'cod', name: 'Cash on Delivery', icon: IndianRupee },
@@ -522,6 +522,51 @@ useEffect(() => {
         setIsPlacingOrder(false);
       }
     }
+    if (selectedPayment === "upi") {
+      try {
+        const orderProducts = storeProducts.map(product => ({
+          productId: product._id,
+          productName: product.name,
+          quantity: productQuantities[product._id] || 1,
+          unitPrice: parseFloat(product.price) || 0,
+        }));
+    
+        const orderData = {
+          products: orderProducts,
+          sellerId: store._id,
+          buyerId: buyerId,
+          totalAmount: parseFloat(calculateTotal()),
+          totalItems: getTotalItems(),
+          orderType: selectedService,
+          customerName: customerName.trim(),
+          deliveryAddress: address.trim(),
+          phoneNumber: phoneNumber,
+          paymentMethod: selectedPayment,
+          transactionId: transactionId,   // ✅ user entered txn id
+          status: 'pending',
+        };
+    
+        const response = await axios.post(`${SERVER_URL}/orders/create`, orderData, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+    
+        const result = response.data.data;
+        toast.success(`✅ Order placed! Order ID: ${response.data.orderId}`);
+        clearStoreCart(store._id);
+        navigate(`/receipt/${result.orderId}`, { 
+          state: { orderData: result } 
+        });
+    
+      } catch (err) {
+        console.error("❌ Order error:", err);
+        toast.error("❌ Failed to place order");
+        setIsPlacingOrder(false);
+      }
+    }
+    
   };
   
 
