@@ -57,7 +57,7 @@ const ProductsGrid = ({
     { key: 'burgers', label: 'Burgers', icon: Beef },
     { key: 'pizza', label: 'Pizza', icon: Pizza },
     { key: 'coffee-specials', label: 'Coffee Specials', icon: Coffee },
-    { key: 'tea', label: 'Tea', icon: MugHot },
+    { key: 'tea', label: 'Tea', icon: Coffee },
     { key: 'coffee', label: 'Coffee', icon: Coffee },
     { key: 'drinks', label: 'Drinks', icon: CupSoda },
     { key: 'mocktails', label: 'Mocktails', icon: Martini },
