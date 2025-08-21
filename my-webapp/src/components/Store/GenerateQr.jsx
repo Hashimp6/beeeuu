@@ -79,11 +79,29 @@ const RestaurantQRGenerator = () => {
       }
     }
     
-    // Restaurant name with premium typography
+    // Restaurant name with premium typography and smart text fitting
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 42px "Times New Roman", serif';
-    ctx.letterSpacing = '3px';
+    
+    // Function to fit text within canvas width with proper sizing
+    const fitRestaurantName = (text, maxWidth, maxFontSize = 42) => {
+      let fontSize = maxFontSize;
+      ctx.font = `bold ${fontSize}px "Times New Roman", serif`;
+      
+      // Reduce font size until text fits
+      while (ctx.measureText(text.toUpperCase()).width > maxWidth && fontSize > 20) {
+        fontSize -= 2;
+        ctx.font = `bold ${fontSize}px "Times New Roman", serif`;
+      }
+      
+      return fontSize;
+    };
+    
+    const maxTextWidth = canvas.width - 80; // Padding on both sides
+    const finalFontSize = fitRestaurantName(restaurantName, maxTextWidth);
+    
+    ctx.font = `bold ${finalFontSize}px "Times New Roman", serif`;
+    ctx.letterSpacing = finalFontSize > 30 ? '3px' : '1px';
     
     // Add text shadow effect
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -91,7 +109,19 @@ const RestaurantQRGenerator = () => {
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
     
-    ctx.fillText(restaurantName.toUpperCase(), canvas.width / 2, 80);
+    // Split long names into multiple lines if needed
+    const words = restaurantName.toUpperCase().split(' ');
+    const maxWordsPerLine = Math.ceil(words.length / (finalFontSize < 30 ? 2 : 1));
+    
+    if (words.length > maxWordsPerLine && finalFontSize < 30) {
+      const line1 = words.slice(0, Math.ceil(words.length / 2)).join(' ');
+      const line2 = words.slice(Math.ceil(words.length / 2)).join(' ');
+      
+      ctx.fillText(line1, canvas.width / 2, 60);
+      ctx.fillText(line2, canvas.width / 2, 60 + finalFontSize + 5);
+    } else {
+      ctx.fillText(restaurantName.toUpperCase(), canvas.width / 2, 80);
+    }
     
     // Reset shadow
     ctx.shadowColor = 'transparent';
@@ -99,25 +129,27 @@ const RestaurantQRGenerator = () => {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     
-    // Golden decorative line
-    const lineGradient = ctx.createLinearGradient(canvas.width / 2 - 200, 100, canvas.width / 2 + 200, 100);
+    // Golden decorative line - positioned dynamically based on restaurant name
+    const decorativeLineY = words.length > maxWordsPerLine && finalFontSize < 30 ? 130 : 120;
+    const lineGradient = ctx.createLinearGradient(canvas.width / 2 - 200, decorativeLineY, canvas.width / 2 + 200, decorativeLineY);
     lineGradient.addColorStop(0, 'transparent');
     lineGradient.addColorStop(0.2, '#d4af37');
     lineGradient.addColorStop(0.5, '#f4e4bc');
     lineGradient.addColorStop(0.8, '#d4af37');
     lineGradient.addColorStop(1, 'transparent');
     ctx.fillStyle = lineGradient;
-    ctx.fillRect(canvas.width / 2 - 200, 100, 400, 4);
+    ctx.fillRect(canvas.width / 2 - 200, decorativeLineY, 400, 4);
     
-    // "MENU" text with golden effect
+    // "MENU" text with golden effect - positioned dynamically
+    const menuTextY = decorativeLineY + 60;
     ctx.fillStyle = '#d4af37';
     ctx.font = 'bold 64px "Times New Roman", serif';
-    ctx.fillText('MENU', canvas.width / 2, 180);
+    ctx.fillText('MENU', canvas.width / 2, menuTextY);
     
     // Add golden glow effect to MENU
     ctx.shadowColor = '#d4af37';
     ctx.shadowBlur = 20;
-    ctx.fillText('MENU', canvas.width / 2, 180);
+    ctx.fillText('MENU', canvas.width / 2, menuTextY);
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     
@@ -126,10 +158,10 @@ const RestaurantQRGenerator = () => {
     qrImage.crossOrigin = 'anonymous';
     
     qrImage.onload = () => {
-      // QR code positioning - larger size for better scanning
-      const qrSize = 320; // Increased from 280
+      // QR code positioning - dynamically positioned based on menu text
+      const qrSize = 320;
       const qrX = canvas.width / 2 - qrSize / 2;
-      const qrY = 230; // Adjusted position
+      const qrY = menuTextY + 50; // Positioned relative to menu text
       
       // Outer golden frame
       const frameGradient = ctx.createLinearGradient(qrX - 25, qrY - 25, qrX + qrSize + 25, qrY + qrSize + 25);
@@ -154,32 +186,34 @@ const RestaurantQRGenerator = () => {
       // Draw QR code - DO NOT add logo overlay as it can break scanning
       ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
       
-      // Instruction text with premium styling
+      // Instruction text with premium styling - dynamically positioned
+      const instructionY = qrY + qrSize + 80;
       ctx.fillStyle = '#d4af37';
       ctx.font = 'bold 22px "Times New Roman", serif';
-      ctx.fillText('SCAN WITH YOUR PHONE CAMERA', canvas.width / 2, 630);
+      ctx.fillText('SCAN WITH YOUR PHONE CAMERA', canvas.width / 2, instructionY);
       
       ctx.fillStyle = '#ffffff';
       ctx.font = '18px "Times New Roman", serif';
-      ctx.fillText('TO VIEW OUR DIGITAL MENU', canvas.width / 2, 660);
+      ctx.fillText('TO VIEW OUR DIGITAL MENU', canvas.width / 2, instructionY + 30);
       
       // Show the actual URL for verification
       ctx.fillStyle = '#888888';
       ctx.font = '14px monospace';
       const displayUrl = formattedUrl.length > 50 ? formattedUrl.substring(0, 47) + '...' : formattedUrl;
-      ctx.fillText(displayUrl, canvas.width / 2, 690);
+      ctx.fillText(displayUrl, canvas.width / 2, instructionY + 60);
       
       // Decorative elements
       ctx.fillStyle = '#d4af37';
       ctx.font = '20px serif';
-      ctx.fillText('✦ ◆ ✦', canvas.width / 2, 720);
+      ctx.fillText('✦ ◆ ✦', canvas.width / 2, instructionY + 90);
       
       // Camera icon and instruction - with proper padding
       ctx.fillStyle = 'rgba(212, 175, 55, 0.9)';
       ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('📱 POINT YOUR CAMERA HERE', canvas.width / 2, 610);
+      ctx.fillText('📱 POINT YOUR CAMERA HERE', canvas.width / 2, instructionY - 20);
       
-      // Premium features list - adjusted position to avoid overlap
+      // Premium features list - positioned dynamically
+      const featuresStartY = instructionY + 110;
       ctx.fillStyle = '#cccccc';
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'left';
@@ -191,17 +225,16 @@ const RestaurantQRGenerator = () => {
       ];
       
       features.forEach((feature, index) => {
-        ctx.fillText(feature, canvas.width / 2 - 200, 740 + index * 22);
+        ctx.fillText(feature, canvas.width / 2 - 200, featuresStartY + index * 22);
       });
       
-      // Table Number Section - Positioned on the right side (adjusted)
-      // TABLE NUMBER heading with golden effect (positioned right)
+      // Table Number Section - Positioned on the right side (dynamically)
       ctx.textAlign = 'center';
       ctx.fillStyle = '#d4af37';
       ctx.font = 'bold 28px "Times New Roman", serif';
       ctx.shadowColor = '#d4af37';
       ctx.shadowBlur = 1;
-      ctx.fillText('TABLE NUMBER', canvas.width - 150, 740);
+      ctx.fillText('TABLE NUMBER', canvas.width - 150, featuresStartY);
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       
@@ -209,7 +242,7 @@ const RestaurantQRGenerator = () => {
       const boxWidth = 160;
       const boxHeight = 70;
       const boxX = canvas.width - 150 - boxWidth / 2;
-      const boxY = 760;
+      const boxY = featuresStartY + 20;
       
       // Outer golden frame for table number box
       const tableFrameGradient = ctx.createLinearGradient(boxX - 8, boxY - 8, boxX + boxWidth + 8, boxY + boxHeight + 8);
@@ -228,32 +261,117 @@ const RestaurantQRGenerator = () => {
       ctx.lineWidth = 2;
       ctx.strokeRect(boxX + 4, boxY + 4, boxWidth - 8, boxHeight - 8);
       
-     
-      // SerchBy branding section - moved down to accommodate all content
+      // --- Premium Footer Advertisement Section ---
+      const footerStartY = canvas.height - 160; // More space for premium footer
+      
+      // Premium footer background with gradient
+      const footerBgGradient = ctx.createLinearGradient(0, footerStartY, 0, canvas.height);
+      footerBgGradient.addColorStop(0, 'rgba(26, 26, 26, 0.95)');
+      footerBgGradient.addColorStop(0.3, 'rgba(45, 45, 45, 0.98)');
+      footerBgGradient.addColorStop(1, 'rgba(15, 15, 15, 1)');
+      ctx.fillStyle = footerBgGradient;
+      ctx.fillRect(0, footerStartY, canvas.width, canvas.height - footerStartY);
+      
+      // Top border with premium golden effect
+      const topBorderGradient = ctx.createLinearGradient(0, footerStartY, canvas.width, footerStartY);
+      topBorderGradient.addColorStop(0, 'transparent');
+      topBorderGradient.addColorStop(0.1, '#d4af37');
+      topBorderGradient.addColorStop(0.5, '#f4e4bc');
+      topBorderGradient.addColorStop(0.9, '#d4af37');
+      topBorderGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = topBorderGradient;
+      ctx.fillRect(0, footerStartY, canvas.width, 3);
+      
+      // Company branding section
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#16a085';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('SerchBy', canvas.width / 2, 860);
       
+      // "Powered by" text
       ctx.fillStyle = '#888888';
-      ctx.font = '14px sans-serif';
-      ctx.fillText('Restaurant order automation system', canvas.width / 2, 885);
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('POWERED BY', canvas.width / 2, footerStartY + 25);
       
-      // Website
-      ctx.fillStyle = '#666666';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('www.serchby.com phn:7012455400', canvas.width / 2, 905);
+      // Load and display SerchBy logo
+      const logo = new Image();
+      logo.crossOrigin = 'anonymous';
+      logo.onload = () => {
+        // Logo positioning - bigger and centered
+        const logoWidth = 120; // Much bigger for the SerchBy logo
+        const logoHeight = 45; // Proportional height
+        const logoX = canvas.width / 2 - logoWidth / 2;
+        const logoY = footerStartY + 30;
+        
+        // Draw SerchBy logo
+        ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+        
+        // Premium tagline with emphasis - centered
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px "Times New Roman", serif';
+        ctx.fillText('Restaurant Automation Platform', canvas.width / 2, footerStartY + 95);
+        
+        // Contact info with modern styling - centered
+        ctx.fillStyle = '#cccccc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('www.serchby.com  •  📞 +91 7012455400', canvas.width / 2, footerStartY + 120);
+      };
       
-      // Bottom decorative border - adjusted to fit all content
-      const bottomGradient = ctx.createLinearGradient(0, 940, canvas.width, 940);
-      bottomGradient.addColorStop(0, 'transparent');
-      bottomGradient.addColorStop(0.2, '#d4af37');
-      bottomGradient.addColorStop(0.8, '#d4af37');
-      bottomGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = bottomGradient;
-      ctx.fillRect(0, 940, canvas.width, 6);
+      logo.onerror = () => {
+        // Fallback - show stylized SerchBy text bigger to match your image
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#16a085'; // Teal color like in your image
+        ctx.font = 'bold 36px sans-serif';
+        ctx.shadowColor = 'rgba(22, 160, 133, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillText('SerchBy', canvas.width / 2, footerStartY + 60);
+        
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        
+        // Premium tagline - centered
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px "Times New Roman", serif';
+        ctx.fillText('Restaurant Automation Platform', canvas.width / 2, footerStartY + 95);
+        
+        // Contact info - centered
+        ctx.fillStyle = '#cccccc';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('www.serchby.com  •  📞 +91 7012455400', canvas.width / 2, footerStartY + 120);
+      };
       
-      // Corner decorative elements
+      logo.src = '/logosvg.png';
+      
+      // Decorative diamond elements around brand (matching your design)
+      ctx.fillStyle = '#d4af37';
+      ctx.font = '16px serif';
+      
+      // Small decorative diamonds in corners of footer
+      ctx.textAlign = 'left';
+      ctx.fillText('◆', 50, footerStartY + 55);
+      ctx.fillText('◆', 80, footerStartY + 30);
+      
+      ctx.textAlign = 'right';
+      ctx.fillText('◆', canvas.width - 50, footerStartY + 55);
+      ctx.fillText('◆', canvas.width - 80, footerStartY + 30);
+      
+      // Center decorative elements
+      ctx.textAlign = 'center';
+      ctx.fillText('◆', canvas.width / 2 - 100, footerStartY + 55);
+      ctx.fillText('◆', canvas.width / 2 + 100, footerStartY + 55);
+      
+      // Premium bottom border (matching your design)
+      const bottomBorderGradient = ctx.createLinearGradient(0, canvas.height - 6, canvas.width, canvas.height - 6);
+      bottomBorderGradient.addColorStop(0, 'transparent');
+      bottomBorderGradient.addColorStop(0.15, '#d4af37');
+      bottomBorderGradient.addColorStop(0.5, '#f4e4bc');
+      bottomBorderGradient.addColorStop(0.85, '#d4af37');
+      bottomBorderGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = bottomBorderGradient;
+      ctx.fillRect(0, canvas.height - 6, canvas.width, 6);
+      
+      // Corner decorative elements - positioned relative to canvas content
       ctx.fillStyle = '#d4af37';
       ctx.font = '24px serif';
       ctx.textAlign = 'left';
@@ -261,9 +379,9 @@ const RestaurantQRGenerator = () => {
       ctx.textAlign = 'right';
       ctx.fillText('◆', canvas.width - 30, 50);
       ctx.textAlign = 'left';
-      ctx.fillText('◆', 30, canvas.height - 30);
+      ctx.fillText('◆', 30, footerStartY - 20);
       ctx.textAlign = 'right';
-      ctx.fillText('◆', canvas.width - 30, canvas.height - 30);
+      ctx.fillText('◆', canvas.width - 30, footerStartY - 20);
       
       setIsGenerating(false);
     };
