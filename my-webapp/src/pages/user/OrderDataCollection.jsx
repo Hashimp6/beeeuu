@@ -15,7 +15,8 @@ import {
   Package,
   ShoppingCart,
   Trash2,
-  IndianRupee
+  IndianRupee,
+  MapPin
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/UserContext';
@@ -24,6 +25,7 @@ import { SERVER_URL } from '../../Config';
 import axios from 'axios';
 import { useCart} from '../../context/CartContext';
 import { showErrorToast, showSuccessToast } from '../../components/user/Tost';
+import LocationSelectorModal from './DeliveryLocation';
 
 const OrderDetails = () => {
   const { user, token } = useAuth();
@@ -38,7 +40,7 @@ const OrderDetails = () => {
   const locationState = location.state || {};
   const storeId = locationState.storeId;
   const storeProducts = cart[storeId]?.products || [];
-  
+  const [deliveryLocation, setDeliveryLocation] = useState(null);
   const [store, setStore] = useState(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false); // Add loading state
 
@@ -149,6 +151,19 @@ useEffect(() => {
   const mobileCheck = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   setIsMobile(mobileCheck);
 }, []);
+
+
+const handleLocationSelect = (location) => {
+  setDeliveryLocation(location);
+  setAddress(location.address); // Populate the address field
+  setAddressError(''); // Clear any address errors
+};
+
+// Add this helper function to check if delivery is selected
+const isDeliverySelected = () => {
+  return selectedService.toLowerCase() === 'delivery' || 
+         selectedService.toLowerCase() === 'home delivery';
+};
   // Validation functions
   const validateName = (name) => {
     const trimmedName = name.trim();
@@ -740,26 +755,59 @@ useEffect(() => {
 
       {/* Address or Table Number */}
       <div>
-        <label className="block text-sm font-medium text-teal-700 mb-2">
-          {selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
-            ? 'Table Number'
-            : 'Table Number / Address '}
-        </label>
-        <textarea
-          value={address}
-          onChange={handleAddressChange}
-          placeholder={
-            selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
-              ? 'Enter your table number'
-              : 'Enter complete delivery address'
-          }
-          rows="3"
-          className={`w-full p-3 border rounded-lg text-base resize-none ${
-            addressError ? 'border-red-500' : 'border-gray-300'
-          } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
-        />
-        {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
+  <label className="block text-sm font-medium text-teal-700 mb-2">
+    {selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
+      ? 'Table Number'
+      : isDeliverySelected()
+      ? 'Delivery Address'
+      : 'Table Number / Address'}
+  </label>
+  
+  {isDeliverySelected() && (
+    <div className="mb-3">
+      <LocationSelectorModal 
+        onLocationSelect={handleLocationSelect}
+        initialAddress={address}
+      />
+    </div>
+  )}
+  
+  <textarea
+    value={address}
+    onChange={handleAddressChange}
+    placeholder={
+      selectedService.toLowerCase() === 'eat in' || selectedService.toLowerCase() === 'dine in'
+        ? 'Enter your table number'
+        : isDeliverySelected()
+        ? 'Enter complete delivery address or use location selector above'
+        : 'Enter complete delivery address'
+    }
+    rows="3"
+    className={`w-full p-3 border rounded-lg text-base resize-none ${
+      addressError ? 'border-red-500' : 'border-gray-300'
+    } focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
+  />
+  {addressError && <p className="text-red-500 text-sm mt-1">{addressError}</p>}
+  
+  {deliveryLocation && (
+    <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+      <div className="flex items-start gap-2">
+        <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-blue-800">Location Selected</p>
+          <p className="text-xs text-blue-700">{deliveryLocation.address}</p>
+          {deliveryLocation.lat && deliveryLocation.lng && (
+            <p className="text-xs text-blue-600">
+              Coordinates: {deliveryLocation.lat.toFixed(4)}, {deliveryLocation.lng.toFixed(4)}
+            </p>
+          )}
+        </div>
       </div>
+    </div>
+  )}
+</div>
+
+
 
       {/* Phone Number */}
       <div>
