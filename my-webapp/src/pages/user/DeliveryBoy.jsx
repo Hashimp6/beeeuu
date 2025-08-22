@@ -92,33 +92,30 @@ const DeliveryBoyScreen = () => {
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      
-      try {
-        // Simple QR code detection simulation
-        // In a real app, you'd use a library like jsQR
-        const qrData = await simulateQRDetection(imageData);
-        if (qrData && !scanned) {
-          handleQRCodeDetected(qrData);
-          return;
+      // Try using BarcodeDetector API if available (Chrome/Edge)
+      // eslint-disable-next-line no-undef
+      if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+        try {
+          // eslint-disable-next-line no-undef
+          const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await barcodeDetector.detect(canvas);
+          
+          if (barcodes.length > 0 && !scanned) {
+            console.log("QR Code detected:", barcodes[0].rawValue);
+            handleQRCodeDetected(barcodes[0].rawValue);
+            return;
+          }
+        } catch (error) {
+          console.error('BarcodeDetector error:', error);
         }
-      } catch (error) {
-        console.error('QR scanning error:', error);
-      }
-    }
-
-    if (scanning) {
-      requestAnimationFrame(scanForQRCode);
-    }
-  };
-
-  const simulateQRDetection = (imageData) => {
-    // This is a simulation - in reality you'd use jsQR library
-    // For demo purposes, we'll simulate finding QR data after 3 seconds of scanning
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (Math.random() > 0.95) { // 5% chance per frame to "detect" QR
-          resolve(JSON.stringify({
+      } else {
+        // Fallback: Use a more aggressive simulation for demonstration
+        // In production, you should install and use jsQR library
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Simple pattern detection simulation (more responsive than before)
+        if (Math.random() > 0.98) { // 2% chance per frame - much faster detection
+          const mockQRData = JSON.stringify({
             _id: "order_123",
             orderId: "ORD001",
             orderDate: new Date().toISOString(),
@@ -149,12 +146,21 @@ const DeliveryBoyScreen = () => {
             gst: 21,
             paymentMethod: "cash",
             paymentStatus: "pending"
-          }));
+          });
+          
+          console.log("Mock QR Code detected (fallback)");
+          handleQRCodeDetected(mockQRData);
+          return;
         }
-        resolve(null);
-      }, 100);
-    });
+      }
+    }
+
+    if (scanning) {
+      requestAnimationFrame(scanForQRCode);
+    }
   };
+
+
 
   const handleQRCodeDetected = (data) => {
     setScanned(true);
