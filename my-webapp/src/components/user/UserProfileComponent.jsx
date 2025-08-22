@@ -21,7 +21,8 @@ import {
   CheckCircle,
   Eye,
   Store,
-  Ticket
+  Ticket,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../../context/UserContext';
 import axios from 'axios';
@@ -273,6 +274,7 @@ const UserProfileComponent = ({  setHistory }) => {
       secondary: "bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 shadow-lg shadow-gray-500/25",
       danger: "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25",
       black: "bg-black hover:bg-gray-900 text-white shadow-lg shadow-black/50",
+      delivery: "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-400/30",
       ghost: "bg-white/80 hover:bg-white text-teal-600 border border-teal-200 shadow-lg shadow-teal-500/10"
     };
 
@@ -370,7 +372,8 @@ const UserProfileComponent = ({  setHistory }) => {
                 icon: <MapPin className="w-4 h-4 text-teal-600" />,
                 label: "Address",
                 value: localUser.address || 'Not provided'
-              }].map((item, idx) => (
+              },
+            ].map((item, idx) => (
                 <div key={idx} className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-2.5 border border-gray-200/50">
                   <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-teal-100">{item.icon}</div>
                   <div>
@@ -395,17 +398,25 @@ const UserProfileComponent = ({  setHistory }) => {
   onClick={() => setHistory('reservation')}
   variant="black"
 />
+
               <ActionButton
                 icon={FileText}
                 text="My Orders"
                 onClick={() => setHistory('orders')}
                 variant="secondary"
               />
+   <ActionButton
+  icon={Truck}
+  text="Delivery"
+  onClick={() => navigate('/Delivery')}
+  variant="delivery"
+  />
             </GlassCard>
           </div>
 
           {/* Bottom Section - Only Logout */}
           <div className="pb-4 space-y-2">
+       
   <ActionButton
     icon={Store}
     text="Be a Seller"

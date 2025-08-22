@@ -44,6 +44,7 @@ const printThermalReceiptDirect = (order, store) => {
 
   // Create QR Code data object
   const qrData = {
+    _id:order._id,
     orderId: order.orderId,
     customerName: order.customerName,
     phoneNumber: order.phoneNumber,
@@ -1090,19 +1091,19 @@ const OrderCard = ({ order, onStatusChange, storeCategory, store }) => {
 
   const handleStatusUpdate = async (newStatus) => {
     // Only ask for OTP if changing from processing → delivered
-    if (order.status === 'processing' && newStatus === 'delivered') {
-      const userOtp = prompt('Enter OTP provided by customer:');
+    // if (order.status === 'processing' && newStatus === 'delivered') {
+    //   const userOtp = prompt('Enter OTP provided by customer:');
   
-      if (!userOtp) {
-        showErrorToast('OTP is required to mark as delivered');
-        return;
-      }
+    //   if (!userOtp) {
+    //     showErrorToast('OTP is required to mark as delivered');
+    //     return;
+    //   }
   
-      if (userOtp !== order.otp) {
-        showErrorToast('Incorrect OTP');
-        return;
-      }
-    }
+    //   if (userOtp !== order.otp) {
+    //     showErrorToast('Incorrect OTP');
+    //     return;
+    //   }
+    // }
   
     setIsUpdating(true);
     try {

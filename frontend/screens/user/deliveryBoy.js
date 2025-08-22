@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import {
 import { CameraView, Camera } from 'expo-camera';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { SERVER_URL } from '../../config';
 
 const DeliveryBoyScreen = () => {
   const [hasPermission, setHasPermission] = useState(null);
@@ -27,6 +29,26 @@ const DeliveryBoyScreen = () => {
 
     getCameraPermissions();
   }, []);
+  const markAsDelivered = async () => {
+    if (!orderData) return;
+  
+  
+    try {
+      const response = await axios.patch(
+        `${SERVER_URL}/orders/status/${orderData._id}`,
+        { status: 'delivered' }
+      );
+  
+      // Optionally, update local state so UI reflects the new status
+      setOrderData({ ...orderData, status: 'delivered' });
+  
+      Alert.alert('Success', 'Order marked as delivered!');
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      Alert.alert('Error', 'Could not update order status');
+    }
+  };
+  
 
   const handleBarCodeScanned = ({ type, data }) => {
     setScanned(true);
@@ -196,6 +218,24 @@ const DeliveryBoyScreen = () => {
               <Text style={styles.navigateButtonText}>Navigate</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.actionButtons}>
+          <TouchableOpacity
+  style={[
+    styles.newScanButton,
+    { backgroundColor: orderData.status === 'delivered' ? '#aaa' : '#34C759' }
+  ]}
+  onPress={markAsDelivered}
+  disabled={orderData.status === 'delivered'}
+>
+
+    <Ionicons name="checkmark-done" size={20} color="white" />
+    <Text style={styles.newScanButtonText}>Mark as Delivered</Text>
+  </TouchableOpacity>
+
+
+</View>
+
 
           {/* Store Information */}
           <View style={styles.section}>

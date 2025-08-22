@@ -29,6 +29,7 @@ import SerchByLandingPage from "./pages/Home";
 import OrderReceipt from "./pages/user/OrderReciept";
 import RestaurantQRGenerator from "./components/Store/GenerateQr";
 import CustomerBookingPage from "./components/user/Reservation";
+import DeliveryBoyScreen from "./pages/user/DeliveryBoy";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -73,6 +74,7 @@ function App() {
           <Route path="/offers/:offerId" element={<HomeLayout />} />
           <Route path="/Qr" element={<RestaurantQRGenerator/>} />
           <Route path="/Booking" element={<CustomerBookingPage/>} />
+          <Route path="/Delivery" element={<DeliveryBoyScreen/>} />
           {/* Public Home Route - accessible to everyone */}
           <Route
             path="/home"
