@@ -790,6 +790,62 @@ const updateUserContact = async (req, res) => {
 };
 
 
+// Add Other Account
+const addOtherAccount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { storeName, email, password } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if storeName already exists
+    const exists = user.otherAccounts.find(acc => acc.storeName === storeName);
+    if (exists) {
+      return res.status(400).json({ message: "Store already exists with this storeName" });
+    }
+
+    user.otherAccounts.push({ storeName, email, password });
+    await user.save();
+
+    res.status(201).json({ message: "Other account added", otherAccounts: user.otherAccounts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete Other Account (by storeName)
+const deleteOtherAccount = async (req, res) => {
+  try {
+    const { userId, storeName } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.otherAccounts = user.otherAccounts.filter(acc => acc.storeName !== storeName);
+    await user.save();
+
+    res.json({ message: "Other account deleted", otherAccounts: user.otherAccounts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get All Other Accounts
+const getOtherAccounts = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select("otherAccounts");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json(user.otherAccounts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 module.exports = {
   initiateRegistration,
   verifyOTPAndRegister ,
@@ -800,9 +856,12 @@ module.exports = {
   getAllUsers,
   updateUser,
   deleteUser,
+  getOtherAccounts,
+  deleteOtherAccount,
   changePassword,
   verifyToken,
   updateLocation,
+  addOtherAccount,
   forgotPassword,
   verifyResetToken,
   resetPassword,

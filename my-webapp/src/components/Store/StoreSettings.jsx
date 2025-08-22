@@ -1,22 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LogOut } from 'lucide-react';
+import { LogOut, Store } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
+import { useAuth } from '../../context/UserContext';
 
 const paymentOptions = ['Cash on Delivery', 'UPI', 'Card', 'Net Banking','Razorpay'];
 const serviceOptions = ['Eat In', 'Take Away / Parcel', 'collection', 'Delivery'];
 
 const StoreSettings = ({ store, logout }) => {
+  const { user, login } = useAuth();
+  const [otherStores, setOtherStores] = useState([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [switchingStore, setSwitchingStore] = useState(null);
   const [newUpi, setNewUpi] = useState(store.upi);
   const [selectedPayments, setSelectedPayments] = useState(store.paymentType || []);
   const [selectedServices, setSelectedServices] = useState(store.serviceType || []);
   const [loading, setLoading] = useState(false);
   const [showKeys, setShowKeys] = useState(false);
-const [isFetchingKeys, setIsFetchingKeys] = useState(false);
+  const [isFetchingKeys, setIsFetchingKeys] = useState(false);
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [securedPages, setSecuredPages] = useState(store.security?.pages || []);
-const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
+  const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
   const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
+
+  // Fetch other stores when component mounts
+  useEffect(() => {
+    fetchOtherStores();
+  }, []);
+
+  const fetchOtherStores = async () => {
+    setLoadingStores(true);
+    try {
+      const response = await axios.get(`${SERVER_URL}/users/other/${user._id}`);
+      setOtherStores(response.data);
+    } catch (error) {
+      console.error('Failed to fetch other stores:', error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const handleStoreSwitch = async (email, password, storeName) => {
+    setSwitchingStore(storeName);
+    try {
+      const result = await login(email, password);
+      if (result) {
+        // Login successful, the context will handle the state update
+        alert(`Successfully switched to ${storeName}`);
+      } else {
+        alert('Failed to switch store. Please try again.');
+      }
+    } catch (error) {
+      console.error('Store switch failed:', error);
+      alert('Failed to switch store. Please try again.');
+    } finally {
+      setSwitchingStore(null);
+    }
+  };
+
   const toggleItem = (list, setList, item) => {
     if (list.includes(item)) {
       setList(list.filter(i => i !== item));
@@ -24,9 +65,9 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
       setList([...list, item]);
     }
   };
-  console.log("st cat",store.category);
   
-  const pageOptions = ['overview','Offers','appointments', 'orders', 'product', 'gallery', 'settings']; // Customize based on your app
+  const pageOptions = ['overview','Offers','appointments', 'orders', 'product', 'gallery', 'settings'];
+  
   const handleUpdateSecuredPages = async () => {
     setUpdatingSecuredPages(true);
     try {
@@ -61,6 +102,7 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
       setIsFetchingKeys(false);
     }
   };
+
   const handleRazorpaySave = async () => {
     if (!razorpayKeyId.trim() || !razorpayKeySecret.trim()) {
       alert("Both Key ID and Secret are required.");
@@ -78,7 +120,6 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
       alert("Failed to save Razorpay credentials.");
     }
   };
-  
   
   const handleUpiUpdate = async () => {
     if (!newUpi.trim()) return;
@@ -153,58 +194,56 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
             </div>
           </div>
           )}
-  {selectedPayments.includes('Razorpay') && (
-  <div className="bg-white rounded-xl shadow-lg p-6 col-span-1">
-    <h3 className="text-lg font-semibold text-gray-900 mb-4">Razorpay Credentials</h3>
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Key ID</label>
-        <input
-          type="text"
-          className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-          placeholder="Enter Razorpay Key ID"
-          value={showKeys || !store.razorpay?.key_id ? razorpayKeyId : '••••••••'}
-          onChange={(e) => setRazorpayKeyId(e.target.value)}
-          disabled={!showKeys && store.razorpay?.key_id}
-        />
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Key Secret</label>
-        <input
-          type="text"
-          className="border border-gray-300 rounded-lg px-4 py-2 w-full"
-          placeholder="Enter Razorpay Secret"
-          value={showKeys || !store.razorpay?.key_secret ? razorpayKeySecret : '••••••••'}
-          onChange={(e) => setRazorpayKeySecret(e.target.value)}
-          disabled={!showKeys && store.razorpay?.key_secret}
-        />
-      </div>
+          {selectedPayments.includes('Razorpay') && (
+          <div className="bg-white rounded-xl shadow-lg p-6 col-span-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Razorpay Credentials</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Key ID</label>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+                  placeholder="Enter Razorpay Key ID"
+                  value={showKeys || !store.razorpay?.key_id ? razorpayKeyId : '••••••••'}
+                  onChange={(e) => setRazorpayKeyId(e.target.value)}
+                  disabled={!showKeys && store.razorpay?.key_id}
+                />
+              </div>
 
-      <div className="flex space-x-4">
-        <button
-          onClick={handleRazorpaySave}
-          className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
-        >
-          {store.razorpay?.key_id ? "Update" : "Add"} Razorpay Credentials
-        </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Key Secret</label>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+                  placeholder="Enter Razorpay Secret"
+                  value={showKeys || !store.razorpay?.key_secret ? razorpayKeySecret : '••••••••'}
+                  onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                  disabled={!showKeys && store.razorpay?.key_secret}
+                />
+              </div>
 
-        {store.razorpay?.key_id && (
-          <button
-            onClick={handleViewRazorpay}
-            disabled={isFetchingKeys}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            {showKeys ? 'Hide' : isFetchingKeys ? 'Loading...' : 'View'}
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+              <div className="flex space-x-4">
+                <button
+                  onClick={handleRazorpaySave}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  {store.razorpay?.key_id ? "Update" : "Add"} Razorpay Credentials
+                </button>
 
-
-
+                {store.razorpay?.key_id && (
+                  <button
+                    onClick={handleViewRazorpay}
+                    disabled={isFetchingKeys}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    {showKeys ? 'Hide' : isFetchingKeys ? 'Loading...' : 'View'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          )}
 
           {/* Payment Options Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -227,81 +266,97 @@ const [updatingSecuredPages, setUpdatingSecuredPages] = useState(false);
               {loading ? 'Saving...' : 'Save Payment Types'}
             </button>
           </div>
-          <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
-              {serviceOptions.map((option) => (
-                <label key={option} className="flex items-center space-x-2 mb-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedServices.includes(option)}
-                    onChange={() => toggleItem(selectedServices, setSelectedServices, option)}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-              <button
-                onClick={() => handleUpdateServiceTypes(selectedServices)}
-                disabled={loading}
-                className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                {loading ? 'Saving...' : 'Save Service Types'}
-              </button>
-            </div>
-          {/* Service Options Section - Only for Hotel/Restaurant */}
-          {/* {store.category === "Restaurant" && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
-              {serviceOptions.map((option) => (
-                <label key={option} className="flex items-center space-x-2 mb-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedServices.includes(option)}
-                    onChange={() => toggleItem(selectedServices, setSelectedServices, option)}
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-              <button
-                onClick={() => handleUpdateServiceTypes(selectedServices)}
-                disabled={loading}
-                className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                {loading ? 'Saving...' : 'Save Service Types'}
-              </button>
-            </div>
-          )} */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-  <h3 className="text-lg font-semibold text-gray-900 mb-4">Protected Pages</h3>
-  <p className="text-sm text-gray-600 mb-2">
-    Select which pages require a password to access.
-  </p>
-  {pageOptions.map((page) => (
-    <label key={page} className="flex items-center space-x-2 mb-2">
-      <input
-        type="checkbox"
-        checked={securedPages.includes(page)}
-        onChange={() => {
-          setSecuredPages(prev =>
-            prev.includes(page)
-              ? prev.filter(p => p !== page)
-              : [...prev, page]
-          );
-        }}
-      />
-      <span>{page}</span>
-    </label>
-  ))}
 
-  <button
-    onClick={handleUpdateSecuredPages}
-    disabled={updatingSecuredPages}
-    className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
-  >
-    {updatingSecuredPages ? 'Saving...' : 'Save Protected Pages'}
-  </button>
-</div>
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Accepting Methods</h3>
+            {serviceOptions.map((option) => (
+              <label key={option} className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={selectedServices.includes(option)}
+                  onChange={() => toggleItem(selectedServices, setSelectedServices, option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+            <button
+              onClick={() => handleUpdateServiceTypes(selectedServices)}
+              disabled={loading}
+              className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              {loading ? 'Saving...' : 'Save Service Types'}
+            </button>
+          </div>
 
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Protected Pages</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Select which pages require a password to access.
+            </p>
+            {pageOptions.map((page) => (
+              <label key={page} className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={securedPages.includes(page)}
+                  onChange={() => {
+                    setSecuredPages(prev =>
+                      prev.includes(page)
+                        ? prev.filter(p => p !== page)
+                        : [...prev, page]
+                    );
+                  }}
+                />
+                <span>{page}</span>
+              </label>
+            ))}
+
+            <button
+              onClick={handleUpdateSecuredPages}
+              disabled={updatingSecuredPages}
+              className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              {updatingSecuredPages ? 'Saving...' : 'Save Protected Pages'}
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* Store Switcher Section */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <Store className="w-5 h-5" />
+          <span>Switch Store</span>
+        </h3>
+        
+        {loadingStores ? (
+          <p className="text-gray-500">Loading other stores...</p>
+        ) : otherStores.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 mb-4">
+              Click on a store name to switch to that store:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {otherStores.map((storeData) => (
+                <button
+                  key={storeData._id}
+                  onClick={() => handleStoreSwitch(storeData.email, storeData.password, storeData.storeName)}
+                  disabled={switchingStore === storeData.storeName}
+                  className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Store className="w-4 h-4" />
+                  <span>
+                    {switchingStore === storeData.storeName 
+                      ? 'Switching...' 
+                      : storeData.storeName
+                    }
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500">No other stores available.</p>
+        )}
       </div>
 
       <div className="pt-6 border-t mt-6 ml-6">

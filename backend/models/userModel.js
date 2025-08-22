@@ -5,6 +5,13 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   phone: { type: String },
   address: { type: String},
+  otherAccounts: [
+    {
+      storeName: String,
+      email: String,
+      password: String  // you’d store the password here
+    }
+  ],
   role: {
     type: String,
     enum: ["user", "seller","admin"],

@@ -18,8 +18,8 @@ const storeSchema = new mongoose.Schema({
     default: true,
   },
   security: {
-    password: { type: String },
-    pages: [String] // Pages requiring protection
+    password: { type: String, default: "hello123" }, // default password
+    pages: { type: [String], default: [] }           // empty array by default
   },
   subscription: {
     type: String,

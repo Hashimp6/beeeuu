@@ -405,12 +405,6 @@ const UserProfileComponent = ({  setHistory }) => {
                 onClick={() => setHistory('orders')}
                 variant="secondary"
               />
-   <ActionButton
-  icon={Truck}
-  text="Delivery"
-  onClick={() => navigate('/Delivery')}
-  variant="delivery"
-  />
             </GlassCard>
           </div>
 
