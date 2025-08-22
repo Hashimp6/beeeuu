@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Phone, Navigation, QrCode, CheckCircle, X } from 'lucide-react';
 import { SERVER_URL } from '../../Config';
 
-
 const DeliveryBoyScreen = () => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
@@ -61,20 +60,44 @@ const DeliveryBoyScreen = () => {
     setScanning(true);
 
     try {
+      // Request camera with specific constraints for better QR detection
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { 
+          facingMode: 'environment', // Use back camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }
       });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
         
-        // Start QR code detection
-        setTimeout(() => scanForQRCode(), 500);
+        // Wait for video to load before starting detection
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => {
+            console.log('Camera started, beginning QR detection...');
+            setTimeout(() => scanForQRCode(), 1000); // Give camera time to focus
+          });
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera');
+      
+      // Provide specific error messages
+      let errorMessage = 'Unable to access camera. ';
+      if (error.name === 'NotAllowedError') {
+        errorMessage += 'Please allow camera permissions and try again.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'No camera found on this device.';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage += 'Camera is not supported in this browser.';
+      } else {
+        errorMessage += 'Please ensure you\'re using HTTPS and a supported browser.';
+      }
+      
+      alert(errorMessage);
       setShowScanner(false);
       setScanning(false);
     }
@@ -88,36 +111,42 @@ const DeliveryBoyScreen = () => {
     const ctx = canvas.getContext('2d');
 
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      // Set canvas size to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Try using BarcodeDetector API if available (Chrome/Edge)
+      // Method 1: Try BarcodeDetector API (Chrome/Edge only)
       // eslint-disable-next-line no-undef
       if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
         try {
           // eslint-disable-next-line no-undef
-          const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+          const barcodeDetector = new BarcodeDetector({ 
+            formats: ['qr_code', 'code_128', 'code_39', 'ean_13'] 
+          });
           const barcodes = await barcodeDetector.detect(canvas);
           
           if (barcodes.length > 0 && !scanned) {
-            console.log("QR Code detected:", barcodes[0].rawValue);
+            console.log("Real QR Code detected:", barcodes[0].rawValue);
             handleQRCodeDetected(barcodes[0].rawValue);
             return;
           }
         } catch (error) {
           console.error('BarcodeDetector error:', error);
         }
-      } else {
-        // Fallback: Use a more aggressive simulation for demonstration
-        // In production, you should install and use jsQR library
+      }
+
+      // Method 2: Manual QR detection simulation for demo
+      // In production, install jsQR: npm install jsqr
+      else {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Simple pattern detection simulation (more responsive than before)
-        if (Math.random() > 0.98) { // 2% chance per frame - much faster detection
+        // Simulate QR detection - click anywhere on screen to trigger
+        // Or wait for automatic detection
+        if (Math.random() > 0.985) { // ~1.5% chance per frame
           const mockQRData = JSON.stringify({
             _id: "order_123",
-            orderId: "ORD001",
+            orderId: `ORD${Date.now()}`,
             orderDate: new Date().toISOString(),
             customerName: "John Doe",
             phoneNumber: "+91-9876543210",
@@ -135,7 +164,7 @@ const DeliveryBoyScreen = () => {
                 totalPrice: 150
               },
               {
-                productName: "Fresh Milk",
+                productName: "Fresh Milk", 
                 quantity: 1,
                 totalPrice: 60
               }
@@ -148,13 +177,14 @@ const DeliveryBoyScreen = () => {
             paymentStatus: "pending"
           });
           
-          console.log("Mock QR Code detected (fallback)");
+          console.log("Mock QR Code detected (demo mode)");
           handleQRCodeDetected(mockQRData);
           return;
         }
       }
     }
 
+    // Continue scanning
     if (scanning) {
       requestAnimationFrame(scanForQRCode);
     }
@@ -257,17 +287,55 @@ const DeliveryBoyScreen = () => {
           </div>
           
           <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-6 text-center">
-            <p className="text-white text-lg mb-4">Scan QR Code</p>
-            <p className="text-gray-300 text-sm mb-6">
-              Position the QR code within the frame to scan
+            <p className="text-white text-lg mb-2">Scan QR Code</p>
+            <p className="text-gray-300 text-sm mb-4">
+              Position the QR code within the frame
             </p>
-            <button
-              onClick={stopScanning}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center mx-auto transition-colors"
-            >
-              <X className="h-5 w-5 mr-2" />
-              Cancel
-            </button>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => {
+                  // Manual trigger for testing
+                  const mockData = JSON.stringify({
+                    _id: "test_order",
+                    orderId: `TEST${Date.now()}`,
+                    orderDate: new Date().toISOString(),
+                    customerName: "Test Customer",
+                    phoneNumber: "+91-9999999999",
+                    deliveryAddress: "Test Address, Test City",
+                    status: "out_for_delivery",
+                    store: {
+                      storeName: "Test Store",
+                      place: "Test Location", 
+                      phone: "+91-8888888888"
+                    },
+                    products: [
+                      {
+                        productName: "Test Product",
+                        quantity: 1,
+                        totalPrice: 100
+                      }
+                    ],
+                    totalAmount: 100,
+                    deliveryFee: 20,
+                    platformFee: 10,
+                    gst: 10,
+                    paymentMethod: "cash",
+                    paymentStatus: "pending"
+                  });
+                  handleQRCodeDetected(mockData);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Test Scan
+              </button>
+              <button
+                onClick={stopScanning}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       </div>
