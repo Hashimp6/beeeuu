@@ -9,7 +9,7 @@ const LocationSelectorModal = ({ onLocationSelect, initialAddress = '' }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+  const [mapCenter, setMapCenter] = useState({ lat: 9.9312, lng: 76.2673 }); // Default to Kochi
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);

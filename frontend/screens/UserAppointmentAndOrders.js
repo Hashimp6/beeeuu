@@ -671,11 +671,15 @@ const UserAppointmentsOrders = ({ route, navigation }) => {
  
         {/* Order Details */}
         <View style={styles.infoSection}>
+        <View style={styles.shopRow}>
+            <Text style={styles.shopText}>OTP : {item.otp}</Text>
+          </View>
           {/* Store Name */}
           <View style={styles.shopRow}>
             <Icon name="store" size={16} color="#666" />
             <Text style={styles.shopText}>{storeName}</Text>
           </View>
+
   
           {item.orderType && (
   <View style={styles.locationRow}>

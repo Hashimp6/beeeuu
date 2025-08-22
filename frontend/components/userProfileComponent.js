@@ -557,7 +557,7 @@ const UserProfileComponent = ({ store }) => {
                 onPress={() => navigation.navigate("SettingsScreen")}
               >
                 <View style={styles.actionItemLeft}>
-                  <Icon name="notifications" size={18} color="#14b8a6" />
+                  <Icon name="notifications" size={18}  />
                   <Text style={styles.actionItemText}>Notifications</Text>
                 </View>
                 <Icon name="chevron-right" size={20} color="#94a3b8" />
@@ -565,10 +565,21 @@ const UserProfileComponent = ({ store }) => {
 
               <TouchableOpacity 
   style={styles.actionItem}
+  onPress={() => navigation.navigate("Delivery")}
+>
+  <View style={styles.actionItemLeft}>
+    <Icon name="local-shipping" size={20}  /> {/* Emerald green */}
+    <Text style={styles.actionItemText}>Delivery</Text>
+  </View>
+  <Icon name="chevron-right" size={20} color="#94a3b8" />
+</TouchableOpacity>
+
+              <TouchableOpacity 
+  style={styles.actionItem}
   onPress={() => setShowPolicyDropdown(!showPolicyDropdown)}
 >
   <View style={styles.actionItemLeft}>
-    <Icon name="lock" size={18} color="#14b8a6" />
+    <Icon name="lock" size={18} />
     <Text style={styles.actionItemText}>T&C and Privacy Policy</Text>
   </View>
   <Icon name="chevron-right" size={20} color="#94a3b8" />

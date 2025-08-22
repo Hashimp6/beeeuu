@@ -35,6 +35,7 @@ import AddOfferComponent from '../screens/store/AddOfferScreen';
 import SubscriptionPlansScreen from '../components/Subscribtion';
 import RazorpayCheckout from '../screens/store/RazorpayCheckout';
 import CustomerBookingPage from '../screens/user/Reservation';
+import DeliveryBoyScreen from '../screens/user/deliveryBoy';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -152,6 +153,12 @@ const AppNavigator = () => {
           <Stack.Screen
             name="ChatDetail"
             component={ChatDetailScreen}
+            options={{ headerShown: false }}
+          />
+
+<Stack.Screen
+            name="Delivery"
+            component={DeliveryBoyScreen}
             options={{ headerShown: false }}
           />
             <Stack.Screen

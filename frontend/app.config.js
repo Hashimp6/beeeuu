@@ -5,13 +5,13 @@ const isUsingDynamicGoogleServices = !!process.env.GOOGLE_SERVICES_JSON_BASE64;
 export default {
   expo: {
     name: "SerchBy",
-    slug: "SerchBy", 
+    slug: "SerchBy",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "light",
     scheme: "serchby",
     icon: "./assets/icon.png",
-
+    
     ios: {
       bundleIdentifier: "com.hashim.serchby",
       supportsTablet: true,
@@ -24,7 +24,7 @@ export default {
         "applinks:www.serchby.com"
       ]
     },
-
+    
     android: {
       package: "com.hashim.serchby",
       icon: "./assets/icon.png",
@@ -37,7 +37,6 @@ export default {
         backgroundColor: "#ffffff"
       },
       
-      // Add this for notification icon
       notifications: {
         icon: "./assets/icon.png",
         color: "#ffffff"
@@ -50,8 +49,10 @@ export default {
       },
       permissions: [
         "NOTIFICATIONS",
-        "ACCESS_FINE_LOCATION", 
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA", // Add this for barcode scanner
+        "READ_EXTERNAL_STORAGE" // Add this for barcode scanner
       ],
       intentFilters: [
         {
@@ -66,25 +67,31 @@ export default {
         }
       ]
     },
-
+    
     web: {
       favicon: "./assets/icon.png"
     },
-
+    
     plugins: [
       [
-        "expo-notifications",
+        "expo-camera",
+        {
+          cameraPermission: "Allow $(PRODUCT_NAME) to access camera for scanning QR codes.",
+          microphonePermission: false
+        }
+      ],
+      [
+        "expo-notifications", 
         {
           icon: "./assets/icon.png",
           color: "#ffffff",
-          // Add this for more control
-          sounds: ["./assets/notification.wav"], // optional custom sound
+          sounds: ["./assets/notification.wav"],
           androidMode: "default",
           androidCollapsedTitle: "#{unread_notifications} new interactions"
         }
       ]
     ],
-
+    
     extra: {
       googleMapsApiKey: "AIzaSyAWdpzsOIeDYSG76s3OncbRHmm5pBwiG24",
       eas: {

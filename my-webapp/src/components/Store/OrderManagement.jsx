@@ -42,7 +42,39 @@ const printThermalReceiptDirect = (order, store) => {
   const gst = order.gst || 0;
   const grandTotal = itemTotal + deliveryFee + platformFee + gst;
 
-  // Thermal receipt HTML with forced 80mm width
+  // Create QR Code data object
+  const qrData = {
+    orderId: order.orderId,
+    customerName: order.customerName,
+    phoneNumber: order.phoneNumber,
+    orderDate: order.orderDate,
+    deliveryAddress: order.deliveryAddress,
+    products: order.products?.map(product => ({
+      productName: product.productName,
+      quantity: product.quantity,
+      totalPrice: product.totalPrice
+    })) || [],
+    totalAmount: order.totalAmount || grandTotal,
+    deliveryFee: deliveryFee,
+    platformFee: platformFee,
+    gst: gst,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    store: {
+      storeName: store?.storeName,
+      place: store?.place,
+      phone: store?.phone
+    },
+    printedAt: new Date().toISOString()
+  };
+
+  // Convert to JSON string for QR code
+  const qrCodeData = JSON.stringify(qrData);
+  
+  // Generate QR code URL using QR Server API (free service)
+  const qrCodeURL = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeData)}`;
+
+  // Thermal receipt HTML with forced 80mm width and QR code
   const receiptHTML = `
     <!DOCTYPE html>
     <html>
@@ -213,6 +245,36 @@ const printThermalReceiptDirect = (order, store) => {
           font-size: 10pt !important;
         }
         
+        /* QR Code Section */
+        .qr-section {
+          text-align: center;
+          margin: 6px 0;
+          padding: 4px;
+          border: 1px dashed #000;
+        }
+        
+        .qr-title {
+          font-size: 8pt !important;
+          font-weight: bold !important;
+          margin-bottom: 3px;
+        }
+        
+        .qr-code {
+          margin: 4px 0;
+        }
+        
+        .qr-code img {
+          width: 40mm !important;
+          height: 40mm !important;
+          border: 1px solid #ccc;
+        }
+        
+        .qr-description {
+          font-size: 6pt !important;
+          margin-top: 2px;
+          line-height: 1.2;
+        }
+        
         /* Footer */
         .footer {
           text-align: center;
@@ -261,6 +323,11 @@ const printThermalReceiptDirect = (order, store) => {
             color: #fff !important;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
+          }
+          
+          .qr-code img {
+            width: 35mm !important;
+            height: 35mm !important;
           }
         }
       </style>
@@ -376,6 +443,15 @@ const printThermalReceiptDirect = (order, store) => {
           </div>
         </div>
         
+        <!-- QR Code Section -->
+        <div class="qr-section">
+          <div class="qr-title">SCAN FOR ORDER DATA</div>
+          <div class="qr-code">
+            <img src="${qrCodeURL}" alt="Order QR Code" />
+          </div>
+         
+        </div>
+        
         <div class="dashed-separator"></div>
         
         <!-- Footer -->
@@ -454,13 +530,50 @@ const printThermalReceiptDirect = (order, store) => {
 
   // Execute printing
   printDirect();
+  
+  // Return the QR data for testing/debugging purposes
+  console.log('QR Code Data:', qrData);
+  return qrData;
 };
 
 // Usage: Replace your existing print button handler with this
 const printThermalReceipt = (order, store) => {
-  printThermalReceiptDirect(order, store);
+  return printThermalReceiptDirect(order, store);
 };
 
+// Helper function to manually get QR data without printing
+const getOrderQRData = (order, store) => {
+  const itemTotal = order.products?.reduce((sum, item) => sum + item.totalPrice, 0) || order.totalAmount;
+  const deliveryFee = order.deliveryFee || 0;
+  const platformFee = order.platformFee || 0;
+  const gst = order.gst || 0;
+  const grandTotal = itemTotal + deliveryFee + platformFee + gst;
+
+  return {
+    orderId: order.orderId,
+    customerName: order.customerName,
+    phoneNumber: order.phoneNumber,
+    orderDate: order.orderDate,
+    deliveryAddress: order.deliveryAddress,
+    products: order.products?.map(product => ({
+      productName: product.productName,
+      quantity: product.quantity,
+      totalPrice: product.totalPrice
+    })) || [],
+    totalAmount: order.totalAmount || grandTotal,
+    deliveryFee: deliveryFee,
+    platformFee: platformFee,
+    gst: gst,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    store: {
+      storeName: store?.storeName,
+      place: store?.place,
+      phone: store?.phone
+    },
+    printedAt: new Date().toISOString()
+  };
+};
 
 // COD Table Print Receipt Component - Add this after PrintReceipt component
 const CODTablePrintReceipt = ({ tableData, tableName, store, onClose }) => {
