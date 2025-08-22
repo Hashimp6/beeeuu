@@ -14,7 +14,8 @@ import { showErrorToast, showSuccessToast } from '../user/Tost';
 import QRCode from 'qrcode';
 
 
-const printThermalReceipt = (order, store) => {
+// Enhanced thermal printing function that bypasses A4 format
+const printThermalReceiptDirect = (order, store) => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('en-IN', {
       day: '2-digit',
@@ -41,18 +42,19 @@ const printThermalReceipt = (order, store) => {
   const gst = order.gst || 0;
   const grandTotal = itemTotal + deliveryFee + platformFee + gst;
 
-  // Just Eat style thermal receipt HTML
+  // Thermal receipt HTML with forced 80mm width
   const receiptHTML = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Delivery Receipt #${order.orderId}</title>
+      <title>Receipt #${order.orderId}</title>
       <style>
+        /* Force thermal printer settings */
         @page {
-          size: 80mm auto;
-          margin: 0;
+          size: 80mm auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         
         * {
@@ -61,338 +63,204 @@ const printThermalReceipt = (order, store) => {
           box-sizing: border-box;
         }
         
-        body {
-          font-family: 'Arial', sans-serif;
-          font-size: 8pt;
-          line-height: 1.1;
-          color: #000;
-          background: #fff;
-          width: 80mm;
-          max-width: 80mm;
-          padding: 1mm 2mm;
-          margin: 0 auto;
-          overflow-x: hidden;
-          -webkit-print-color-adjust: exact;
-          color-adjust: exact;
+        html, body {
+          width: 80mm !important;
+          max-width: 80mm !important;
+          margin: 0 !important;
+          padding: 2mm !important;
+          font-family: 'Courier New', monospace !important;
+          font-size: 8pt !important;
+          line-height: 1.1 !important;
+          color: #000 !important;
+          background: #fff !important;
+          overflow-x: hidden !important;
         }
         
         .receipt {
-          width: 100%;
-          max-width: 100%;
-          margin: 0;
+          width: 100% !important;
+          max-width: 76mm !important;
         }
         
         /* Typography */
-        .small { font-size: 7pt; }
-        .medium { font-size: 8pt; }
-        .large { font-size: 10pt; }
-        .xlarge { font-size: 12pt; }
-        .bold { font-weight: bold; }
-        .center { text-align: center; }
-        .left { text-align: left; }
-        .right { text-align: right; }
+        .bold { font-weight: bold !important; }
+        .center { text-align: center !important; }
+        .left { text-align: left !important; }
+        .right { text-align: right !important; }
         
         /* Header */
         .header {
           text-align: center;
-          margin-bottom: 6px;
-          padding-bottom: 3px;
+          margin-bottom: 4px;
+          padding-bottom: 2px;
           border-bottom: 1px solid #000;
         }
         
         .brand-name {
-          font-size: 12pt;
-          font-weight: bold;
-          letter-spacing: 0.5px;
+          font-size: 12pt !important;
+          font-weight: bold !important;
           margin-bottom: 1px;
         }
         
         .restaurant-name {
-          font-size: 10pt;
-          font-weight: bold;
+          font-size: 9pt !important;
+          font-weight: bold !important;
           margin: 1px 0;
         }
         
         .restaurant-details {
-          font-size: 7pt;
-          line-height: 1.2;
+          font-size: 7pt !important;
           margin: 0.5px 0;
         }
         
-        /* Order ID Section */
-        .order-id-section {
-          background: #000;
-          color: #fff;
+        /* Order ID */
+        .order-id {
+          background: #000 !important;
+          color: #fff !important;
           text-align: center;
-          padding: 4px 8px;
-          margin: 6px 0;
-          font-weight: bold;
-          font-size: 11pt;
+          padding: 3px !important;
+          margin: 4px 0;
+          font-weight: bold !important;
+          font-size: 10pt !important;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
         
-        /* Info rows */
-        .info-section {
-          margin: 6px 0;
-          font-size: 9pt;
-        }
-        
+        /* Info sections */
         .info-row {
           display: flex;
           justify-content: space-between;
-          margin: 2px 0;
-          padding: 1px 0;
+          margin: 1px 0;
+          font-size: 8pt !important;
         }
         
-        .info-label {
-          font-weight: normal;
-        }
+        .info-label { font-weight: normal; }
+        .info-value { font-weight: bold; }
         
-        .info-value {
-          font-weight: bold;
-        }
-        
-        /* Customer section */
+        /* Customer box */
         .customer-box {
           border: 1px solid #000;
-          padding: 4px;
-          margin: 6px 0;
-          font-size: 9pt;
+          padding: 3px;
+          margin: 4px 0;
+          font-size: 8pt !important;
         }
         
         .customer-title {
           text-align: center;
-          font-weight: bold;
-          font-size: 9pt;
-          margin-bottom: 4px;
+          font-weight: bold !important;
+          margin-bottom: 2px;
           text-decoration: underline;
         }
         
-        .customer-line {
-          margin: 2px 0;
-          display: flex;
-          justify-content: space-between;
-        }
-        
-        .address-text {
-          font-size: 8pt;
-          line-height: 1.3;
-          margin: 2px 0;
-        }
-        
-        /* Items section */
+        /* Items */
         .items-header {
-          background: #000;
-          color: #fff;
-          padding: 3px;
+          background: #000 !important;
+          color: #fff !important;
+          padding: 2px;
           text-align: center;
-          font-weight: bold;
-          font-size: 10pt;
-          margin: 8px 0 4px 0;
+          font-weight: bold !important;
+          font-size: 9pt !important;
+          margin: 4px 0 2px 0;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
         }
         
-        .items-table {
-          width: 100%;
-          font-size: 9pt;
-        }
-        
-        .items-header-row {
+        .items-table-header {
           display: flex;
-          font-weight: bold;
-          padding: 2px 0;
+          font-weight: bold !important;
+          padding: 1px 0;
           border-bottom: 1px solid #000;
-          font-size: 8pt;
+          font-size: 7pt !important;
         }
         
         .item-col-name { flex: 2.5; }
-        .item-col-qty { width: 30px; text-align: center; }
-        .item-col-price { width: 50px; text-align: right; }
+        .item-col-qty { width: 25px; text-align: center; }
+        .item-col-price { width: 45px; text-align: right; }
         
         .item-row {
           display: flex;
-          padding: 3px 0;
+          padding: 2px 0;
           border-bottom: 1px dotted #999;
-          font-size: 9pt;
-        }
-        
-        .item-name {
-          flex: 2.5;
-          font-weight: bold;
-          line-height: 1.2;
-        }
-        
-        .item-qty {
-          width: 30px;
-          text-align: center;
-          font-weight: bold;
-        }
-        
-        .item-price {
-          width: 50px;
-          text-align: right;
-          font-weight: bold;
+          font-size: 8pt !important;
         }
         
         /* Bill summary */
         .bill-summary {
-          margin: 8px 0;
+          margin: 4px 0;
           border: 1px solid #000;
-          padding: 6px;
+          padding: 3px;
         }
         
         .bill-title {
           text-align: center;
-          font-weight: bold;
-          font-size: 10pt;
-          margin-bottom: 6px;
+          font-weight: bold !important;
+          font-size: 9pt !important;
+          margin-bottom: 3px;
           text-decoration: underline;
         }
         
         .bill-line {
           display: flex;
           justify-content: space-between;
-          margin: 2px 0;
-          font-size: 9pt;
+          margin: 1px 0;
+          font-size: 8pt !important;
         }
         
         .bill-total {
           border-top: 1px solid #000;
-          margin-top: 4px;
-          padding-top: 4px;
-          font-weight: bold;
-          font-size: 11pt;
-        }
-        
-        /* Payment section */
-        .payment-box {
-          border: 1px solid #000;
-          padding: 4px;
-          margin: 6px 0;
-          font-size: 9pt;
-        }
-        
-        .payment-title {
-          text-align: center;
-          font-weight: bold;
-          margin-bottom: 4px;
-          text-decoration: underline;
-        }
-        
-        /* Status section */
-        .status-box {
-          text-align: center;
-          border: 2px solid #000;
-          padding: 6px;
-          margin: 8px 0;
-          background: #f5f5f5;
-        }
-        
-        .status-label {
-          font-size: 9pt;
-          margin-bottom: 2px;
-        }
-        
-        .status-value {
-          font-size: 14pt;
-          font-weight: bold;
+          margin-top: 2px;
+          padding-top: 2px;
+          font-weight: bold !important;
+          font-size: 10pt !important;
         }
         
         /* Footer */
         .footer {
           text-align: center;
-          margin-top: 10px;
-          padding-top: 6px;
+          margin-top: 6px;
+          padding-top: 3px;
           border-top: 1px dashed #000;
-          font-size: 8pt;
+          font-size: 7pt !important;
         }
         
         .thank-you {
-          font-size: 12pt;
-          font-weight: bold;
-          margin: 6px 0;
-        }
-        
-        .support-info {
-          margin: 2px 0;
-        }
-        
-        .print-time {
-          margin-top: 6px;
-          font-size: 7pt;
-          color: #666;
+          font-size: 10pt !important;
+          font-weight: bold !important;
+          margin: 3px 0;
         }
         
         /* Separators */
-        .separator {
-          text-align: center;
-          margin: 4px 0;
-          font-size: 8pt;
-        }
-        
         .line-separator {
           border-top: 1px solid #000;
-          margin: 4px 0;
+          margin: 2px 0;
         }
         
         .dashed-separator {
           border-top: 1px dashed #000;
-          margin: 4px 0;
+          margin: 3px 0;
         }
         
-        /* Print specific styles */
+        /* Print specific overrides */
         @media print {
-          body { 
+          html, body {
+            width: 80mm !important;
+            max-width: 80mm !important;
             margin: 0 !important;
             padding: 1mm !important;
             font-size: 7pt !important;
-            width: 80mm !important;
-            max-width: 80mm !important;
           }
           
           @page {
-            margin: 0 !important;
             size: 80mm auto !important;
+            margin: 0 !important;
           }
           
-          .receipt {
-            page-break-inside: avoid;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
+          .no-print { display: none !important; }
           
-          .no-print {
-            display: none !important;
-          }
-          
-          /* Ensure black prints black */
-          .order-id-section, .items-header {
+          .order-id, .items-header {
             background: #000 !important;
             color: #fff !important;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
-          }
-        }
-        
-        /* Thermal printer specific optimization */
-        @media print and (max-width: 80mm) {
-          body {
-            font-size: 6pt !important;
-            padding: 0.5mm !important;
-          }
-          
-          .brand-name {
-            font-size: 10pt !important;
-          }
-          
-          .restaurant-name {
-            font-size: 8pt !important;
-          }
-          
-          .order-id-section {
-            font-size: 8pt !important;
-          }
-          
-          .info-row, .bill-line, .customer-line {
-            font-size: 7pt !important;
           }
         }
       </style>
@@ -409,24 +277,20 @@ const printThermalReceipt = (order, store) => {
         </div>
         
         <!-- Order ID -->
-        <div class="order-id-section">
-          ORDER #${order.orderId}
-        </div>
+        <div class="order-id">ORDER #${order.orderId}</div>
         
         <!-- Order Details -->
-        <div class="info-section">
-          <div class="info-row">
-            <span class="info-label">Order Date:</span>
-            <span class="info-value">${formatDate(order.orderDate)}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Order Time:</span>
-            <span class="info-value">${formatTime(order.orderDate)}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Type:</span>
-            <span class="info-value">DELIVERY</span>
-          </div>
+        <div class="info-row">
+          <span class="info-label">Date:</span>
+          <span class="info-value">${formatDate(order.orderDate)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Time:</span>
+          <span class="info-value">${formatTime(order.orderDate)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Type:</span>
+          <span class="info-value">DELIVERY</span>
         </div>
         
         <div class="line-separator"></div>
@@ -434,15 +298,15 @@ const printThermalReceipt = (order, store) => {
         <!-- Customer Details -->
         <div class="customer-box">
           <div class="customer-title">DELIVERY TO</div>
-          <div class="customer-line">
+          <div class="info-row">
             <span>Name:</span>
             <span class="bold">${order.customerName}</span>
           </div>
-          <div class="customer-line">
+          <div class="info-row">
             <span>Phone:</span>
             <span class="bold">${order.phoneNumber}</span>
           </div>
-          <div class="address-text">
+          <div style="font-size: 7pt; margin-top: 2px;">
             <strong>Address:</strong><br>
             ${order.deliveryAddress}
           </div>
@@ -451,7 +315,7 @@ const printThermalReceipt = (order, store) => {
         <!-- Items -->
         <div class="items-header">ORDER DETAILS</div>
         
-        <div class="items-header-row">
+        <div class="items-table-header">
           <span class="item-col-name">Item</span>
           <span class="item-col-qty">Qty</span>
           <span class="item-col-price">Total</span>
@@ -459,11 +323,11 @@ const printThermalReceipt = (order, store) => {
         
         ${order.products?.map((product, index) => `
           <div class="item-row">
-            <div class="item-name">${product.productName}</div>
-            <div class="item-qty">${product.quantity}</div>
-            <div class="item-price">₹${product.totalPrice}</div>
+            <div class="item-col-name bold">${product.productName}</div>
+            <div class="item-col-qty bold">${product.quantity}</div>
+            <div class="item-col-price bold">₹${product.totalPrice}</div>
           </div>
-        `).join('') || '<div class="item-row"><div class="item-name">No items found</div><div class="item-qty">-</div><div class="item-price">-</div></div>'}
+        `).join('') || '<div class="item-row"><div class="item-col-name">No items</div><div class="item-col-qty">-</div><div class="item-col-price">-</div></div>'}
         
         <!-- Bill Summary -->
         <div class="bill-summary">
@@ -500,8 +364,8 @@ const printThermalReceipt = (order, store) => {
         </div>
         
         <!-- Payment Details -->
-        <div class="payment-box">
-          <div class="payment-title">PAYMENT INFO</div>
+        <div class="customer-box">
+          <div class="customer-title">PAYMENT INFO</div>
           <div class="info-row">
             <span>Method:</span>
             <span class="bold">${order.paymentMethod?.toUpperCase() || 'COD'}</span>
@@ -512,24 +376,16 @@ const printThermalReceipt = (order, store) => {
           </div>
         </div>
         
-        <!-- Order Status -->
-        <div class="status-box">
-          <div class="status-label">ORDER STATUS</div>
-          <div class="status-value">${order.orderStatus?.toUpperCase() || 'CONFIRMED'}</div>
-        </div>
-        
         <div class="dashed-separator"></div>
         
         <!-- Footer -->
         <div class="footer">
           <div class="thank-you">THANK YOU!</div>
           <div>Enjoy your meal!</div>
-          <div class="support-info">Support: ${store?.phone || '+91-XXXXXXXXXX'}</div>
-          <div class="support-info">Email: ${store?.email || 'support@serchby.com'}</div>
-          
-          <div class="separator">••••••••••••••••••••••••••••</div>
-          
-          <div class="print-time">Printed: ${formatDate(new Date().toISOString())}</div>
+          <div>Support: ${store?.phone || '+91-XXXXXXXXXX'}</div>
+          <div style="margin-top: 4px; font-size: 6pt;">
+            Printed: ${formatDate(new Date().toISOString())}
+          </div>
         </div>
         
       </div>
@@ -537,221 +393,72 @@ const printThermalReceipt = (order, store) => {
     </html>
   `;
 
-  // Universal thermal printer function for USB and Bluetooth
-  const printThermalReceipt = () => {
-    // Check if Web Bluetooth API is available
-    // if (navigator.bluetooth && window.BluetoothRemoteGATTServer) {
-    //   printViaBluetooth().catch(() => {
-    //     // Fallback to standard printing
-    //     printViaStandard();
-    //   });
-    // } else {
-      // Standard printing for USB printers
-      printViaStandard();
-    // }
-  };
-
-  // Bluetooth printing method
-  const printViaBluetooth = async () => {
-    try {
-      // Request Bluetooth device (thermal printer)
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // Thermal printer service
-      });
-      
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-      
-      // Send ESC/POS commands
-      const printCommands = generateThermalPrintCommands(order, store);
-      const encoder = new TextEncoder();
-      await characteristic.writeValue(encoder.encode(printCommands));
-      
-      console.log('Bluetooth printing successful');
-    } catch (error) {
-      console.error('Bluetooth printing failed:', error);
-      throw error;
-    }
-  };
-
-  // Standard printing method (USB/Network printers)
-  const printViaStandard = () => {
-    // Create optimized print window
-    const printWindow = window.open('', '_blank', 'width=300,height=600,scrollbars=no,resizable=no');
-    
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(receiptHTML);
-      printWindow.document.close();
-      
-      // Enhanced printing process
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.focus();
-          
-          // Set thermal printer specific settings
-          if (printWindow.print) {
-            // Try to set printer settings for thermal printers
-            try {
-              const mediaQueryList = printWindow.matchMedia('print');
-              mediaQueryList.addListener(() => {
-                console.log('Printing to thermal printer...');
-              });
-            } catch (e) {
-              console.log('Advanced print settings not available');
-            }
-            
-            printWindow.print();
-          }
-          
-          // Auto-close after printing
-          setTimeout(() => {
-            if (!printWindow.closed) {
-              printWindow.close();
-            }
-          }, 2000);
-        }, 300);
-      };
-      
-      // Fallback timing
-      setTimeout(() => {
-        if (printWindow && !printWindow.closed) {
-          try {
-            printWindow.focus();
-            printWindow.print();
-            setTimeout(() => printWindow.close(), 2000);
-          } catch (error) {
-            console.error('Standard print failed:', error);
-            showPrintInstructions();
-          }
-        }
-      }, 800);
-    } else {
-      // Popup blocked - use iframe method
-      printViaIframe();
-    }
-  };
-
-  // Iframe printing method (popup blocker fallback)
-  const printViaIframe = () => {
+  // Force direct printing without browser dialog
+  const printDirect = () => {
+    // Method 1: Use iframe (most reliable)
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.left = '-9999px';
     iframe.style.width = '80mm';
     iframe.style.height = 'auto';
-    iframe.style.border = 'none';
     
     document.body.appendChild(iframe);
     
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    iframeDoc.open();
-    iframeDoc.write(receiptHTML);
-    iframeDoc.close();
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(receiptHTML);
+    doc.close();
     
-    setTimeout(() => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        
-        setTimeout(() => {
-          if (iframe.parentNode) {
-            document.body.removeChild(iframe);
-          }
-        }, 3000);
-      } catch (error) {
-        console.error('Iframe print failed:', error);
-        showPrintInstructions();
-      }
-    }, 500);
+    // Auto-print after content loads
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          
+          // Clean up
+          setTimeout(() => {
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe);
+            }
+          }, 2000);
+        } catch (error) {
+          console.error('Print error:', error);
+          // Fallback to popup method
+          printViaPopup();
+        }
+      }, 300);
+    };
   };
 
-  // Show manual print instructions
-  const showPrintInstructions = () => {
-    const instructionWindow = window.open('', '_blank', 'width=400,height=300');
-    instructionWindow.document.write(`
-      <h3>Thermal Printer Instructions:</h3>
-      <ol>
-        <li><strong>USB Printer:</strong> Connect and select your thermal printer in the print dialog</li>
-        <li><strong>Bluetooth Printer:</strong> Pair your printer in device settings first</li>
-        <li>Set paper size to 80mm (3.15 inches)</li>
-        <li>Disable margins in printer settings</li>
-        <li>Try printing again</li>
-      </ol>
-      <p><button onclick="window.close()">Close</button></p>
-    `);
+  // Fallback popup method
+  const printViaPopup = () => {
+    const printWindow = window.open('', '_blank', 
+      'width=300,height=600,scrollbars=no,resizable=no,toolbar=no,menubar=no'
+    );
+    
+    if (printWindow) {
+      printWindow.document.write(receiptHTML);
+      printWindow.document.close();
+      
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          setTimeout(() => printWindow.close(), 1000);
+        }, 100);
+      };
+    } else {
+      alert('Please allow popups for thermal printing or check your printer settings.');
+    }
   };
 
   // Execute printing
-  printThermalReceipt();
+  printDirect();
 };
 
-// Alternative function for direct Bluetooth printing (if you have a Bluetooth print library)
-const printBluetoothReceipt = async (order, store, printerAddress) => {
-  try {
-    // This would work with libraries like cordova-plugin-bluetooth-printer or similar
-    if (window.BluetoothPrinter) {
-      const receiptText = generateThermalPrintCommands(order, store);
-      await window.BluetoothPrinter.print(printerAddress, receiptText);
-    } else {
-      // Fallback to HTML printing
-      printThermalReceipt(order, store);
-    }
-  } catch (error) {
-    console.error('Bluetooth printing failed:', error);
-    printThermalReceipt(order, store);
-  }
-};
-
-// Generate ESC/POS commands for direct thermal printing
-const generateThermalPrintCommands = (order, store) => {
-  const ESC = '\x1b';
-  const commands = [];
-  
-  // Initialize printer
-  commands.push(ESC + '@'); // Initialize
-  commands.push(ESC + 'a' + '\x01'); // Center align
-  
-  // Header
-  commands.push(ESC + '!' + '\x10'); // Double height
-  commands.push('SERCHBY\n');
-  commands.push(ESC + '!' + '\x00'); // Normal text
-  commands.push(`${store?.storeName || 'RESTAURANT'}\n`);
-  commands.push(`${store?.place || 'Location'}\n`);
-  commands.push(`Tel: ${store?.phone || 'N/A'}\n`);
-  commands.push('--------------------------------\n');
-  
-  // Order ID
-  commands.push(ESC + '!' + '\x08'); // Bold
-  commands.push(`ORDER #${order.orderId}\n`);
-  commands.push(ESC + '!' + '\x00'); // Normal
-  commands.push('--------------------------------\n');
-  
-  // Items
-  order.products?.forEach((product, index) => {
-    commands.push(`${product.productName}\n`);
-    commands.push(`  ${product.quantity} x ₹${product.totalPrice}\n`);
-  });
-  
-  commands.push('--------------------------------\n');
-  commands.push(`TOTAL: ₹${order.totalAmount}\n`);
-  commands.push('--------------------------------\n');
-  
-  // Customer details
-  commands.push(`Customer: ${order.customerName}\n`);
-  commands.push(`Phone: ${order.phoneNumber}\n`);
-  commands.push(`Address: ${order.deliveryAddress}\n`);
-  commands.push('--------------------------------\n');
-  
-  // Footer
-  commands.push(ESC + 'a' + '\x01'); // Center align
-  commands.push('THANK YOU!\n');
-  commands.push('\n\n\n');
-  commands.push(ESC + 'd' + '\x03'); // Feed 3 lines
-  commands.push(ESC + 'i'); // Cut paper
-  
-  return commands.join('');
+// Usage: Replace your existing print button handler with this
+const printThermalReceipt = (order, store) => {
+  printThermalReceiptDirect(order, store);
 };
 
 
