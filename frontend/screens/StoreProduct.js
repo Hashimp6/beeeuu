@@ -41,10 +41,17 @@ const SellerProfile = ({ navigation }) => {
     name: '',
     description: '',
     category: '',
-    type: '', // Added missing type field
+    type: '',
     price: '',
-    imageUri: '',
+    imageUris: [], // Changed from imageUri to imageUris array
   });
+
+  // Create ref for ScrollView
+  const scrollViewRef = React.useRef(null);
+
+  // Calculate helper values for image management
+  const totalImages = product.imageUris.length;
+  const canAddMore = totalImages < 5;
 
   useEffect(() => {
     const loadToken = async () => {
@@ -67,9 +74,9 @@ const SellerProfile = ({ navigation }) => {
       name: '',
       description: '',
       category: '',
-      type: '', // Reset type field
+      type: '',
       price: '',
-      imageUri: '',
+      imageUris: [], // Reset to empty array
     });
     setEditingProduct(null);
     setShowAddForm(false);
@@ -81,7 +88,6 @@ const SellerProfile = ({ navigation }) => {
       setLoading(true);
       setError('');
       
-      // Check if storeDetails exists
       if (!storeDetails || !storeDetails._id) {
         throw new Error('Store details not available');
       }
@@ -111,7 +117,7 @@ const SellerProfile = ({ navigation }) => {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchProducts();
-  }, [token, storeDetails]); // Added dependencies
+  }, [token, storeDetails]);
 
   // Fetch data when component mounts or comes into focus
   useFocusEffect(
@@ -122,10 +128,9 @@ const SellerProfile = ({ navigation }) => {
     }, [token, storeDetails])
   );
 
-  // Fixed image picker handler
-  const pickImage = async () => {
+  // Updated image picker to handle multiple images
+  const pickMultipleImages = async () => {
     try {
-      // Request permission to access media library
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
@@ -137,33 +142,64 @@ const SellerProfile = ({ navigation }) => {
         return;
       }
 
-      // Launch image picker with correct configuration
+      const remainingSlots = 5 - totalImages;
+      
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Fixed: Use correct enum
-        allowsEditing: true,
-        aspect: [3, 4],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false, // Allow multiple selection
         quality: 0.8,
-        allowsMultipleSelection: false,
+        allowsMultipleSelection: true, // Enable multiple selection
+        selectionLimit: remainingSlots, // Limit to remaining slots
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0];
-       setProduct(prev => ({ 
+        const newImageUris = result.assets.map(asset => asset.uri);
+        
+        // Validate file sizes (5MB each)
+        const validImages = [];
+        for (const asset of result.assets) {
+          if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+            Alert.alert('File Too Large', 'Each image must be less than 5MB');
+            continue;
+          }
+          validImages.push(asset.uri);
+        }
+        
+        setProduct(prev => ({ 
           ...prev, 
-          imageUri: selectedImage.uri 
+          imageUris: [...prev.imageUris, ...validImages].slice(0, 5) // Ensure max 5 images
         }));
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to select image. Please try again.');
+      console.error('Error picking images:', error);
+      Alert.alert('Error', 'Failed to select images. Please try again.');
     }
+  };
+
+  // Remove image from array
+  const removeImage = (indexToRemove) => {
+    setProduct(prev => ({
+      ...prev,
+      imageUris: prev.imageUris.filter((_, index) => index !== indexToRemove)
+    }));
+  };
+
+  // Handle type change (for non-restaurant stores)
+  const handleTypeChange = (value) => {
+    setProduct({ ...product, type: value });
   };
 
   // Add/Update product with proper validation
   const handleSubmitProduct = async () => {
     // Enhanced validation
-    if (!product.name.trim() || !product.price.trim() || !product.type || !product.category) {
-      Alert.alert('Error', 'Please fill in all required fields (Name, Type, Category, Price)');
+    if (!product.name.trim() || !product.price.trim() || !product.category) {
+      Alert.alert('Error', 'Please fill in all required fields (Name, Category, Price)');
+      return;
+    }
+
+    // Validate type for non-restaurant stores
+    if (storeDetails.category !== "Restaurant" && !product.type) {
+      Alert.alert('Error', 'Please select a type (Product or Service)');
       return;
     }
 
@@ -173,7 +209,6 @@ const SellerProfile = ({ navigation }) => {
       return;
     }
 
-    // Check if storeDetails exists
     if (!storeDetails || !storeDetails._id) {
       Alert.alert('Error', 'Store information is missing');
       return;
@@ -187,15 +222,22 @@ const SellerProfile = ({ navigation }) => {
       formData.append('name', product.name.trim());
       formData.append('description', product.description.trim());
       formData.append('category', product.category);
-      formData.append('type', product.type); // Added type field
+      
+      // Always append type - default to 'product' for restaurants
+      const typeValue = storeDetails.category === "Restaurant" ? 'product' : product.type;
+      formData.append('type', typeValue);
+      
       formData.append('price', parseFloat(product.price).toString());
       
-      if (product.imageUri) {
-        const fileExtension = product.imageUri.split('.').pop() || 'jpg';
-        formData.append('image', {
-          uri: product.imageUri,
-          type: `image/${fileExtension}`,
-          name: `product_image_${Date.now()}.${fileExtension}`,
+      // Append multiple images
+      if (product.imageUris.length > 0) {
+        product.imageUris.forEach((uri, index) => {
+          const fileExtension = uri.split('.').pop() || 'jpg';
+          formData.append('images', {
+            uri: uri,
+            type: `image/${fileExtension}`,
+            name: `product_image_${Date.now()}_${index}.${fileExtension}`,
+          });
         });
       }
 
@@ -216,7 +258,6 @@ const SellerProfile = ({ navigation }) => {
         },
       });
 
-    
       Alert.alert(
         'Success',
         `Product ${editingProduct ? 'updated' : 'added'} successfully!`,
@@ -275,18 +316,26 @@ const SellerProfile = ({ navigation }) => {
     }
   };
   
-  // Edit product
+  // Edit product - updated to handle multiple images and auto-scroll
   const handleEditProduct = (item) => {
     setEditingProduct(item);
     setProduct({
       name: item.name || '',
       description: item.description || '',
       category: item.category || '',
-      type: item.type || '', // Added type field
+      type: item.type || (storeDetails.category === "Restaurant" ? 'product' : ''), // Default for restaurants
       price: item.price ? item.price.toString() : '',
-      imageUri: item.image || '',
+      imageUris: item.images || [], // Set existing images array
     });
     setShowAddForm(true);
+    
+    // Auto-scroll to top with animation
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: 0,
+        animated: true
+      });
+    }, 100); // Small delay to ensure form is rendered
   };
 
   const toggleAddForm = () => {
@@ -295,6 +344,14 @@ const SellerProfile = ({ navigation }) => {
     } else {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setShowAddForm(true);
+      
+      // Auto-scroll to top when adding new product
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: 0,
+          animated: true
+        });
+      }, 100);
     }
   };
 
@@ -327,6 +384,7 @@ const SellerProfile = ({ navigation }) => {
 
   return (
     <ScrollView 
+      ref={scrollViewRef} // Add ref to ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -342,135 +400,156 @@ const SellerProfile = ({ navigation }) => {
       </View>
 
       {showAddForm && (
-  <View style={styles.addProductForm}>
-    <Text style={styles.formTitle}>
-      {editingProduct ? 'Edit Product' : 'Add New Product'}
-    </Text>
-
-    {/* Product Name */}
-    <TextInput
-      placeholder="Product Name *"
-      placeholderTextColor="#666"
-      style={styles.input}
-      value={product.name}
-      onChangeText={(text) => setProduct({ ...product, name: text })}
-    />
-
-    {/* Description */}
-    <TextInput
-      placeholder="Description"
-      placeholderTextColor="#666"
-      style={[styles.input, styles.textArea]}
-      value={product.description}
-      onChangeText={(text) => setProduct({ ...product, description: text })}
-      multiline
-      numberOfLines={3}
-    />
-
-    {/* Type Dropdown */}
-    <Picker
-  selectedValue={product.type}
-  onValueChange={(value) => setProduct({ ...product, type: value })}
-  style={{
-    backgroundColor: '#f5f5f5',
-    marginVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: 'black', // <- important to show selected value
-    fontSize: 16,
-  }}
->
-  <Picker.Item label="Select Type *" value={null} />
-  <Picker.Item label="Product" value="product" />
-  <Picker.Item label="Service" value="service" />
-</Picker>
-
-    {/* Category Dropdown */}
-    <Picker
-  selectedValue={product.category}
-  onValueChange={(value) => setProduct({ ...product, category: value })}
-  style={{
-    backgroundColor: '#f5f5f5',
-    marginVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: 'black', // Ensures selected value is visible
-    fontSize: 16,
-  }}
->
-  <Picker.Item label="Select Category *" value={null} />
-  <Picker.Item label="Face" value="face" />
-  <Picker.Item label="Hand" value="hand" />
-  <Picker.Item label="Hair" value="hair" />
-  <Picker.Item label="Nail" value="nail" />
-  <Picker.Item label="Body" value="body" />
-  <Picker.Item label="Food" value="food" />
-  <Picker.Item label="Stationary" value="stationary" />
-  <Picker.Item label="Bakery" value="bakery" />
-</Picker>
-
-
-    {/* Image Picker */}
-    <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-      <Text style={styles.imagePickerText}>
-        {product.imageUri ? 'Change Image' : '📷 Pick Image from Gallery'}
-      </Text>
-    </TouchableOpacity>
-
-    {/* Image Preview */}
-    {product.imageUri && (
-      <View style={styles.imagePreviewContainer}>
-        <Image
-          source={{ uri: product.imageUri }}
-          style={styles.previewImage}
-          onError={(error) => {
-        Alert.alert('Error', 'Failed to load image');
-          }}
-        />
-        <TouchableOpacity
-          style={styles.removeImageBtn}
-          onPress={() => setProduct({ ...product, imageUri: '' })}
-        >
-          <Text style={styles.removeImageText}>✕</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-
-    {/* Price */}
-    <TextInput
-      placeholder="Price (₹) *"
-      placeholderTextColor="#666"
-      keyboardType="numeric"
-      style={styles.input}
-      value={product.price}
-      onChangeText={(text) => setProduct({ ...product, price: text })}
-    />
-
-    {/* Buttons */}
-    <View style={styles.buttonRow}>
-      <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-        <Text style={styles.cancelText}>Cancel</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.submitBtn, loading && styles.disabledBtn]}
-        onPress={handleSubmitProduct}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" size="small" />
-        ) : (
-          <Text style={styles.submitText}>
-            {editingProduct ? 'Update' : 'Add Product'}
+        <View style={styles.addProductForm}>
+          <Text style={styles.formTitle}>
+            {editingProduct ? 'Edit Product' : 'Add New Product'}
           </Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  </View>
-)}
 
+          {/* Product Name */}
+          <TextInput
+            placeholder="Product Name *"
+            placeholderTextColor="#666"
+            style={styles.input}
+            value={product.name}
+            onChangeText={(text) => setProduct({ ...product, name: text })}
+          />
+
+          {/* Description */}
+          <TextInput
+            placeholder="Description"
+            placeholderTextColor="#666"
+            style={[styles.input, styles.textArea]}
+            value={product.description}
+            onChangeText={(text) => setProduct({ ...product, description: text })}
+            multiline
+            numberOfLines={3}
+          />
+
+          {/* Type Dropdown - Only show for non-restaurant stores */}
+          {storeDetails.category !== "Restaurant" && (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Type *</Text>
+              <Picker
+                selectedValue={product.type}
+                onValueChange={handleTypeChange}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select Type" value="" />
+                <Picker.Item label="Product" value="product" />
+                <Picker.Item label="Service" value="service" />
+              </Picker>
+            </View>
+          )}
+
+          {/* Category Dropdown */}
+          <Picker
+            selectedValue={product.category}
+            onValueChange={(value) => setProduct({ ...product, category: value })}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select Category *" value="" />
+            <Picker.Item label="Signature" value="signature" />
+            <Picker.Item label="Starters" value="starter" />
+            <Picker.Item label="Main Course" value="main-course" />
+            <Picker.Item label="Chinese" value="chinese" />
+            <Picker.Item label="Indian / Curry" value="indian" />
+            <Picker.Item label="Biryani & Rice" value="biryani" />
+            <Picker.Item label="Breads" value="breads" />
+            <Picker.Item label="Pasta & Noodles" value="pasta-noodles" />
+            <Picker.Item label="Soups" value="soups" />
+            <Picker.Item label="Salads" value="salads" />
+            <Picker.Item label="Breakfast" value="breakfast" />
+            <Picker.Item label="Snacks / Quick Bites" value="snacks" />
+            <Picker.Item label="Pizza" value="pizza" />
+            <Picker.Item label="Burgers" value="burgers" />
+            <Picker.Item label="Sandwiches" value="sandwiches" />
+            <Picker.Item label="Coffee Specials" value="coffee-specials" />
+            <Picker.Item label="Tea" value="tea" />
+            <Picker.Item label="Coffee" value="coffee" />
+            <Picker.Item label="Drinks" value="drinks" />
+            <Picker.Item label="Mocktails" value="mocktails" />
+            <Picker.Item label="Mojitos" value="mojitos" />
+            <Picker.Item label="Shakes" value="shakes" />
+            <Picker.Item label="Smoothies" value="smoothies" />
+            <Picker.Item label="Falooda" value="falooda" />
+            <Picker.Item label="Cakes" value="cakes" />
+            <Picker.Item label="Desserts" value="desserts" />
+            <Picker.Item label="Combo Meal" value="combo-meal" />
+            <Picker.Item label="Today's Special" value="today-special" />
+          </Picker>
+
+          {/* Multiple Images Upload */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Product Images ({totalImages}/5)</Text>
+            
+            {/* Image Preview Grid */}
+            {totalImages > 0 && (
+              <View style={styles.imageGrid}>
+                {product.imageUris.map((uri, index) => (
+                  <View key={index} style={styles.imagePreviewContainer}>
+                    <Image 
+                      source={{ uri }} 
+                      style={styles.previewImage}
+                    />
+                    <TouchableOpacity
+                      onPress={() => removeImage(index)}
+                      style={styles.removeImageBtn}
+                    >
+                      <Text style={styles.removeImageText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Upload Button */}
+            {canAddMore && (
+              <TouchableOpacity 
+                style={styles.imagePicker} 
+                onPress={pickMultipleImages}
+              >
+                <Text style={styles.imagePickerText}>
+                  📷 {totalImages > 0 ? 'Add More Images' : 'Pick Images from Gallery'}
+                </Text>
+                <Text style={styles.imagePickerSubtext}>
+                  Max 5 images, 5MB each
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Price */}
+          <TextInput
+            placeholder="Price (₹) *"
+            placeholderTextColor="#666"
+            keyboardType="numeric"
+            style={styles.input}
+            value={product.price}
+            onChangeText={(text) => setProduct({ ...product, price: text })}
+          />
+
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.submitBtn, loading && styles.disabledBtn]}
+              onPress={handleSubmitProduct}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.submitText}>
+                  {editingProduct ? 'Update' : 'Add Product'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {loading && !showAddForm ? (
         <ActivityIndicator size="large" color="#155366" style={{ marginTop: 40 }} />
@@ -484,15 +563,21 @@ const SellerProfile = ({ navigation }) => {
           {store?.products?.length > 0 ? (
             store.products.map((item) => (
               <View key={item._id} style={styles.card}>
-               <View style={styles.imageContainer}>
-  <Image
-    source={{
-      uri: item.images?.[0] || 'https://picsum.photos/300?random=11'
-    }}
-    style={styles.cardImage}
-    resizeMode="cover"
-  />
-</View>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={{
+                      uri: item.images?.[0] || 'https://picsum.photos/300?random=11'
+                    }}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                  />
+                  {/* Show image count if multiple images */}
+                  {item.images && item.images.length > 1 && (
+                    <View style={styles.imageCountBadge}>
+                      <Text style={styles.imageCountText}>+{item.images.length - 1}</Text>
+                    </View>
+                  )}
+                </View>
                 <View style={styles.info}>
                   <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
                   <Text style={styles.desc} numberOfLines={2}>
@@ -587,6 +672,24 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
+  formGroup: {
+    marginVertical: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#155366',
+    marginBottom: 8,
+  },
+  picker: {
+    backgroundColor: '#f5f5f5',
+    marginVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    color: 'black',
+    fontSize: 16,
+  },
   imagePicker: {
     backgroundColor: '#e0f7fa',
     padding: 15,
@@ -602,31 +705,45 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  imagePickerSubtext: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   imagePreviewContainer: {
     position: 'relative',
-    marginTop: 10,
-    alignItems: 'center',
+    width: (screenWidth - 80) / 2,
+    height: 120,
+    marginBottom: 10,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   previewImage: {
-    width: screenWidth - 80,
-    height: 200,
-    borderRadius: 10,
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
     resizeMode: 'cover',
   },
   removeImageBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(255,0,0,0.8)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeImageText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   input: {
@@ -711,10 +828,25 @@ const styles = StyleSheet.create({
     width: 130,
     height: 140,
     backgroundColor: '#f0f0f0',
+    position: 'relative',
   },
   cardImage: {
     width: '100%',
     height: '100%',
+  },
+  imageCountBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  imageCountText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   info: {
     flex: 1,

@@ -19,6 +19,7 @@ const deleteImageFiles = (imagePaths) => {
 // Add Product
 const addProduct = async (req, res) => {
   try {
+    console.log("hi");
     
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -26,6 +27,8 @@ const addProduct = async (req, res) => {
     }
     
     const { store, name, description, details, category, type, price, quantity } = req.body;
+    console.log("hhh",req.body);
+    
     
     if (!store || !name || !price) {
       // Clean up uploaded images if validation fails
@@ -71,6 +74,8 @@ const addProduct = async (req, res) => {
 // Update Product
 const updateProduct = async (req, res) => {
   try {
+    console.log("HLLOo");
+    
     const { productId } = req.params;
     
     // Find existing product to get current images
