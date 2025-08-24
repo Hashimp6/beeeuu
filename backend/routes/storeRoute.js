@@ -24,7 +24,13 @@ const {
   updateSecurityPassword,
   updateOnlineTicketing,
   updateWalkingTicketing,
-  updateTableBooking
+  updateTableBooking,
+  addDeliveryCharge,
+  editDeliveryCharge,
+  deleteDeliveryCharge,
+  getDeliveryCharges,
+  setGST,
+  getGST
 } = require("../controllers/storeController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadStoreImage } = require("../config/multer");
@@ -40,6 +46,14 @@ router.get("/nearby",getNearbyStores);
  router.put('/update-upi/:storeId',updateUPI);
  router.put('/:storeId/security', updateProtectedPages);
  router.put('/:storeId/security-password', updateSecurityPassword);
+ router.post("/:storeId/deliveryCharges", addDeliveryCharge);
+router.put("/:storeId/deliveryCharges/:index", editDeliveryCharge);
+router.delete("/:storeId/deliveryCharges/:index",deleteDeliveryCharge);
+router.get("/:storeId/deliveryCharges", getDeliveryCharges);
+
+// GST
+router.put("/:storeId/gst", setGST);
+router.get("/:storeId/gst", getGST);
  router.put("/:storeId/online-ticketing", updateOnlineTicketing);
 
 // 👇 Route to update walking ticketing

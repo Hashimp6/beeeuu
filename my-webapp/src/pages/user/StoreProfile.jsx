@@ -732,8 +732,8 @@ const handleTouchEnd = () => {
   <OffersStories storeId={store._id} />
 </div>
 
-      {/* Navigation Tabs */}
-      <section className="bg-white border-b border-gray-100 sticky top-16 z-40">
+     {/* Navigation Tabs - FIXED: Removed sticky positioning */}
+     <section className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center">
             <div className="flex bg-gray-50 rounded-xl p-1 my-6">

@@ -1,25 +1,6 @@
 // src/components/ProductsGrid.jsx
-import React from 'react';
-import { Heart,  Star,
-  ChefHat,
-  Coffee,
-  Cake,
-  Package,
-  Sparkles,
-  Leaf,
-  Flame,
-  Utensils,
-  UtensilsCrossed,
-  Sandwich,
-  Pizza,
-  Beef,
-  CupSoda,
-  Martini,
-  GlassWater,
-  IceCream,
-  Wine,
-  MugHot,
-  IceCream2 ,ShoppingBag, Calendar,} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Heart, Star, ChefHat, Coffee, Cake, Package, Sparkles, Leaf, Flame, Utensils, UtensilsCrossed, Sandwich, Pizza, Beef, CupSoda, Martini, GlassWater, IceCream, Wine, MugHot, IceCream2, ShoppingBag, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { showSuccessToast, showErrorToast } from "./Tost";
 
@@ -33,6 +14,9 @@ const ProductsGrid = ({
   onProductClick 
 }) => {
   const { addToCart } = useCart();
+  const [activeCategory, setActiveCategory] = useState('');
+  const navRef = useRef(null);
+  const categoryRefs = useRef({});
 
   // Filter only active products
   const activeProducts = products.filter(product => product.active !== false);
@@ -68,8 +52,8 @@ const ProductsGrid = ({
     { key: 'desserts', label: 'Desserts', icon: Cake },
     { key: 'cakes', label: 'Cakes', icon: Cake },
     { key: 'combo-meal', label: 'Combo Meal', icon: Package },
-
   ];
+
   // Group products by category for restaurants (using filtered active products)
   const groupedProducts = isRestaurant ? 
     restaurantCategories.reduce((acc, category) => {
@@ -78,6 +62,69 @@ const ProductsGrid = ({
       );
       return acc;
     }, {}) : null;
+
+  // Get categories that have products
+  const availableCategories = isRestaurant ? 
+    restaurantCategories.filter(category => 
+      groupedProducts[category.key] && groupedProducts[category.key].length > 0
+    ) : [];
+
+  // Handle category navigation
+  const scrollToCategory = (categoryKey) => {
+    const element = categoryRefs.current[categoryKey];
+    if (element) {
+      const navHeight = navRef.current?.offsetHeight || 0;
+      const yOffset = -navHeight - 20; // 20px extra space
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveCategory(categoryKey);
+    }
+  };
+
+  // Handle horizontal scroll for navigation
+  const scrollNav = (direction) => {
+    if (navRef.current) {
+      const scrollAmount = 200;
+      navRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Intersection Observer to update active category
+  useEffect(() => {
+    if (!isRestaurant || availableCategories.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const categoryKey = entry.target.getAttribute('data-category');
+            setActiveCategory(categoryKey);
+          }
+        });
+      },
+      {
+        rootMargin: '-100px 0px -50% 0px',
+        threshold: 0.1,
+      }
+    );
+
+    Object.values(categoryRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, [isRestaurant, availableCategories.length]);
+
+  // Set first category as active initially
+  useEffect(() => {
+    if (availableCategories.length > 0 && !activeCategory) {
+      setActiveCategory(availableCategories[0].key);
+    }
+  }, [availableCategories.length, activeCategory]);
 
   // Render product card
   const renderProductCard = (product) => (
@@ -159,7 +206,7 @@ const ProductsGrid = ({
               handleAppointment(product);
             } else {
               if (!store?.isActive||store?.subscription==='basic') {
-                showErrorToast("Sorry, you can’t order from this shop. Try again later.");
+                showErrorToast("Sorry, you can't order from this shop. Try again later.");
                 return;
               }
               addToCart(product, store);
@@ -202,7 +249,12 @@ const ProductsGrid = ({
     const IconComponent = category.icon;
 
     return (
-      <div key={category.key} className="space-y-4 sm:space-y-6">
+      <div
+        key={category.key}
+        ref={(el) => (categoryRefs.current[category.key] = el)}
+        data-category={category.key}
+        className="space-y-4 sm:space-y-6 scroll-mt-32"
+      >
         {/* Category Header */}
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-teal-600 to-cyan-600 p-2 rounded-xl">
@@ -222,6 +274,61 @@ const ProductsGrid = ({
     );
   };
 
+  // Render category navigation
+  const renderCategoryNavigation = () => {
+    if (!isRestaurant || availableCategories.length === 0) return null;
+
+    return (
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="relative">
+          {/* Left scroll button */}
+          <button
+            onClick={() => scrollNav('left')}
+            className="absolute left-0 top-0 z-10 h-full px-2 bg-gradient-to-r from-white to-transparent flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ChevronLeft size={20} className="text-gray-600" />
+          </button>
+
+          {/* Navigation container */}
+          <div
+            ref={navRef}
+            className="flex overflow-x-auto scrollbar-hide py-3 px-8 gap-2 scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {availableCategories.map((category) => {
+              const IconComponent = category.icon;
+              const isActive = activeCategory === category.key;
+              
+              return (
+                <button
+                  key={category.key}
+                  onClick={() => scrollToCategory(category.key)}
+                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                    isActive
+                      ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md transform scale-105'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black'
+                  }`}
+                >
+                  <IconComponent size={16} />
+                  <span className="hidden sm:inline">{category.label}</span>
+                  <span className="sm:hidden">{category.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right scroll button */}
+          <button
+            onClick={() => scrollNav('right')}
+            className="absolute right-0 top-0 z-10 h-full px-2 bg-gradient-to-l from-white to-transparent flex items-center justify-center hover:bg-gray-50 transition-colors"
+          >
+            <ChevronRight size={20} className="text-gray-600" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Section Header */}
@@ -231,12 +338,15 @@ const ProductsGrid = ({
         </h2>
       </div>
 
+      {/* Category Navigation for Restaurants */}
+      {renderCategoryNavigation()}
+
       {/* Products Display */}
       {activeProducts && activeProducts.length > 0 ? (
         isRestaurant ? (
           // Restaurant view with categorized sections
           <div className="space-y-8 sm:space-y-12">
-            {restaurantCategories.map(category => 
+            {availableCategories.map(category => 
               renderCategorySection(category, groupedProducts[category.key] || [])
             )}
             
@@ -252,7 +362,11 @@ const ProductsGrid = ({
               
               if (uncategorizedProducts.length > 0) {
                 return (
-                  <div className="space-y-4 sm:space-y-6">
+                  <div
+                    ref={(el) => (categoryRefs.current['others'] = el)}
+                    data-category="others"
+                    className="space-y-4 sm:space-y-6 scroll-mt-32"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="bg-gradient-to-r from-gray-600 to-gray-700 p-2 rounded-xl">
                         <ShoppingBag size={20} className="text-white" />

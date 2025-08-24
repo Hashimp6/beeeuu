@@ -1507,174 +1507,165 @@ const OrderManagement = ({ store }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [notificationTimer, setNotificationTimer] = useState(null);
   const [hasNewOrders, setHasNewOrders] = useState(false);
-  const [audioReady, setAudioReady] = useState(false); // NEW: Track audio readiness
+  const [audioReady, setAudioReady] = useState(false);
   const [previousPendingCount, setPreviousPendingCount] = useState(0);
   const [showCODOnly, setShowCODOnly] = useState(false);
+
   // Audio ref for notification sound
-  const audioRef = useRef(null); // CHANGED: Use ref instead of state
+  const audioRef = useRef(null);
+  const audioContextRef = useRef(null); // ✅ NEW: Track audio context for cleanup
 
-  // Create notification sound
-// Create notification sound
-// FIND this section around line 20-50 and REPLACE it completely:
+  // ✅ FIXED: Create notification sound with proper cleanup
+  useEffect(() => {
+    // Cleanup previous audio context
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch (error) {
+        console.log('Error closing audio context:', error);
+      }
+      audioContextRef.current = null;
+    }
 
-// Create notification sound - FIXED VERSION
-useEffect(() => {
-  if (soundEnabled && typeof window !== 'undefined') {
-    const createChimeSound = () => {
+    if (soundEnabled && typeof window !== 'undefined') {
       try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Create a pleasant chime with descending tones
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-        oscillator.frequency.setValueAtTime(450, audioContext.currentTime + 0.2);
-        
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-        
-        oscillator.type = 'sine';
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
+        audioContextRef.current = audioContext; // ✅ Store for cleanup
+
+        const createChimeSound = () => {
+          try {
+            // Check if audio context is still valid
+            if (audioContext.state === 'closed') return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Create a pleasant chime with descending tones
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(450, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.type = 'sine';
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+          } catch (error) {
+            console.log('Error playing chime:', error);
+          }
+        };
+
+        audioRef.current = { play: createChimeSound };
+        setAudioReady(true);
       } catch (error) {
-        console.log('Audio context error:', error);
+        console.log('Audio context creation error:', error);
+        setAudioReady(false);
+      }
+    } else {
+      audioRef.current = null;
+      setAudioReady(false);
+    }
+
+    // ✅ CLEANUP FUNCTION
+    return () => {
+      if (audioContextRef.current) {
+        try {
+          audioContextRef.current.close();
+        } catch (error) {
+          console.log('Error closing audio context in cleanup:', error);
+        }
+        audioContextRef.current = null;
       }
     };
+  }, [soundEnabled]); // Only depend on soundEnabled
 
-    // Set the audio element and mark as ready
-    audioRef.current = { play: createChimeSound };  // ✅ CHANGED: Use audioRef instead of setAudioElement
-    setAudioReady(true); // ✅ NEW: Mark audio as ready
- } else {
-    setAudioReady(false);
-  }
-}, [soundEnabled]);
-  // Play notification sound
-// Play notification sound
-// Replace your existing playNotificationSound function with this:
+  // ✅ FIXED: Play notification sound with additional safety checks
+  const playNotificationSound = () => {
+    if (soundEnabled && audioReady && audioRef.current && audioContextRef.current) {
+      try {
+        // Check if audio context is still active
+        if (audioContextRef.current.state === 'closed') {
+          console.log('🔇 Audio context is closed');
+          return;
+        }
 
-// Add this function inside OrderManagement component after handleStatusChange
-const handleMarkTablePaid = async (orderIds, tableName) => {
-  const totalAmount = orderIds.reduce((sum, orderId) => {
-    const order = orders.find(o => o._id === orderId);
-    return sum + (order ? parseFloat(order.totalAmount) : 0);
-  }, 0);
-
-  toast((t) => (
-    <span className="flex flex-col gap-2 relative">
-      {/* ❌ X Button */}
-      <button
-        onClick={() => toast.dismiss(t.id)}
-        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
-      >
-        <X size={16} />
-      </button>
-  
-      <span className="text-sm font-medium">
-        Mark all orders for <b>{tableName}</b> as paid?
-      </span>
-      <span className="text-xs text-gray-600">
-        Total Amount: ₹{totalAmount} | {orderIds.length} orders
-      </span>
-  
-      <div className="flex justify-end gap-2 mt-2">
-        <button
-          onClick={async () => {
-            toast.dismiss(t.id);
-            try {
-              const updatePromises = orderIds.map(orderId =>
-                axios.patch(
-                  `${SERVER_URL}/orders/payment/${orderId}`,
-                  { paymentStatus: 'completed' },
-                  {
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`,
-                    },
-                  }
-                )
-              );
-  
-              await Promise.all(updatePromises);
-  
-              setOrders(prev =>
-                prev.map(order =>
-                  orderIds.includes(order._id)
-                    ? { ...order, paymentStatus: 'completed' }
-                    : order
-                )
-              );
-  
-              toast.success(`✅ ${tableName} marked as paid! Total: ₹${totalAmount}`);
-              setTimeout(() => fetchOrders(selectedStatus), 1000);
-            } catch (error) {
-              console.error('Error updating table payments:', error);
-              toast.error('Failed to update payments');
-            }
-          }}
-          className="px-3 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700"
-        >
-          Confirm Payment
-        </button>
-        <button
-          onClick={() => toast.dismiss(t.id)}
-          className="px-3 py-1.5 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
-        >
-          Cancel
-        </button>
-      </div>
-    </span>
-  ), { 
-    duration: 2000,   // ✅ Auto-close after 5 seconds
-    position: "top-center",
-  });
-};
-
-
-const playNotificationSound = () => {
-  if (soundEnabled && audioReady && audioRef.current) {
-    try {
-      if (audioRef.current.play && typeof audioRef.current.play === 'function') {
-        audioRef.current.play();
+        if (audioRef.current.play && typeof audioRef.current.play === 'function') {
+          audioRef.current.play();
+        }
+      } catch (error) {
+        console.log('Error playing sound:', error);
       }
-    } catch (error) {
-      console.log('Error playing sound:', error);
+    } else {
+      console.log('🔇 Sound not played - soundEnabled:', soundEnabled, 'audioReady:', audioReady);
     }
-  } else {
-    console.log('🔇 Sound not played - soundEnabled:', soundEnabled, 'audioReady:', audioReady);
-  }
-};
+  };
 
-// Start persistent notification
-const startPersistentNotification = () => {
-  if (notificationTimer || !soundEnabled || !audioReady) {
-   return;
-  }
-  
-  // Play immediately
-  playNotificationSound();
-  
-  // Then repeat every 2 seconds
-  const timer = setInterval(() => {
+  // ✅ FIXED: Start persistent notification with better cleanup
+  const startPersistentNotification = () => {
+    // Stop any existing timer first
+    stopNotification();
+    
+    if (!soundEnabled || !audioReady) {
+      return;
+    }
+    
+    // Play immediately
     playNotificationSound();
-  }, 2000);
-  
-  setNotificationTimer(timer);
-  setHasNewOrders(true);
-};
+    
+    // Then repeat every 2 seconds
+    const timer = setInterval(() => {
+      if (soundEnabled && audioReady) { // ✅ Check state before playing
+        playNotificationSound();
+      } else {
+        // If sound is disabled, stop the timer
+        clearInterval(timer);
+        setNotificationTimer(null);
+        setHasNewOrders(false);
+      }
+    }, 2000);
+    
+    setNotificationTimer(timer);
+    setHasNewOrders(true);
+  };
 
-// Stop notification
-const stopNotification = () => {
-  if (notificationTimer) {
-    clearInterval(notificationTimer);
-    setNotificationTimer(null);
+  // ✅ FIXED: Stop notification with better cleanup
+  const stopNotification = () => {
+    if (notificationTimer) {
+      clearInterval(notificationTimer);
+      setNotificationTimer(null);
+    }
     setHasNewOrders(false);
-  }
-};
+  };
 
+  // ✅ FIXED: Sound toggle with proper cleanup
+  const handleSoundToggle = () => {
+    const newSoundState = !soundEnabled;
+    
+    // If disabling sound, stop notifications immediately
+    if (!newSoundState) {
+      stopNotification();
+    }
+    
+    setSoundEnabled(newSoundState);
+  };
+
+  // ✅ FIXED: Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopNotification();
+      if (audioContextRef.current) {
+        try {
+          audioContextRef.current.close();
+        } catch (error) {
+          console.log('Error closing audio context on unmount:', error);
+        }
+      }
+    };
+  }, []);
   const statusOptions = [
     { value: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length, color: 'bg-yellow-500' },
     { value: 'confirmed', label: 'Confirmed', count: orders.filter(o => o.status === 'confirmed').length, color: 'bg-blue-500' },
@@ -1717,26 +1708,24 @@ const stopNotification = () => {
       const pendingOrders = newOrders.filter(o => o.status === 'pending');
       const currentPendingCount = pendingOrders.length;
       
-      // Handle notifications for pending orders
-     // Handle notifications for pending orders with audio ready check
-if (currentPendingCount > 0) {
-  if (!hasNewOrders) {
-    // Wait a bit for audio to be ready if it's not yet
-    if (!audioReady && soundEnabled) {
-     setTimeout(() => {
-        if (audioReady) {
-          startPersistentNotification();
+      if (currentPendingCount > 0) {
+        if (!hasNewOrders && soundEnabled) { // ✅ Check soundEnabled here too
+          if (audioReady) {
+            startPersistentNotification();
+          } else if (soundEnabled) {
+            // Wait for audio to be ready
+            setTimeout(() => {
+              if (audioReady && soundEnabled) { // ✅ Double-check both conditions
+                startPersistentNotification();
+              }
+            }, 500);
+          }
+          
+          showSuccessToast(`🔔 You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}!`);
         }
-      }, 500); // Wait 500ms for audio to initialize
-    } else {
-      startPersistentNotification();
-    }
-    
-    showSuccessToast(`🔔 You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}!`);
-  }
-} else {
-  stopNotification();
-}
+      } else {
+        stopNotification();
+      }
       
       setPreviousPendingCount(currentPendingCount);
       setOrders(newOrders);
@@ -1747,6 +1736,7 @@ if (currentPendingCount > 0) {
       setLoading(false);
     }
   };
+
 
 // 1. Fix the handleStatusChange function in OrderManagement component
 // Fixed handleStatusChange function - replace your existing one with this:
@@ -1839,6 +1829,81 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
   });
 };
 
+const handleMarkTablePaid = async (orderIds, tableName) => {
+  const totalAmount = orderIds.reduce((sum, orderId) => {
+    const order = orders.find(o => o._id === orderId);
+    return sum + (order ? parseFloat(order.totalAmount) : 0);
+  }, 0);
+
+  toast((t) => (
+    <span className="flex flex-col gap-2 relative">
+      <button
+        onClick={() => toast.dismiss(t.id)}
+        className="absolute top-1 right-1 text-gray-500 hover:text-gray-800"
+      >
+        <X size={16} />
+      </button>
+  
+      <span className="text-sm font-medium">
+        Mark all orders for <b>{tableName}</b> as paid?
+      </span>
+      <span className="text-xs text-gray-600">
+        Total Amount: ₹{totalAmount} | {orderIds.length} orders
+      </span>
+  
+      <div className="flex justify-end gap-2 mt-2">
+        <button
+          onClick={async () => {
+            toast.dismiss(t.id);
+            try {
+              const updatePromises = orderIds.map(orderId =>
+                axios.patch(
+                  `${SERVER_URL}/orders/payment/${orderId}`,
+                  { paymentStatus: 'completed' },
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                )
+              );
+  
+              await Promise.all(updatePromises);
+  
+              setOrders(prev =>
+                prev.map(order =>
+                  orderIds.includes(order._id)
+                    ? { ...order, paymentStatus: 'completed' }
+                    : order
+                )
+              );
+  
+              toast.success(`✅ ${tableName} marked as paid! Total: ₹${totalAmount}`);
+              setTimeout(() => fetchOrders(selectedStatus), 1000);
+            } catch (error) {
+              console.error('Error updating table payments:', error);
+              toast.error('Failed to update payments');
+            }
+          }}
+          className="px-3 py-1.5 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+        >
+          Confirm Payment
+        </button>
+        <button
+          onClick={() => toast.dismiss(t.id)}
+          className="px-3 py-1.5 text-sm text-white bg-gray-600 rounded hover:bg-gray-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </span>
+  ), { 
+    duration: 2000,
+    position: "top-center",
+  });
+};
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1918,23 +1983,24 @@ const handleStatusChange = (orderId, newStatus, paymentStatus = null) => {
                     </div>
                   </div>
                 </div>
+                <div className="fixed top-4 right-10 z-50 flex flex-row space-x-3">
+  {/* COD Only View Toggle */}
+  <button
+    onClick={() => setShowCODOnly(!showCODOnly)}
+    className={`px-4 py-2 rounded-full shadow-lg backdrop-blur-md transition font-semibold text-sm flex items-center space-x-2 ${
+      showCODOnly 
+        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+        : 'bg-black/50 hover:bg-black/70 text-white'
+    }`}
+    title={showCODOnly ? 'Show all orders' : 'Show only COD tracker'}
+  >
+    <DollarSign className="w-4 h-4" />
+    <span>{showCODOnly ? 'Exit COD' : 'COD Only'}</span>
+  </button>
 
-             
-             
-                <div className="fixed top-4 right-24 z-50 flex flex-row space-x-3 ">
   {/* Sound Toggle */}
   <button
-onClick={() => {
-  const newSoundState = !soundEnabled;
-  setSoundEnabled(newSoundState);
-  
-  // If disabling sound, stop notifications
-  if (!newSoundState) {
-    stopNotification();
-    setAudioReady(false);
-  }
-  // Audio will be recreated by useEffect when soundEnabled changes
-}}
+    onClick={handleSoundToggle}
     className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
     title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
   >
@@ -1949,50 +2015,7 @@ onClick={() => {
   >
     <RefreshCcw className="w-5 h-5" />
   </button>
-  {/* Add this COD Toggle Button in the fixed button container with sound toggle */}
-  <div className="fixed top-4 right-24 z-50 flex flex-row space-x-3">
-                  {/* COD Only View Toggle */}
-                  <button
-                    onClick={() => setShowCODOnly(!showCODOnly)}
-                    className={`px-4 py-2 rounded-full shadow-lg backdrop-blur-md transition font-semibold text-sm flex items-center space-x-2 ${
-                      showCODOnly 
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                        : 'bg-black/50 hover:bg-black/70 text-white'
-                    }`}
-                    title={showCODOnly ? 'Show all orders' : 'Show only COD tracker'}
-                  >
-                    <DollarSign className="w-4 h-4" />
-                    <span>{showCODOnly ? 'Exit COD' : 'COD Only'}</span>
-                  </button>
-
-                  {/* Sound Toggle */}
-                  <button
-                    onClick={() => {
-                      const newSoundState = !soundEnabled;
-                      setSoundEnabled(newSoundState);
-                      if (!newSoundState) {
-                        stopNotification();
-                        setAudioReady(false);
-                      }
-                    }}
-                    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
-                    title={soundEnabled ? 'Disable notification sound' : 'Enable notification sound'}
-                  >
-                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                  </button>
-
-                  {/* Refresh Button */}
-                  <button
-                    onClick={() => fetchOrders(selectedStatus)}
-                    className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg backdrop-blur-md transition"
-                    title="Refresh Orders"
-                  >
-                    <RefreshCcw className="w-5 h-5" />
-                  </button>
-                </div>
 </div>
-
-
               </div>
             </div>
           </div>

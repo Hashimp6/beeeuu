@@ -1147,6 +1147,116 @@ const updateTableBooking = async (req, res) => {
   }
 };
 
+
+const addDeliveryCharge = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { minDistance, maxDistance, charge } = req.body;
+
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    store.deliveryCharges.push({ minDistance, maxDistance, charge });
+    await store.save();
+
+    res.json({ message: "Delivery charge added", deliveryCharges: store.deliveryCharges });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Edit a delivery charge by index
+const editDeliveryCharge = async (req, res) => {
+  try {
+    const { storeId, index } = req.params;
+    const { minDistance, maxDistance, charge } = req.body;
+
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    if (!store.deliveryCharges[index])
+      return res.status(404).json({ message: "Delivery charge not found" });
+
+    store.deliveryCharges[index] = { minDistance, maxDistance, charge };
+    await store.save();
+
+    res.json({ message: "Delivery charge updated", deliveryCharges: store.deliveryCharges });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete a delivery charge by index
+const deleteDeliveryCharge = async (req, res) => {
+  try {
+    const { storeId, index } = req.params;
+
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    if (!store.deliveryCharges[index])
+      return res.status(404).json({ message: "Delivery charge not found" });
+
+    store.deliveryCharges.splice(index, 1);
+    await store.save();
+
+    res.json({ message: "Delivery charge deleted", deliveryCharges: store.deliveryCharges });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get all delivery charges
+const getDeliveryCharges = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const store = await Store.findById(storeId);
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json(store.deliveryCharges);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// ---------------- GST ----------------
+
+// Add or Update GST
+const setGST = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { gst } = req.body;
+
+    const store = await Store.findByIdAndUpdate(
+      storeId,
+      { gst },
+      { new: true }
+    );
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json({ message: "GST updated", gst: store.gst });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get GST
+const getGST = async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const store = await Store.findById(storeId);
+
+    if (!store) return res.status(404).json({ message: "Store not found" });
+
+    res.json({ gst: store.gst });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
   module.exports = {
     
     registerStore,
@@ -1174,4 +1284,10 @@ const updateTableBooking = async (req, res) => {
   updateOnlineTicketing,
   updateWalkingTicketing,
   updateTableBooking,
+  addDeliveryCharge,
+  editDeliveryCharge,
+  deleteDeliveryCharge,
+  getDeliveryCharges,
+  setGST,
+  getGST,
   };

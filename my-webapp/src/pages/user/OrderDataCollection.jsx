@@ -265,7 +265,7 @@ const isDeliverySelected = () => {
     const nameValid = validateName(customerName) === '';
     const phoneValid = validatePhone(phoneNumber) === '';
     const addressValid = validateAddress(address) === '';
-    
+    if (!selectedPayment) return false;
     if (selectedPayment !== 'upi') {
       return nameValid && phoneValid && addressValid;
     }

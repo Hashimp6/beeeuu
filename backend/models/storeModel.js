@@ -26,6 +26,16 @@ const storeSchema = new mongoose.Schema({
     enum: ['basic', 'premium', 'golden'],
     default: 'basic'
   },
+  deliveryCharges: [
+    {
+      minDistance: Number, // in km
+      maxDistance: Number, // in km
+      charge: Number       // delivery fee for this range
+    }
+  ],
+  gst: {
+    type: Number,
+  },
   onlineTicketing: {
     active: { type: Boolean, default: false },
     type: { type: String, enum: ['free', 'paid'], default: 'free' },
